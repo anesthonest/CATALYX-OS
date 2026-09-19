@@ -1,0 +1,187 @@
+{
+  "gcp_project_id": "catalyx-v2-production",
+  "version": "2.0.0",
+  "description": "CATALYX V2 - AI-Powered Execution Intelligence Operating System Database Blueprint",
+  "collections": [
+    {
+      "name": "users",
+      "type": "root",
+      "description": "Stores user accounts, gamified levels, XP, and core V2 execution scores",
+      "schema": {
+        "uid": "string (unique identifier)",
+        "username": "string",
+        "email": "string",
+        "xp": "integer (total accumulated experience points)",
+        "level": "integer (gamified tier, computed using user.xp)",
+        "title": "string (earned ranking title based on performance)",
+        "streak": "integer (active consecutive execution days)",
+        "executionScore": "integer (0-100 score on overall task compliance)",
+        "focusScore": "integer (0-100 score analyzing dedicated focus blocks)",
+        "consistencyScore": "integer (0-100 score evaluating sequence of streaks)",
+        "momentumScore": "integer (0-100 score tracking speed of delivery)",
+        "premium": "boolean",
+        "achievements": "array of strings (unlocked achievement IDs)",
+        "createdAt": "timestamp (ISO 8601)",
+        "updatedAt": "timestamp (ISO 8601, optional)"
+      },
+      "subcollections": [
+        {
+          "name": "tasks",
+          "description": "Individually tracked execution duties and objectives",
+          "schema": {
+            "id": "string",
+            "text": "string",
+            "completed": "boolean",
+            "dueDate": "timestamp (ISO 8601, optional)",
+            "priority": "string ('high' | 'medium' | 'low')",
+            "category": "string ('work' | 'personal' | 'growth' | 'finance')",
+            "createdAt": "timestamp (ISO 8601)",
+            "completedAt": "timestamp (ISO 8601, optional)"
+          }
+        },
+        {
+          "name": "aiMemory",
+          "description": "User long-term memory logs and AI Coach cognitive context",
+          "schema": {
+            "id": "string",
+            "role": "string ('user' | 'ai')",
+            "message": "string (chat content text)",
+            "createdAt": "timestamp (ISO 8601)"
+          }
+        },
+        {
+          "name": "goals",
+          "description": "Strategic short-term and long-term milestones aligning personal growth",
+          "schema": {
+            "id": "string",
+            "title": "string",
+            "description": "string",
+            "targetDate": "timestamp (ISO 8601)",
+            "progress": "integer (0-100 completion percent)",
+            "status": "string ('active' | 'completed' | 'paused')",
+            "type": "string ('short_term' | 'long_term')",
+            "createdAt": "timestamp (ISO 8601)"
+          }
+        },
+        {
+          "name": "projects",
+          "description": "High-level initiatives breaking down into multiple milestones",
+          "schema": {
+            "id": "string",
+            "title": "string",
+            "description": "string",
+            "status": "string ('planning' | 'active' | 'on_hold' | 'completed')",
+            "progress": "integer (0-100 percent)",
+            "milestones": "array of objects",
+            "createdAt": "timestamp (ISO 8601)"
+          }
+        },
+        {
+          "name": "notifications",
+          "description": "Smart, personalized, real-time reminders and metrics warnings",
+          "schema": {
+            "id": "string",
+            "title": "string",
+            "message": "string",
+            "read": "boolean",
+            "type": "string ('streak_risk' | 'achievement' | 'team_report' | 'focus_reminder')",
+            "createdAt": "timestamp (ISO 8601)"
+          }
+        },
+        {
+          "name": "focusBlocks",
+          "description": "Completed deep work/Pomodoro tracking sessions for calculating Focus Score",
+          "schema": {
+            "id": "string",
+            "taskName": "string",
+            "durationMinutes": "integer",
+            "efficiencyRating": "integer (1-5)",
+            "soundscape": "string",
+            "createdAt": "timestamp (ISO 8601)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "workspaces",
+      "type": "root",
+      "description": "Cross-organizational rooms enabling collaborative sprints, timeline channels, and AI team analysis",
+      "schema": {
+        "id": "string (unique code)",
+        "name": "string",
+        "ownerId": "string (uid of creator)",
+        "memberIds": "array of strings (uids of authorized users)",
+        "teamProductivityScore": "integer (0-100 collaborative index)",
+        "burnoutRisk": "string ('Low' | 'Moderate' | 'High')",
+        "teamMomentum": "string ('Low' | 'Moderate' | 'Optimal')",
+        "createdAt": "timestamp (ISO 8601)"
+      },
+      "subcollections": [
+        {
+          "name": "members",
+          "description": "Roles, profiles, and joined dates of authenticated workspace users",
+          "schema": {
+            "uid": "string",
+            "email": "string",
+            "username": "string",
+            "role": "string ('owner' | 'member')",
+            "joinedAt": "timestamp (ISO 8601)"
+          }
+        },
+        {
+          "name": "tasks",
+          "description": "Shared task logs assigned, executed, and compiled collectively",
+          "schema": {
+            "id": "string",
+            "text": "string",
+            "completed": "boolean",
+            "priority": "string ('high' | 'medium' | 'low')",
+            "assignedTo": "string (uid or username, optional)",
+            "completedBy": "string (uid, optional)",
+            "createdAt": "timestamp (ISO 8601)",
+            "completedAt": "timestamp (ISO 8601, optional)"
+          }
+        },
+        {
+          "name": "messages",
+          "description": "Real-time communication logs containing team messages, threads, and AI Coach tags",
+          "schema": {
+            "id": "string",
+            "text": "string",
+            "username": "string",
+            "userId": "string",
+            "ai": "boolean",
+            "emojiReactions": "array of objects",
+            "createdAt": "timestamp (ISO 8601)"
+          }
+        },
+        {
+          "name": "knowledgeWiki",
+          "description": "Wiki and documentation nodes stored in the shared Knowledge Vault",
+          "schema": {
+            "id": "string",
+            "title": "string",
+            "content": "string (markdown content)",
+            "authorName": "string",
+            "createdAt": "timestamp (ISO 8601)",
+            "updatedAt": "timestamp (ISO 8601)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "invites",
+      "type": "root",
+      "description": "Global user invitation records mapping to email mailboxes",
+      "schema": {
+        "id": "string",
+        "workspaceId": "string",
+        "workspaceName": "string",
+        "email": "string",
+        "senderEmail": "string",
+        "status": "string ('pending' | 'accepted' | 'declined')",
+        "createdAt": "timestamp (ISO 8601)"
+      }
+    }
+  ]
+}

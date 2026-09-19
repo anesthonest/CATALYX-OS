@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CATALYX V2 | Executive Telemetry Profile Sharing</title>
+    <!-- Tailwind CSS CDN for elegant vanilla styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #020617;
+      }
+      .font-display {
+        font-family: 'Space Grotesk', sans-serif;
+      }
+      .font-mono {
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .glass-panel {
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .glow-purple {
+        box-shadow: 0 0 40px rgba(157, 78, 221, 0.15);
+      }
+    </style>
+  </head>
+  <body class="text-gray-200 min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <!-- Atmospheric subtle glow backgrounds -->
+    <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#9d4edd]/5 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#00f5d4]/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="w-full max-w-lg glass-panel glow-purple rounded-3xl p-8 relative overflow-hidden">
+      <!-- 1. NOT FOUND STATE -->
+      <div id="not-found" class="hidden text-center py-8">
+        <h1 class="text-3xl font-display font-medium text-pink-500 mb-2 uppercase tracking-wider">TELEMETRY SECURE DISCONNECTED</h1>
+        <p class="text-xs text-gray-400 font-mono mb-6">Error: The requested UID could not be resolved in the CATALYX master database cache.</p>
+        <a href="/" class="py-2.5 px-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-xs font-semibold hover:opacity-90 transition-all font-display">
+          SECURE LOG IN PORTAL
+        </a>
+      </div>
+
+      <!-- 2. PROFILE CONTENT STATE -->
+      <div id="profile-content" class="space-y-6">
+        <div class="text-center">
+          <span class="px-3 py-1 text-[9px] font-mono tracking-widest text-[#00f5d4] border border-[#00f5d4]/20 bg-[#00f5d4]/5 rounded-full uppercase">
+            V2 Verified Execution Node
+          </span>
+          
+          <div id="avatar" class="w-24 h-24 bg-gradient-to-tr from-purple-600 via-pink-500 to-cyan-500 rounded-3xl flex items-center justify-center text-white text-4xl font-bold mx-auto mt-6 shadow-2xl relative">
+            <span id="initials">EX</span>
+            <span id="premium-crown" class="hidden absolute -top-2 -right-2 text-xl filter drop-shadow">👑</span>
+          </div>
+
+          <h2 id="username" class="text-3xl font-display font-semibold text-white mt-4 tracking-tight">Commander Post</h2>
+          <p id="rank-title" class="text-xs text-purple-400 font-mono font-medium tracking-wider uppercase mt-1">Level 1 - Strategic Novice</p>
+          <p id="email" class="text-[10px] text-gray-500 font-mono mt-0.5">user@catalyx.space</p>
+        </div>
+
+        <!-- Metric Categories Overview -->
+        <div class="border-t border-b border-white/5 py-4 my-2">
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div>
+              <span class="text-[9px] font-mono text-gray-400 block uppercase tracking-wider">LEVEL</span>
+              <span id="level" class="text-lg font-bold text-white block">1</span>
+            </div>
+            <div>
+              <span class="text-[9px] font-mono text-gray-400 block uppercase tracking-wider font-bold text-purple-400">EXECUTION</span>
+              <span id="score" class="text-lg font-bold text-[#9d4edd] block">0%</span>
+            </div>
+            <div>
+              <span class="text-[9px] font-mono text-gray-400 block uppercase tracking-wider">FOCUS</span>
+              <span id="focus" class="text-lg font-bold text-[#00f5d4] block">0%</span>
+            </div>
+            <div>
+              <span class="text-[9px] font-mono text-gray-400 block uppercase tracking-wider">STREAK</span>
+              <span id="streak" class="text-lg font-bold text-pink-500 block">1d</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quad-Vector Performance Index -->
+        <div class="space-y-3 bg-black/30 rounded-2xl p-4 border border-white/5">
+          <h4 class="text-[10px] font-mono text-gray-400 tracking-widest uppercase mb-1">Execution Index Telemetry</h4>
+          
+          <div>
+            <div class="flex justify-between text-[11px] font-mono text-gray-400 mb-1">
+              <span>Execution Score</span>
+              <span id="exec-score-val" class="font-bold text-white">0%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+              <div id="exec-score-bar" class="h-full bg-gradient-to-r from-purple-600 to-indigo-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono text-gray-400 mb-1">
+              <span>Focus Score (Pomodoro sessions)</span>
+              <span id="focus-score-val" class="font-bold text-white">0%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+              <div id="focus-score-bar" class="h-full bg-gradient-to-r from-teal-500 to-cyan-400" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono text-gray-400 mb-1">
+              <span>Consistency Score (Task completion)</span>
+              <span id="consistency-score-val" class="font-bold text-white">0%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+              <div id="consistency-score-bar" class="h-full bg-gradient-to-r from-pink-600 to-rose-400" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono text-gray-400 mb-1">
+              <span>Momentum Score (Speed to completion)</span>
+              <span id="momentum-score-val" class="font-bold text-white">0%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
+              <div id="momentum-score-bar" class="h-full bg-gradient-to-r from-blue-600 to-[#00f5d4]" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center pt-2">
+          <div id="xp-capsule" class="inline-block px-4 py-1.5 bg-slate-950 border border-white/5 rounded-full text-xs font-mono text-gray-300">
+            Total Accumulated Operational Energy: <span id="xp" class="text-[#00f5d4] font-bold">0 XP</span>
+          </div>
+        </div>
+
+        <div class="border-t border-white/5 pt-5 space-y-4">
+          <p class="text-xs text-gray-400 leading-relaxed max-w-md mx-auto text-center">
+            This verified profile is synchronized through CATALYX V2, the enterprise-ready Execution Intelligence platform powered by Vinexsah Technologies.
+          </p>
+          <a href="/" class="w-full inline-block py-3 bg-[#030712] hover:bg-slate-900 border border-white/10 text-white rounded-xl text-xs font-semibold tracking-wide transition-all uppercase text-center font-display">
+            Launch Your Execution Core
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Extract parameters from url: profile.html?user=UID
+      const params = new URLSearchParams(window.location.search);
+      const targetUid = params.get('user') || 'vine_demo_user';
+
+      // Attempt to load profile from simulated cache
+      const rawUsers = localStorage.getItem('catalyx_sim_users');
+      let profile = null;
+
+      if (rawUsers) {
+        try {
+          const list = JSON.parse(rawUsers);
+          profile = list.find(u => u.uid === targetUid);
+        } catch(e) {
+          console.error(e);
+        }
+      }
+
+      // Default demo profile if cache is empty or fallback needed
+      if (!profile && targetUid === 'vine_demo_user') {
+        profile = {
+          uid: 'vine_demo_user',
+          username: 'vine_executor',
+          email: 'anesthonest81@gmail.com',
+          xp: 245,
+          level: 2,
+          streak: 3,
+          executionScore: 78,
+          focusScore: 82,
+          consistencyScore: 72,
+          momentumScore: 80,
+          premium: true,
+          createdAt: new Date().toISOString()
+        };
+      }
+
+      if (profile) {
+        document.getElementById('username').textContent = profile.username;
+        document.getElementById('email').textContent = profile.email;
+        document.getElementById('initials').textContent = profile.username.slice(0, 2).toUpperCase();
+        document.getElementById('level').textContent = profile.level;
+        document.getElementById('streak').textContent = profile.streak + 'd';
+        
+        const execS = profile.executionScore || 0;
+        const focusS = profile.focusScore || Math.min(100, Math.max(20, execS - 5));
+        const consisS = profile.consistencyScore || Math.min(100, Math.max(10, execS + 10));
+        const momenS = profile.momentumScore || Math.min(100, Math.max(15, execS - 12));
+
+        document.getElementById('score').textContent = execS + '%';
+        document.getElementById('focus').textContent = focusS + '%';
+        document.getElementById('xp').textContent = (profile.xp || 0) + ' XP';
+
+        // Set scores
+        document.getElementById('exec-score-val').textContent = execS + '%';
+        document.getElementById('exec-score-bar').style.width = execS + '%';
+
+        document.getElementById('focus-score-val').textContent = focusS + '%';
+        document.getElementById('focus-score-bar').style.width = focusS + '%';
+
+        document.getElementById('consistency-score-val').textContent = consisS + '%';
+        document.getElementById('consistency-score-bar').style.width = consisS + '%';
+
+        document.getElementById('momentum-score-val').textContent = momenS + '%';
+        document.getElementById('momentum-score-bar').style.width = momenS + '%';
+
+        // Rank Title Generation
+        let rTitle = 'Novice Executor';
+        if (execS >= 90) {
+          rTitle = 'Strategic Overlord';
+        } else if (execS >= 80) {
+          rTitle = 'Strategic Commander';
+        } else if (execS >= 70) {
+          rTitle = 'Execution General';
+        } else if (execS >= 50) {
+          rTitle = 'Discipline Operator';
+        } else if (execS >= 30) {
+          rTitle = 'Focus Recruit';
+        }
+        document.getElementById('rank-title').textContent = `Level ${profile.level} - ${rTitle}`;
+
+        if (profile.premium) {
+          document.getElementById('premium-crown').classList.remove('hidden');
+          document.getElementById('avatar').classList.add('bg-gradient-to-r', 'from-pink-500', 'via-purple-600', 'to-indigo-500', 'animate-pulse');
+        }
+      } else {
+        document.getElementById('profile-content').classList.add('hidden');
+        document.getElementById('not-found').classList.remove('hidden');
+      }
+    </script>
+  </body>
+</html>

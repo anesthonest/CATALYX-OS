@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Global default deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Checking authentication state
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Checking profile ownership
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper: Verify valid alphanumeric ID formats
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Users Collection rules
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      
+      // Tasks sub-collection
+      match /tasks/{taskId} {
+        allow read, write: if isOwner(userId);
+      }
+      
+      // AI Memory / Chat history sub-collection
+      match /aiMemory/{messageId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Goals sub-collection
+      match /goals/{goalId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Projects sub-collection
+      match /projects/{projectId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Notifications sub-collection
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Focus blocks sessions sub-collection (Pomodoro logs)
+      match /focusBlocks/{focusId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Helper: Workspace membership query
+    function isWorkspaceMember(workspaceId) {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)/members/$(request.auth.uid)) ||
+        get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid
+      );
+    }
+
+    // Workspaces Collection rules
+    match /workspaces/{workspaceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+
+      // Workspace Members subcollection
+      match /members/{memberId} {
+        allow read: if isWorkspaceMember(workspaceId);
+        allow write: if isAuthenticated();
+      }
+
+      // Workspace Tasks subcollection
+      match /tasks/{taskId} {
+        allow read, write: if isWorkspaceMember(workspaceId);
+      }
+
+      // Workspace Team Chat messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isWorkspaceMember(workspaceId);
+      }
+
+      // Workspace Standard Operating Procedures / Wiki subcollection (Knowledge Vault)
+      match /knowledgeWiki/{wikiId} {
+        allow read, write: if isWorkspaceMember(workspaceId);
+      }
+    }
+
+    // Global Workspace Invites
+    match /invites/{inviteId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

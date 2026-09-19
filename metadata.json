@@ -1,0 +1,7 @@
+{
+  "name": "CATALYX",
+  "description": "CATALYX V30: Universal Enterprise AI Operating System. Full-system functionality, governance, intelligence, payments, and multi-domain autonomous orchestration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
