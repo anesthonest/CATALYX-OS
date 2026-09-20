@@ -41,6 +41,41 @@
   --color-brand-pink: #ff007f;
   --color-brand-cyan: #00f5d4;
   --color-brand-indigo: #4361ee;
+  --color-brand-gold: #f59e0b;
+  --color-brand-amber: #d97706;
+}
+
+/* Layered Professional Dark Surfaces */
+.catalyx-surface-base {
+  background-color: #0b0f17;
+}
+
+.catalyx-surface-card {
+  background-color: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.catalyx-surface-elevated {
+  background-color: #161f33;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.catalyx-badge-gold {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.catalyx-btn-gold {
+  background-color: #f59e0b;
+  color: #0b0f17;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.catalyx-btn-gold:hover {
+  background-color: #fbbf24;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
 }
 
 /* Glassmorphism custom scrollbar and scroll logic */

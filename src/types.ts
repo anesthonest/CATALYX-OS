@@ -5714,7 +5714,12 @@ export type UserPersonaRole =
 export type PrimaryDomainId = 
   | 'home'
   | 'work'
+  | 'collaborate'
+  | 'business'
+  | 'marketplace'
   | 'intelligence'
+  | 'connections'
+  | 'system'
   | 'missions'
   | 'automation'
   | 'resources'

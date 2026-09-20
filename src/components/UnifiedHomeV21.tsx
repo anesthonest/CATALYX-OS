@@ -39,10 +39,14 @@ import {
   Presentation,
   Video,
   FileText,
-  Play
+  Play,
+  Users
 } from 'lucide-react';
 import { EnterpriseActivityFeed } from './EnterpriseActivityFeed';
 import { CatalyxSystemGuideView } from './CatalyxSystemGuideView';
+import { PageHeader } from './design-system/PageHeader';
+import { MetricCard } from './design-system/MetricCard';
+import { ActionCard } from './design-system/ActionCard';
 
 interface UnifiedHomeV21Props {
   user: UserProfile;
@@ -112,80 +116,70 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
     localStorage.setItem('catalyx_v21_hide_welcome', 'true');
   };
 
-  const handleAskSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!askAiQuery.trim()) return;
-    onOpenAskAi(askAiQuery);
-    setAskAiQuery('');
-  };
-
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fadeIn">
-      {/* 1. TOP HERO BAR: Role Lens & Context Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-5 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-brand-purple/10">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30 font-bold">
-              CATALYX V24
-            </span>
-            <span className="text-xs text-gray-400 font-mono">
-              OPERATIONAL COMMAND CENTER
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight flex items-center gap-2">
-            Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cyan to-brand-purple">{user.username || 'Commander'}</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-300 mt-1 max-w-2xl">
-            {roleProfile.subtitle}
-          </p>
-        </div>
-
-        {/* Role Lens & Controls */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-slate-950/80 border border-white/10 rounded-xl px-3 py-1.5">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Role View:</span>
+      {/* 1. STANDARDIZED PAGE HEADER WITH ROLE LENS & CUSTOMIZATION */}
+      <PageHeader
+        title={`Welcome, ${user.username || 'Commander'}`}
+        subtitle={roleProfile.subtitle}
+        badge="V26 RELEASE"
+        roleLens={
+          <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 shadow-sm">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Role:</span>
             <select
               value={activeRole}
               onChange={(e) => onRoleChange(e.target.value as UserPersonaRole)}
-              className="bg-transparent text-xs font-semibold text-brand-cyan focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-semibold text-amber-400 focus:outline-none cursor-pointer"
               aria-label="Select Operational Role Perspective"
             >
-              <option value="EXECUTIVE" className="bg-slate-900 text-white">Executive (Strategic Command)</option>
-              <option value="MANAGER" className="bg-slate-900 text-white">Manager (Operations & Tasks)</option>
-              <option value="OPERATOR" className="bg-slate-900 text-white">Operator (Real-Time Control)</option>
-              <option value="DEVELOPER" className="bg-slate-900 text-white">Developer (APIs & Sandbox)</option>
-              <option value="RESEARCHER" className="bg-slate-900 text-white">Researcher (Data & Models)</option>
-              <option value="FINANCE" className="bg-slate-900 text-white">Finance (Commerce & Ledger)</option>
-              <option value="ADMIN" className="bg-slate-900 text-white">Admin (Governance & Safety)</option>
+              <option value="EXECUTIVE" className="bg-slate-950 text-white">Executive (Strategic Command)</option>
+              <option value="MANAGER" className="bg-slate-950 text-white">Manager (Operations & Tasks)</option>
+              <option value="OPERATOR" className="bg-slate-950 text-white">Operator (Real-Time Control)</option>
+              <option value="DEVELOPER" className="bg-slate-950 text-white">Developer (APIs & Runtimes)</option>
+              <option value="RESEARCHER" className="bg-slate-950 text-white">Researcher (Models & Proofs)</option>
+              <option value="FINANCE" className="bg-slate-950 text-white">Finance (Commerce & Ledger)</option>
+              <option value="ADMIN" className="bg-slate-950 text-white">Admin (Governance & Safety)</option>
             </select>
           </div>
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onOpenAskAi()}
+              className="px-3 py-1.5 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Ask CATALYX AI Assistant"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Ask AI</span>
+            </button>
+            <button
+              onClick={() => setShowConfigModal(true)}
+              className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+              title="Customize Command Center"
+              aria-label="Customize widgets"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Customize</span>
+            </button>
+          </div>
+        }
+      />
 
-          <button
-            onClick={() => setShowConfigModal(true)}
-            className="p-2 rounded-xl bg-slate-950/80 border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-all flex items-center gap-1.5 text-xs font-medium cursor-pointer"
-            title="Configure Dashboard Widgets"
-            aria-label="Configure widgets"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-brand-purple" />
-            <span className="hidden sm:inline">Customize</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. OPTIONAL WELCOME & ORIENTATION GUIDE (What is CATALYX?) */}
+      {/* 2. ONBOARDING & ORIENTATION GUIDE (What is CATALYX? 3-Question Clarity) */}
       {showWelcomeGuide && widgetConfig.welcomeCard && (
-        <div className="glass-panel p-5 rounded-2xl border border-brand-cyan/30 bg-gradient-to-br from-brand-cyan/10 via-slate-900/80 to-slate-950/90 relative overflow-hidden">
+        <div className="catalyx-surface-card p-5 sm:p-6 rounded-2xl border border-amber-500/30 relative overflow-hidden shadow-lg">
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
           <button
             onClick={handleDismissWelcome}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/5 cursor-pointer"
+            className="absolute top-4 right-4 text-gray-400 hover:text-white p-1.5 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors"
             title="Dismiss Guide"
             aria-label="Dismiss guide"
           >
             <X className="w-4 h-4" />
           </button>
           <div className="flex flex-col md:flex-row gap-5 items-start">
-            <div className="p-3 bg-brand-cyan/15 rounded-xl border border-brand-cyan/40 shrink-0 text-brand-cyan">
-              <Compass className="w-7 h-7 animate-pulse" />
+            <div className="p-3 bg-amber-500/15 rounded-xl border border-amber-500/30 shrink-0 text-amber-400">
+              <Compass className="w-7 h-7" />
             </div>
             <div className="space-y-3 flex-1">
               <div>
@@ -193,46 +187,47 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
                   What is CATALYX?
                 </h2>
                 <p className="text-xs sm:text-sm text-gray-300 mt-1 leading-relaxed">
-                  CATALYX is your <strong className="text-white">Human-Centered Autonomous Operating System</strong>. It consolidates work management, strategic missions, multi-agent automation, knowledge synthesis, and financial integrity into a single unified interface.
+                  CATALYX is your <strong className="text-white">all-in-one professional platform</strong> for managing work, collaborating with teams, utilizing AI, and growing your business.
                 </p>
               </div>
 
+              {/* 3 Core Orientation Questions */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                <div className="p-3 bg-slate-950/60 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-mono uppercase text-brand-cyan font-bold block mb-0.5">1. What can I do here?</span>
-                  <p className="text-xs text-gray-400">Launch projects, coordinate autonomous AI agent specialists, track goals, and run planetary simulations.</p>
+                <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 space-y-1">
+                  <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block">1. What can I do here?</span>
+                  <p className="text-xs text-gray-300 leading-relaxed">Create projects, write documents, build slide decks, coordinate AI agents, and run commercial operations.</p>
                 </div>
-                <div className="p-3 bg-slate-950/60 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-mono uppercase text-brand-purple font-bold block mb-0.5">2. What is happening?</span>
-                  <p className="text-xs text-gray-400">Observe real-time team velocity, agent queue throughput, and planetary intelligence risk alerts.</p>
+                <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 space-y-1">
+                  <span className="text-[10px] font-mono uppercase text-purple-400 font-bold block">2. What is happening?</span>
+                  <p className="text-xs text-gray-300 leading-relaxed">Track active team deliverables, agent execution metrics, system health, and real-time ledger settlements.</p>
                 </div>
-                <div className="p-3 bg-slate-950/60 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold block mb-0.5">3. What should I do next?</span>
-                  <p className="text-xs text-gray-400">Act on high-priority items below, review pending approvals, or ask the AI assistant for contextual guidance.</p>
+                <div className="p-3.5 bg-black/40 rounded-xl border border-white/5 space-y-1">
+                  <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold block">3. What should I do next?</span>
+                  <p className="text-xs text-gray-300 leading-relaxed">Resolve priority action items below, open your assigned tasks backlog, or ask the AI assistant for advice.</p>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <button
-                  onClick={() => onNavigate('tasks')}
-                  className="px-3 py-1.5 bg-brand-cyan text-slate-950 text-xs font-bold rounded-lg hover:bg-brand-cyan/90 transition-all flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => onNavigate('universal-work')}
+                  className="px-3.5 py-1.5 catalyx-btn-gold text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
-                  <span>Explore Tasks</span>
+                  <span>Explore Work Hub</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => onOpenAskAi("Give me a strategic overview of my active workspace.")}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => onOpenAskAi("Give me a brief overview of my active workspace and priority recommendations.")}
+                  className="px-3.5 py-1.5 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Bot className="w-3.5 h-3.5 text-brand-purple" />
+                  <Bot className="w-3.5 h-3.5 text-purple-400" />
                   <span>Ask CATALYX AI</span>
                 </button>
                 <button
                   onClick={onOpenCommandPalette}
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-mono rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-mono rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <Search className="w-3.5 h-3.5 text-gray-400" />
-                  <span>Search Everything (Cmd+K)</span>
+                  <span>Search (Cmd+K)</span>
                 </button>
               </div>
             </div>
@@ -240,7 +235,7 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
         </div>
       )}
 
-      {/* 3. CATALYX SYSTEM GUIDE AI (V26 Deep Grounded Intelligence) */}
+      {/* 3. CATALYX SYSTEM GUIDE AI (V26 Grounded Intelligence) */}
       {widgetConfig.askCatalyx && (
         <CatalyxSystemGuideView
           activeTab="home"
@@ -251,50 +246,35 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
         />
       )}
 
-      {/* 4. ROLE TELEMETRY & LIVE OPERATIONAL PULSE (What is happening?) */}
+      {/* 4. ROLE TELEMETRY & LIVE OPERATIONAL PULSE (MetricCards) */}
       {widgetConfig.roleMetrics && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {roleProfile.metrics.map((metric, idx) => (
-            <div key={idx} className="glass-panel p-4 rounded-2xl border border-white/10 flex flex-col justify-between hover:border-white/20 transition-all">
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
-                  {metric.label}
-                </span>
-                {metric.change && (
-                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                    metric.isPositive 
-                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' 
-                      : 'bg-amber-500/15 text-amber-400 border border-amber-500/20'
-                  }`}>
-                    {metric.change}
-                  </span>
-                )}
-              </div>
-              <div className="my-2">
-                <span className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
-                  {metric.value}
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-400">
-                {metric.subtext}
-              </p>
-            </div>
+            <MetricCard
+              key={idx}
+              label={metric.label}
+              value={metric.value}
+              change={metric.change}
+              isPositive={metric.isPositive}
+              subtext={metric.subtext}
+              icon={<Activity className="w-4 h-4 text-amber-400" />}
+            />
           ))}
         </div>
       )}
 
-      {/* 5. MAIN SPLIT: What needs my attention right now? vs Quick Actions */}
+      {/* 5. MAIN SPLIT: Priority Attention Queue vs Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Priority Actions Queue */}
+        {/* Left 2 Cols: Priority Actions Queue (What needs attention right now?) */}
         {widgetConfig.priorityActions && (
-          <div className="lg:col-span-2 glass-panel p-5 rounded-2xl border border-white/10 space-y-4">
+          <div className="lg:col-span-2 catalyx-surface-card p-5 rounded-2xl border border-white/10 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/5">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-display font-semibold text-white uppercase tracking-wider">
                   What Needs Attention Right Now?
                 </h3>
-                <span className="px-2 py-0.2 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
                   {priorityActions.length} Pending
                 </span>
               </div>
@@ -304,11 +284,11 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
             </div>
 
             {priorityActions.length === 0 ? (
-              <div className="text-center py-8 px-4 rounded-xl bg-slate-950/40 border border-dashed border-white/10">
+              <div className="text-center py-8 px-4 rounded-xl bg-black/30 border border-dashed border-white/10">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                 <h4 className="text-sm font-semibold text-white">All Clear — Zero Critical Bottlenecks</h4>
                 <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                  All active missions, approvals, and firewall actions are currently operating within nominal parameters.
+                  All active initiatives, approvals, and security policies are currently operating within nominal parameters.
                 </p>
               </div>
             ) : (
@@ -319,7 +299,7 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
                     className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
                       action.severity === 'HIGH' || action.severity === 'CRITICAL'
                         ? 'bg-amber-950/20 border-amber-500/30 hover:border-amber-500/50'
-                        : 'bg-slate-950/40 border-white/10 hover:border-white/20'
+                        : 'bg-black/30 border-white/10 hover:border-white/20'
                     }`}
                   >
                     <div className="space-y-1">
@@ -370,115 +350,97 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
 
         {/* Right Col: Quick Actions Launcher (What can I do here?) */}
         {widgetConfig.quickActions && (
-          <div className="glass-panel p-5 rounded-2xl border border-white/10 space-y-4">
+          <div className="catalyx-surface-card p-5 rounded-2xl border border-white/10 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/5">
               <h3 className="text-sm font-display font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                <Zap className="w-4 h-4 text-brand-cyan" />
+                <Zap className="w-4 h-4 text-amber-400" />
                 Quick Actions
               </h3>
               <span className="text-[10px] font-mono text-gray-500 uppercase">One-Click</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
-              <button
+            <div className="grid grid-cols-1 gap-2.5">
+              <ActionCard
+                title="Create or Log Task"
+                description="Add deliverable to personal backlog"
+                icon={<CheckSquare className="w-4 h-4 text-amber-400" />}
                 onClick={() => onNavigate('tasks')}
-                className="w-full p-3 rounded-xl bg-slate-950/60 hover:bg-brand-purple/10 border border-white/5 hover:border-brand-purple/30 text-left transition-all group flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-brand-purple/15 text-brand-purple group-hover:scale-105 transition-transform">
-                    <CheckSquare className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-white group-hover:text-brand-purple transition-colors">Create or Log Task</h4>
-                    <p className="text-[11px] text-gray-400">Add deliverable to personal backlog</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors" />
-              </button>
+              />
 
-              <button
+              <ActionCard
+                title="Start New Project"
+                description="Open Kanban board and milestones"
+                icon={<Layers className="w-4 h-4 text-blue-400" />}
                 onClick={() => onNavigate('project-board')}
-                className="w-full p-3 rounded-xl bg-slate-950/60 hover:bg-brand-cyan/10 border border-white/5 hover:border-brand-cyan/30 text-left transition-all group flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-brand-cyan/15 text-brand-cyan group-hover:scale-105 transition-transform">
-                    <Layers className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-white group-hover:text-brand-cyan transition-colors">Start New Initiative</h4>
-                    <p className="text-[11px] text-gray-400">Open Kanban project board</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors" />
-              </button>
+              />
 
-              <button
-                onClick={() => onNavigate('civilization')}
-                className="w-full p-3 rounded-xl bg-slate-950/60 hover:bg-emerald-500/10 border border-white/5 hover:border-emerald-500/30 text-left transition-all group flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 group-hover:scale-105 transition-transform">
-                    <Globe className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-white group-hover:text-emerald-400 transition-colors">Civilization Command</h4>
-                    <p className="text-[11px] text-gray-400">Planetary missions & roadmaps</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors" />
-              </button>
+              <ActionCard
+                title="Draft Document or Slide Deck"
+                description="Create presentations, notes, or media"
+                icon={<Presentation className="w-4 h-4 text-purple-400" />}
+                onClick={() => onNavigate('presentations')}
+              />
 
-              <button
+              <ActionCard
+                title="AI Action Firewall"
+                description="8-stage safety controls & quarantine"
+                icon={<Shield className="w-4 h-4 text-emerald-400" />}
                 onClick={() => onNavigate('ai-firewall')}
-                className="w-full p-3 rounded-xl bg-slate-950/60 hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/30 text-left transition-all group flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-rose-500/15 text-rose-400 group-hover:scale-105 transition-transform">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-white group-hover:text-rose-400 transition-colors">AI Action Firewall</h4>
-                    <p className="text-[11px] text-gray-400">8-stage safety controls & quarantine</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-3.5 h-3.5 text-gray-500 group-hover:text-white transition-colors" />
-              </button>
+              />
             </div>
           </div>
         )}
       </div>
 
-      {/* V23 CONSOLIDATED OPERATING SYSTEM HUB */}
-      <div className="glass-panel p-5 rounded-2xl border border-white/10 bg-gradient-to-r from-slate-950/80 via-slate-900/60 to-emerald-950/20 space-y-4">
+      {/* 6. CONSOLIDATED UNIVERSAL WORK & OPERATING SYSTEM HUB */}
+      <div className="catalyx-surface-card p-5 sm:p-6 rounded-2xl border border-white/10 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              V23 Production Hub
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase catalyx-badge-gold">
+              Core Capabilities
             </span>
             <h3 className="text-sm font-display font-semibold text-white uppercase tracking-wider">
-              Universal Operating System Domains
+              Work, Collaboration & Business Hub
             </h3>
           </div>
           <span className="text-[11px] font-mono text-gray-400">
-            Real integrations • Zero fabrication
+            Click any domain to jump directly
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Worker Center */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Universal Work Hub */}
           <button
-            onClick={() => onNavigate('worker-center')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-brand-cyan/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
+            onClick={() => onNavigate('universal-work')}
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-amber-500/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="p-2 w-fit rounded-lg bg-brand-cyan/15 text-brand-cyan mb-2 group-hover:scale-105 transition-transform">
+              <div className="p-2 w-fit rounded-lg bg-amber-500/15 text-amber-400 mb-2.5 group-hover:scale-105 transition-transform">
                 <Briefcase className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-brand-cyan transition-colors">Worker Center</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Assigned tasks, who I report to & team blockers</p>
+              <h4 className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Universal Work Hub</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Polymorphic work schemas across 60+ digital work types</p>
             </div>
-            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-brand-cyan pt-2 border-t border-white/5">
-              <span>Accountability</span>
+            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-amber-400 pt-2 border-t border-white/5">
+              <span>Work Management</span>
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </div>
+          </button>
+
+          {/* Team Workspaces */}
+          <button
+            onClick={() => onNavigate('workspace')}
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-blue-500/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
+          >
+            <div>
+              <div className="p-2 w-fit rounded-lg bg-blue-500/15 text-blue-400 mb-2.5 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Team Workspaces</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Collaborative rooms, team chat & shared backlogs</p>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-blue-400 pt-2 border-t border-white/5">
+              <span>Collaboration</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </button>
@@ -486,13 +448,13 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
           {/* Social Inbox */}
           <button
             onClick={() => onNavigate('social-inbox')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-emerald-500/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-emerald-500/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="p-2 w-fit rounded-lg bg-emerald-500/15 text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
+              <div className="p-2 w-fit rounded-lg bg-emerald-500/15 text-emerald-400 mb-2.5 group-hover:scale-105 transition-transform">
                 <MessageSquare className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">Social Inbox</h4>
+              <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">Messages & Inbox</h4>
               <p className="text-[11px] text-gray-400 mt-1">WhatsApp, Messenger, Email & SMS unified queue</p>
             </div>
             <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-emerald-400 pt-2 border-t border-white/5">
@@ -504,35 +466,17 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
           {/* Unified Commerce */}
           <button
             onClick={() => onNavigate('unified-commerce')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-brand-purple/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-purple-500/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="p-2 w-fit rounded-lg bg-brand-purple/15 text-brand-purple mb-2 group-hover:scale-105 transition-transform">
+              <div className="p-2 w-fit rounded-lg bg-purple-500/15 text-purple-400 mb-2.5 group-hover:scale-105 transition-transform">
                 <ShoppingBag className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-brand-purple transition-colors">Unified Commerce</h4>
+              <h4 className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">Commerce & CRM</h4>
               <p className="text-[11px] text-gray-400 mt-1">Orders lifecycle, customer CRM & products catalog</p>
             </div>
-            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-brand-purple pt-2 border-t border-white/5">
-              <span>Integer Ledger</span>
-              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </button>
-
-          {/* Connections Center */}
-          <button
-            onClick={() => onNavigate('connections')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-amber-500/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
-          >
-            <div>
-              <div className="p-2 w-fit rounded-lg bg-amber-500/15 text-amber-400 mb-2 group-hover:scale-105 transition-transform">
-                <Plug className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Connections Center</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Connector fabric, honest statuses & webhook relays</p>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-amber-400 pt-2 border-t border-white/5">
-              <span>Fabric</span>
+            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-purple-400 pt-2 border-t border-white/5">
+              <span>Business</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </button>
@@ -540,32 +484,32 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
           {/* Presentations & Slides */}
           <button
             onClick={() => onNavigate('presentations')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-brand-purple/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-amber-500/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="p-2 w-fit rounded-lg bg-brand-purple/15 text-brand-purple mb-2 group-hover:scale-105 transition-transform">
+              <div className="p-2 w-fit rounded-lg bg-amber-500/15 text-amber-400 mb-2.5 group-hover:scale-105 transition-transform">
                 <Presentation className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-brand-purple transition-colors">Presentations Studio</h4>
+              <h4 className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Presentations Studio</h4>
               <p className="text-[11px] text-gray-400 mt-1">Slide decks, presenter notes & interactive present mode</p>
             </div>
-            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-brand-purple pt-2 border-t border-white/5">
+            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-amber-400 pt-2 border-t border-white/5">
               <span>Decks & Slides</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </button>
 
-          {/* Media Studio */}
+          {/* Media & Podcasts */}
           <button
             onClick={() => onNavigate('media')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-rose-400/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-rose-400/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="p-2 w-fit rounded-lg bg-rose-500/15 text-rose-400 mb-2 group-hover:scale-105 transition-transform">
+              <div className="p-2 w-fit rounded-lg bg-rose-500/15 text-rose-400 mb-2.5 group-hover:scale-105 transition-transform">
                 <Video className="w-4 h-4" />
               </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-rose-400 transition-colors">Media & Podcasts</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Video streams, speed controls & timestamp chapters</p>
+              <h4 className="text-xs font-bold text-white group-hover:text-rose-400 transition-colors">Media Studio</h4>
+              <p className="text-[11px] text-gray-400 mt-1">Video streams, audio podcasts & chapter timestamps</p>
             </div>
             <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-rose-400 pt-2 border-t border-white/5">
               <span>Streaming</span>
@@ -573,97 +517,61 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
             </div>
           </button>
 
-          {/* Meetings Hub */}
+          {/* Unified Meetings */}
           <button
             onClick={() => onNavigate('meetings')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-blue-400/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-blue-400/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="p-2 w-fit rounded-lg bg-blue-500/15 text-blue-400 mb-2 group-hover:scale-105 transition-transform">
+              <div className="p-2 w-fit rounded-lg bg-blue-500/15 text-blue-400 mb-2.5 group-hover:scale-105 transition-transform">
                 <Calendar className="w-4 h-4" />
               </div>
               <h4 className="text-xs font-bold text-white group-hover:text-blue-400 transition-colors">Unified Meetings</h4>
               <p className="text-[11px] text-gray-400 mt-1">Scheduler, agendas, decisions & task conversion</p>
             </div>
             <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-blue-400 pt-2 border-t border-white/5">
-              <span>Collaboration</span>
+              <span>Schedule</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </button>
 
-          {/* Universal Files */}
+          {/* Universal Files & Docs */}
           <button
             onClick={() => onNavigate('files')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-cyan-400/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
+            className="p-4 rounded-xl catalyx-surface-elevated hover:border-cyan-400/40 border border-white/10 text-left transition-all group flex flex-col justify-between cursor-pointer"
           >
             <div>
-              <div className="p-2 w-fit rounded-lg bg-cyan-500/15 text-cyan-400 mb-2 group-hover:scale-105 transition-transform">
+              <div className="p-2 w-fit rounded-lg bg-cyan-500/15 text-cyan-400 mb-2.5 group-hover:scale-105 transition-transform">
                 <FileText className="w-4 h-4" />
               </div>
               <h4 className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors">Files & Documents</h4>
               <p className="text-[11px] text-gray-400 mt-1">Universal document previewer, code syntax & storage</p>
             </div>
             <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-cyan-400 pt-2 border-t border-white/5">
-              <span>Storage Vault</span>
-              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </button>
-
-          {/* Demos & Prototypes */}
-          <button
-            onClick={() => onNavigate('demos')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-white/10 hover:border-amber-400/40 text-left transition-all group flex flex-col justify-between cursor-pointer"
-          >
-            <div>
-              <div className="p-2 w-fit rounded-lg bg-amber-500/15 text-amber-400 mb-2 group-hover:scale-105 transition-transform">
-                <Play className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">Demos & Prototypes</h4>
-              <p className="text-[11px] text-gray-400 mt-1">Live sandboxes, test runners & epistemic badges</p>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-amber-400 pt-2 border-t border-white/5">
-              <span>Sandboxes</span>
-              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-          </button>
-
-          {/* V24 Final Production Certification */}
-          <button
-            onClick={() => onNavigate('v24-certification')}
-            className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-emerald-500/30 hover:border-emerald-400/70 text-left transition-all group flex flex-col justify-between cursor-pointer"
-          >
-            <div>
-              <div className="p-2 w-fit rounded-lg bg-emerald-500/20 text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">V24 Certification</h4>
-              <p className="text-[11px] text-gray-400 mt-1">12 verification gates, link integrity & zero dead ends</p>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[10px] font-mono text-emerald-400 pt-2 border-t border-white/5">
-              <span>Final Sign-Off</span>
+              <span>Vault</span>
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </div>
           </button>
         </div>
       </div>
 
-      {/* 6. RECOMMENDED ACTIONS (What should I do next?) */}
-      <div className="glass-panel p-5 rounded-2xl border border-white/10 space-y-4">
+      {/* 7. ROLE RECOMMENDATIONS (What should I do next?) */}
+      <div className="catalyx-surface-card p-5 rounded-2xl border border-white/10 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-white/5">
           <div className="flex items-center gap-2">
-            <Compass className="w-4 h-4 text-brand-purple" />
+            <Compass className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-display font-semibold text-white uppercase tracking-wider">
-              What Should I Do Next? (Role Recommendations)
+              Recommended Next Steps
             </h3>
           </div>
           <span className="text-[10px] font-mono text-gray-400">
-            Tailored for <strong className="text-brand-cyan">{roleProfile.title}</strong>
+            Tailored for <strong className="text-amber-400">{roleProfile.title}</strong>
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {roleProfile.recommendedActions.map((rec, idx) => (
-            <div key={idx} className="p-4 rounded-xl bg-slate-950/50 border border-white/5 hover:border-brand-purple/40 transition-all flex flex-col justify-between space-y-3">
+            <div key={idx} className="p-4 rounded-xl catalyx-surface-elevated border border-white/5 hover:border-amber-500/40 transition-all flex flex-col justify-between space-y-3">
               <div>
                 <h4 className="text-xs font-bold text-white mb-1">
                   {rec.title}
@@ -674,7 +582,7 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
               </div>
               <button
                 onClick={() => onNavigate(rec.targetTab)}
-                className="py-2 px-3 bg-brand-purple/15 hover:bg-brand-purple/25 border border-brand-purple/30 text-brand-purple text-xs font-semibold rounded-lg transition-all flex items-center justify-between cursor-pointer"
+                className="py-2 px-3 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold rounded-lg transition-all flex items-center justify-between cursor-pointer"
               >
                 <span>{rec.btnLabel}</span>
                 <ArrowRight className="w-3 h-3" />
@@ -684,7 +592,7 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
         </div>
       </div>
 
-      {/* 7. ENTERPRISE COLLABORATION & ACTIVITY STREAM */}
+      {/* 8. ENTERPRISE ACTIVITY FEED */}
       <EnterpriseActivityFeed
         onNavigateToArtifact={(type, id) => {
           if (type === 'FILE') onNavigate('files');
@@ -695,36 +603,36 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
         }}
       />
 
-      {/* 8. WIDGET CUSTOMIZATION MODAL */}
+      {/* 9. WIDGET CUSTOMIZATION MODAL */}
       {showConfigModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel-heavy p-6 rounded-2xl max-w-md w-full border border-white/15 space-y-4 animate-scaleUp">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="catalyx-surface-elevated p-6 rounded-2xl max-w-md w-full border border-white/15 space-y-4 animate-scaleUp shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-base font-display font-bold text-white flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-brand-purple" />
+                <SlidersHorizontal className="w-4 h-4 text-amber-400" />
                 Customize Command Center
               </h3>
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 cursor-pointer"
                 aria-label="Close modal"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs text-gray-300">
-              Configure which modules and widgets appear on your primary Home Command Center. Preferences persist automatically.
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Choose which modules appear on your primary Home Command Center. Preferences persist in your local session.
             </p>
 
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {[
-                { key: 'welcomeCard', label: 'Welcome & Orientation Card', desc: 'Overview of platform architecture' },
-                { key: 'askCatalyx', label: 'Contextual AI Query Prompt', desc: 'Quick natural language consultation' },
-                { key: 'roleMetrics', label: 'Operational Telemetry Metrics', desc: 'Role-adaptive performance indicators' },
-                { key: 'priorityActions', label: 'Priority Attention Queue', desc: 'High-severity risks and approvals' },
+                { key: 'welcomeCard', label: 'Welcome & Orientation Guide', desc: 'Platform definition and core questions' },
+                { key: 'askCatalyx', label: 'Grounded AI Assistant Prompt', desc: 'Natural language strategic consultation' },
+                { key: 'roleMetrics', label: 'Operational Telemetry Metrics', desc: 'Role-adaptive indicators' },
+                { key: 'priorityActions', label: 'Priority Attention Queue', desc: 'Real-time risks, approvals & blockers' },
                 { key: 'quickActions', label: 'Quick Actions Launcher', desc: 'One-click shortcuts to primary tasks' },
-                { key: 'activeWork', label: 'Recommended Next Steps', desc: 'Contextual cognitive directives' }
+                { key: 'activeWork', label: 'Recommended Next Steps', desc: 'Contextual cognitive guidance' }
               ].map(({ key, label, desc }) => {
                 const isEnabled = widgetConfig[key as keyof V21DashboardWidgetConfig];
                 return (
@@ -732,7 +640,7 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
                     key={key}
                     type="button"
                     onClick={() => toggleWidget(key as keyof V21DashboardWidgetConfig)}
-                    className="w-full p-3 rounded-xl bg-slate-900/60 border border-white/5 hover:border-white/15 flex items-center justify-between text-left transition-all cursor-pointer"
+                    className="w-full p-3 rounded-xl catalyx-surface-card border border-white/5 hover:border-white/15 flex items-center justify-between text-left transition-all cursor-pointer"
                   >
                     <div>
                       <span className="text-xs font-semibold text-white block">{label}</span>
@@ -740,7 +648,7 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
                     </div>
                     <div className={`p-1.5 rounded-lg border ${
                       isEnabled 
-                        ? 'bg-brand-cyan/20 border-brand-cyan/40 text-brand-cyan' 
+                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-400' 
                         : 'bg-white/5 border-white/10 text-gray-500'
                     }`}>
                       {isEnabled ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -753,7 +661,7 @@ export const UnifiedHomeV21: React.FC<UnifiedHomeV21Props> = ({
             <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setShowConfigModal(false)}
-                className="py-2 px-5 bg-brand-purple hover:bg-brand-purple/90 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
+                className="py-2 px-5 catalyx-btn-gold text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
               >
                 Save Preferences
               </button>

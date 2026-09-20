@@ -110,6 +110,7 @@ import { navigationRouterService } from './services/navigationRouterService';
 import { UniversalWorkHubView } from './components/UniversalWorkHubView';
 import { PartnershipCollaborationView } from './components/PartnershipCollaborationView';
 import { V25CertificationView } from './components/V25CertificationView';
+import { MarketplaceHubView } from './components/MarketplaceHubView';
 
 // Production Legal, Governance & Compliance Components
 import { TermsAcceptanceGuard } from './components/legal/TermsAcceptanceGuard';
@@ -680,6 +681,15 @@ export default function App() {
         return <AISafetyFirewallTab organizationId={user.uid} currentUserEmail={user.email} />;
       case 'reconciliation':
         return <FinancialReconciliationTab organizationId={user.uid} currentUserEmail={user.email} />;
+      case 'marketplace':
+      case 'marketplace-hub':
+        return (
+          <MarketplaceHubView
+            user={user}
+            activeRole={activeRole}
+            onNavigate={handleSelectTab}
+          />
+        );
       case 'marketplace-api':
         return <MarketplaceApiTab organizationId={user.uid} currentUserEmail={user.email} />;
       // V23 Universal Workspace, Workforce, Social Connectivity, Commerce & Intelligence OS
@@ -1097,17 +1107,14 @@ export default function App() {
         isAdvancedMode={isAdvancedMode}
         onToggleAdvancedMode={handleToggleAdvancedMode}
         tasks={tasks}
-      />
-
-      {/* 2. BODY VIEWPORT */}
-      <div className="flex-1 flex min-h-0">
+      >
         <main className="flex-1 min-w-0 flex flex-col h-[calc(100vh-53px)] overflow-y-auto pb-16 md:pb-6">
           <section className="flex-1 p-4 sm:p-6 relative max-w-7xl w-full mx-auto">
             {renderActiveView()}
           </section>
           <AppFooter onNavigateToLegal={(slug) => handleSelectTab(slug)} />
         </main>
-      </div>
+      </UnifiedNavigationV21>
 
       {/* 3. CONTEXTUAL ASK CATALYX MODAL (V22 REALITY & EXECUTION ENABLED) */}
       <AskCatalyxContextualModal

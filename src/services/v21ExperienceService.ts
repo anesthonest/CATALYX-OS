@@ -9,14 +9,14 @@ import {
 } from '../types';
 
 class V21ExperienceService {
-  // 1. Canonical Domain Hierarchy mapping all V1-V20 capabilities into 9 clear areas
+  // 1. Canonical Domain Hierarchy mapping all capabilities into 8 clear, human-understandable areas
   public readonly domainGroups: V21DomainNavGroup[] = [
     {
       id: 'home',
       label: 'Home',
       tagline: 'Personalized Operational Command Center',
       iconName: 'LayoutDashboard',
-      badge: 'V21',
+      badge: 'V26',
       subItems: [
         { id: 'home', label: 'Command Center', description: 'Priority actions, active work, and tactical focus', iconName: 'Compass', isPrimary: true },
         { id: 'dashboard', label: 'Personal Telemetry', description: 'Discipline level, habits, and execution scores', iconName: 'Zap' }
@@ -25,120 +25,114 @@ class V21ExperienceService {
     {
       id: 'work',
       label: 'Work',
-      tagline: 'Projects, Tasks, Goals & Collaboration',
+      tagline: 'Projects, Tasks, Documents, Presentations & Meetings',
       iconName: 'Briefcase',
       subItems: [
-        { id: 'universal-work', label: 'Universal Work Architecture', description: 'Polymorphic work schemas across 60+ digital work types', iconName: 'Layers', isPrimary: true, versionBadge: 'V25' },
-        { id: 'partnerships', label: 'Partnership Alliances', description: 'Institutional consortia, bilateral proposals & joint governance', iconName: 'Building', versionBadge: 'V25' },
-        { id: 'project-board', label: 'Project Initiatives', description: 'Strategic milestones, deliverables, and Kanban status', iconName: 'FolderKanban' },
-        { id: 'tasks', label: 'Task Execution Logs', description: 'Personal backlog, priority tags, and completed work', iconName: 'CheckSquare' },
-        { id: 'worker-center', label: 'Worker Center & Accountability', description: 'Assigned work, dependencies, who I report to, customer coverage', iconName: 'Briefcase', versionBadge: 'V23' },
+        { id: 'universal-work', label: 'Universal Work Hub', description: 'Polymorphic work schemas across 60+ digital work types', iconName: 'Layers', isPrimary: true, versionBadge: 'V25' },
+        { id: 'project-board', label: 'Projects & Kanban', description: 'Strategic milestones, deliverables, and Kanban status', iconName: 'FolderKanban' },
+        { id: 'tasks', label: 'Tasks & Backlog', description: 'Personal backlog, priority tags, and completed work', iconName: 'CheckSquare' },
+        { id: 'files', label: 'Documents & Files Vault', description: 'Universal document previewer, code syntax, and MIME check', iconName: 'FileText', versionBadge: 'V24' },
         { id: 'presentations', label: 'Presentations & Slides', description: 'Decks, slides studio, presenter notes, and interactive present mode', iconName: 'Presentation', versionBadge: 'V24' },
-        { id: 'media', label: 'Media & Recordings', description: 'Video streams, audio podcasts, and timestamp chapters', iconName: 'Video', versionBadge: 'V24' },
+        { id: 'media', label: 'Media & Studio', description: 'Video streams, audio podcasts, and timestamp chapters', iconName: 'Video', versionBadge: 'V24' },
         { id: 'meetings', label: 'Meetings & Schedule', description: 'Unified syncs, agendas, decisions, and task conversion', iconName: 'Calendar', versionBadge: 'V24' },
-        { id: 'files', label: 'Files & Documents Vault', description: 'Universal document previewer, code syntax, and MIME check', iconName: 'FileText', versionBadge: 'V24' },
+        { id: 'demos', label: 'Demos & Prototypes', description: 'Live apps, sandbox runners, and epistemic badges', iconName: 'Play', versionBadge: 'V24' },
         { id: 'goals', label: 'Strategic Goals', description: 'Key performance objectives and quarterly targets', iconName: 'Target' },
         { id: 'focus', label: 'Deep Focus Cabin', description: 'Distraction-free Pomodoro session logs', iconName: 'Clock' },
-        { id: 'workspace', label: 'Team Workspaces', description: 'Collaborative rooms, team chat, and shared backlogs', iconName: 'Users' }
+        { id: 'worker-center', label: 'Worker Center & Accountability', description: 'Assigned work, dependencies, who I report to, customer coverage', iconName: 'Briefcase', versionBadge: 'V23' }
+      ]
+    },
+    {
+      id: 'collaborate',
+      label: 'Collaborate',
+      tagline: 'Teams, Organizations, Messages & Alliances',
+      iconName: 'Users',
+      badge: 'Teams',
+      subItems: [
+        { id: 'workspace', label: 'Team Workspaces', description: 'Collaborative rooms, team chat, and shared backlogs', iconName: 'Users', isPrimary: true },
+        { id: 'social-inbox', label: 'Messages & Social Inbox', description: 'WhatsApp, Messenger, Instagram, Email, SMS & Catalyx Mesh', iconName: 'MessageSquare', versionBadge: 'V23' },
+        { id: 'partnerships', label: 'Partnership Alliances', description: 'Institutional consortia, bilateral proposals & joint governance', iconName: 'Building', versionBadge: 'V25' },
+        { id: 'leaderboard', label: 'Personnel & Merit', description: 'Team rankings, merit badges, and XP standings', iconName: 'Trophy' }
+      ]
+    },
+    {
+      id: 'business',
+      label: 'Business',
+      tagline: 'Commerce, CRM, Orders, Earnings & Billing',
+      iconName: 'Receipt',
+      badge: 'Finance',
+      subItems: [
+        { id: 'unified-commerce', label: 'Commerce & CRM', description: 'Order lifecycle, customer CRM, products, and fulfillment assignments', iconName: 'ShoppingBag', isPrimary: true, versionBadge: 'V23' },
+        { id: 'commercial-ops', label: 'Earnings & Commercial Ops', description: 'Customer value indexing, pipeline health, and churn', iconName: 'TrendingUp' },
+        { id: 'billing', label: 'Billing & Subscriptions (Pesapal v3)', description: 'Subscriptions, cards, mobile money, and integer units', iconName: 'CreditCard' },
+        { id: 'reconciliation', label: 'Financial Ledger Reconciliation', description: 'Double-entry cryptographic ledger and hash verification', iconName: 'Receipt' }
+      ]
+    },
+    {
+      id: 'marketplace',
+      label: 'Marketplace',
+      tagline: 'Digital Work, Listings & Developer APIs',
+      iconName: 'ShoppingBag',
+      subItems: [
+        { id: 'marketplace-hub', label: 'Digital Work Marketplace', description: 'Discover, buy, sell, and manage digital products, decks, software & media', iconName: 'ShoppingBag', isPrimary: true, versionBadge: 'NEW' },
+        { id: 'marketplace-api', label: 'Developer APIs & Sandbox', description: 'API tokens, webhook relays, and runtime test sandbox', iconName: 'Key' }
       ]
     },
     {
       id: 'intelligence',
       label: 'Intelligence',
-      tagline: 'Unified Insights, Analytics & Planetary Modeling',
+      tagline: 'AI Assistant, Autonomous Agents & Insights',
       iconName: 'Brain',
-      badge: 'Core',
+      badge: 'AI',
       subItems: [
-        { id: 'executive-brief', label: 'Executive Briefing', description: 'Holistic synthesized organizational intelligence', iconName: 'Activity', isPrimary: true },
-        { id: 'demos', label: 'Demos & Prototypes Hub', description: 'Live apps, sandbox runners, and epistemic badges', iconName: 'Play', versionBadge: 'V24' },
+        { id: 'ai-coach', label: 'AI Assistant & Coach', description: 'Adaptive cognitive performance copilot & task guidance', iconName: 'Bot', isPrimary: true },
+        { id: 'ai-workforce', label: 'AI Agent Workforce (11 Agents)', description: 'Specialized autonomous agents and task delegations', iconName: 'Bot' },
+        { id: 'executive-brief', label: 'Executive Briefing', description: 'Holistic synthesized organizational intelligence', iconName: 'Activity' },
         { id: 'analytics', label: 'Analytics & Burnout', description: 'Cognitive load, velocity, and predictive burn risk', iconName: 'BarChart3' },
-        { id: 'v19-planetary-fabric', label: 'Planetary Fabric (V19)', description: 'Universal world model, digital twins, and simulations', iconName: 'Globe', versionBadge: 'V19' },
         { id: 'digital-twin', label: 'Business Digital Twin', description: 'Multi-variable scenario testing and resilience runs', iconName: 'Sliders' },
         { id: 'knowledge', label: 'Knowledge Universe', description: 'Cross-entity semantic knowledge graph and provenance', iconName: 'BookOpen' },
-        { id: 'v11-intelligence', label: 'Autonomous Economic OS (V11)', description: 'Macro-economic forecasting and allocation models', iconName: 'Compass', versionBadge: 'V11' },
-        { id: 'global-intelligence', label: 'Global Intelligence Fabric (V10)', description: 'Decentralized collective situational awareness', iconName: 'Network', versionBadge: 'V10' }
-      ]
-    },
-    {
-      id: 'missions',
-      label: 'Missions',
-      tagline: 'Mission Orchestration, Roadmaps & Strategy',
-      iconName: 'Compass',
-      subItems: [
-        { id: 'civilization', label: 'Civilization Deck', description: 'High-level strategic initiatives and planetary missions', iconName: 'Flag', isPrimary: true },
+        { id: 'workflows', label: 'Intelligent Workflows', description: 'Event-driven triggers, conditional logic, and webhooks', iconName: 'Layers' },
         { id: 'orchestration', label: 'Mission Orchestrator', description: 'Multi-agent coordination DAGs and critical paths', iconName: 'GitBranch' },
         { id: 'approvals', label: 'Approvals Queue', description: 'Commander sign-offs, gates, and human-in-the-loop review', iconName: 'ShieldCheck' },
+        { id: 'civilization', label: 'Civilization Deck', description: 'High-level strategic initiatives and planetary missions', iconName: 'Flag' },
+        { id: 'v19-planetary-fabric', label: 'Planetary Fabric (V19)', description: 'Universal world model, digital twins, and simulations', iconName: 'Globe', versionBadge: 'V19' },
+        { id: 'v18-ecosystem-os', label: 'Ecosystem Operating System (V18)', description: 'Cross-enterprise capability matching and contracts', iconName: 'Globe', versionBadge: 'V18' },
+        { id: 'v17-global-network', label: 'Autonomous Intelligence Net (V17)', description: 'Federated multi-agent collectives and consensus', iconName: 'Network', versionBadge: 'V17' },
+        { id: 'v16-industry-science', label: 'Industry & Science (V16)', description: 'Autonomous laboratory pipelines and scientific modeling', iconName: 'Microscope', versionBadge: 'V16' },
+        { id: 'v15-infrastructure', label: 'Autonomous Infrastructure (V15)', description: 'Compute node telemetry, cloud topologies, and load', iconName: 'Radio', versionBadge: 'V15' },
+        { id: 'v14-economy', label: 'Intelligence Economy (V14)', description: 'Algorithmic market pricing and compute micro-settlements', iconName: 'DollarSign', versionBadge: 'V14' },
+        { id: 'v13-network', label: 'Enterprise Network GAEN (V13)', description: 'Decentralized organization federations and trust links', iconName: 'Network', versionBadge: 'V13' },
+        { id: 'v12-commerce', label: 'Global Commerce & Infra (V12)', description: 'Escrow clearing and cross-border settlement protocols', iconName: 'Coins', versionBadge: 'V12' },
+        { id: 'v11-intelligence', label: 'Autonomous Economic OS (V11)', description: 'Macro-economic forecasting and allocation models', iconName: 'Compass', versionBadge: 'V11' },
+        { id: 'global-intelligence', label: 'Global Intelligence Fabric (V10)', description: 'Decentralized collective situational awareness', iconName: 'Network', versionBadge: 'V10' },
         { id: 'autonomous-os', label: 'Autonomous OS (V9)', description: 'Self-steering execution cycles and mission synthesis', iconName: 'Sparkles', versionBadge: 'V9' }
       ]
     },
     {
-      id: 'automation',
-      label: 'Automation',
-      tagline: 'Autonomous Agents, Workflows & Collective Matrix',
-      iconName: 'Bot',
-      badge: 'Agents',
+      id: 'connections',
+      label: 'Connections',
+      tagline: 'Connector Fabric, Integrations & Webhook Relays',
+      iconName: 'Plug',
       subItems: [
-        { id: 'ai-workforce', label: 'AI Agent Workforce (11)', description: 'Specialized autonomous agents and task delegations', iconName: 'Bot', isPrimary: true },
-        { id: 'workflows', label: 'Intelligent Workflows', description: 'Event-driven triggers, conditional logic, and webhooks', iconName: 'Layers' },
-        { id: 'v17-global-network', label: 'Autonomous Intelligence Net (V17)', description: 'Federated multi-agent collectives and consensus', iconName: 'Network', versionBadge: 'V17' },
-        { id: 'v16-industry-science', label: 'Industry & Science (V16)', description: 'Autonomous laboratory pipelines and scientific modeling', iconName: 'Microscope', versionBadge: 'V16' },
-        { id: 'ai-coach', label: 'Tactical AI Coach', description: 'Adaptive cognitive performance copilot', iconName: 'Cpu' }
+        { id: 'connections', label: 'Universal Connections Center', description: 'Real connector fabric, honest statuses & webhook relays', iconName: 'Plug', isPrimary: true, versionBadge: 'V23' },
+        { id: 'integrations', label: 'System Connectors', description: 'Third-party APIs, webhooks, and communication relays', iconName: 'Plug' }
       ]
     },
     {
-      id: 'resources',
-      label: 'Resources',
-      tagline: 'Personnel, Capacity, Infrastructure & Merit',
-      iconName: 'Cpu',
-      subItems: [
-        { id: 'leaderboard', label: 'Personnel & Leaderboard', description: 'Team rankings, merit badges, and XP standings', iconName: 'Trophy', isPrimary: true },
-        { id: 'v15-infrastructure', label: 'Autonomous Infrastructure (V15)', description: 'Compute node telemetry, cloud topologies, and load', iconName: 'Radio', versionBadge: 'V15' }
-      ]
-    },
-    {
-      id: 'ecosystem',
-      label: 'Ecosystem',
-      tagline: 'Cross-Org Networks, Marketplace & Developers',
-      iconName: 'Globe',
-      subItems: [
-        { id: 'social-inbox', label: 'Omnichannel Social Inbox', description: 'WhatsApp, Messenger, Instagram, Email, SMS & Catalyx Mesh', iconName: 'MessageSquare', isPrimary: true, versionBadge: 'V23' },
-        { id: 'connections', label: 'Universal Connections Center', description: 'Real connector fabric, honest statuses & webhook relays', iconName: 'Plug', versionBadge: 'V23' },
-        { id: 'v18-ecosystem-os', label: 'Ecosystem Operating System (V18)', description: 'Cross-enterprise capability matching and contracts', iconName: 'Globe', versionBadge: 'V18' },
-        { id: 'v13-network', label: 'Enterprise Network GAEN (V13)', description: 'Decentralized organization federations and trust links', iconName: 'Network', versionBadge: 'V13' },
-        { id: 'marketplace-api', label: 'Marketplace & Developers', description: 'Third-party plugins, sandbox runtime, and API tokens', iconName: 'ShoppingBag' }
-      ]
-    },
-    {
-      id: 'commerce',
-      label: 'Commerce',
-      tagline: 'Billing, Ledgers, Transactions & Economics',
-      iconName: 'Receipt',
-      subItems: [
-        { id: 'unified-commerce', label: 'Integrated Commerce & CRM', description: 'Order lifecycle, customer CRM, products, and fulfillment assignments', iconName: 'ShoppingBag', isPrimary: true, versionBadge: 'V23' },
-        { id: 'billing', label: 'Pesapal Billing (v3)', description: 'Subscriptions, cards, mobile money, and integer units', iconName: 'CreditCard' },
-        { id: 'reconciliation', label: 'Ledger Reconciliation', description: 'Double-entry cryptographic ledger and hash verification', iconName: 'Receipt' },
-        { id: 'commercial-ops', label: 'Commercial Operations & CVI', description: 'Customer value indexing, pipeline health, and churn', iconName: 'TrendingUp' },
-        { id: 'v14-economy', label: 'Intelligence Economy (V14)', description: 'Algorithmic market pricing and compute micro-settlements', iconName: 'DollarSign', versionBadge: 'V14' },
-        { id: 'v12-commerce', label: 'Global Commerce & Infra (V12)', description: 'Escrow clearing and cross-border settlement protocols', iconName: 'Coins', versionBadge: 'V12' }
-      ]
-    },
-    {
-      id: 'admin',
-      label: 'Administration',
-      tagline: 'Governance, Security, Firewall & System Health',
+      id: 'system',
+      label: 'System',
+      tagline: 'Settings, Profile, Governance, Security & Policies',
       iconName: 'Shield',
       badge: 'Security',
       subItems: [
-        { id: 'v25-certification', label: 'V25 Production Certification', description: 'Final universal work, collaboration, resilience & quality assurance dossier', iconName: 'ShieldCheck', isPrimary: true, versionBadge: 'V25' },
+        { id: 'admin-portal', label: 'Settings & Administration', description: 'Global organization parameters and system settings', iconName: 'Command', isPrimary: true },
+        { id: 'profile', label: 'Operator Profile', description: 'Security access token, credentials, and notification settings', iconName: 'User' },
+        { id: 'governance', label: 'Governance & RBAC', description: 'Tenant isolation, role permissions, and compliance audit', iconName: 'Shield' },
+        { id: 'ai-firewall', label: 'AI Safety Firewall (8-Stage)', description: 'Deep prompt inspection, blast radius, and quarantine logs', iconName: 'ShieldAlert' },
+        { id: 'legal-center', label: 'Legal, Compliance & Policy', description: 'Terms of service, statutory disclosures, consent logs & revenue policies', iconName: 'FileText', versionBadge: 'LEGAL' },
+        { id: 'v25-certification', label: 'V25 Production Certification', description: 'Final universal work, collaboration, resilience & quality assurance dossier', iconName: 'ShieldCheck', versionBadge: 'V25' },
         { id: 'v24-certification', label: 'V24 Production Certification', description: 'Final universal navigation, collaboration, sharing & link-integrity dossier', iconName: 'ShieldCheck', versionBadge: 'V24' },
         { id: 'v23-certification', label: 'V23 Production Certification', description: 'Universal operating system readiness, security audit & deployment sign-off', iconName: 'Award', versionBadge: 'V23' },
-        { id: 'v20-production-release', label: 'V20 Production Certification', description: '22 verified acceptance gates and operational runbook', iconName: 'CheckCircle', versionBadge: 'V20' },
-        { id: 'ai-firewall', label: 'AI Safety Firewall (8-Stage)', description: 'Deep prompt inspection, blast radius, and quarantine logs', iconName: 'ShieldAlert' },
-        { id: 'governance', label: 'Governance & RBAC', description: 'Tenant isolation, role permissions, and compliance audit', iconName: 'Shield' },
-        { id: 'integrations', label: 'System Connectors', description: 'Third-party APIs, webhooks, and communication relays', iconName: 'Plug' },
-        { id: 'admin-portal', label: 'Command Registry', description: 'Global organization parameters and system settings', iconName: 'Command' },
-        { id: 'legal-center', label: 'Legal, Compliance & Policy', description: 'Terms of service, statutory disclosures, consent logs & revenue policies', iconName: 'FileText', versionBadge: 'LEGAL' },
-        { id: 'profile', label: 'Operator Profile', description: 'Security access token, credentials, and notification settings', iconName: 'User' }
+        { id: 'v20-production-release', label: 'V20 Production Certification', description: '22 verified acceptance gates and operational runbook', iconName: 'CheckCircle', versionBadge: 'V20' }
       ]
     }
   ];
@@ -155,7 +149,7 @@ class V21ExperienceService {
     if ([
       'legal-center', 'legal', 'terms', 'privacy', 'refunds', 'payments', 'payouts', 
       'acceptable-use', 'intellectual-property', 'copyright', 'community-guidelines', 'marketplace-policy'
-    ].includes(tabId)) return 'admin';
+    ].includes(tabId)) return 'system';
     return 'home';
   }
 
