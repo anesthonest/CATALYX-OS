@@ -81,11 +81,11 @@ export class IntelligenceExchangeService {
     const defaultAccounting: CreatorRevenueAccounting = {
       creatorId,
       grossSalesMinorUnits: 842500, // $8,425.00
-      platformCommissionMinorUnits: 126375, // 15% platform fee = $1,263.75
+      platformCommissionMinorUnits: 2106, // 0.25% platform fee = $21.06 (2106 minor units)
       taxesAndFeesMinorUnits: 42125, // 5% withholding/fees = $421.25
-      creatorEarningsMinorUnits: 674000, // Net $6,740.00
+      creatorEarningsMinorUnits: 798269, // Net $7,982.69
       pendingPayoutMinorUnits: 145000, // $1,450.00 pending
-      settledPayoutMinorUnits: 529000, // $5,290.00 already paid
+      settledPayoutMinorUnits: 653269, // $6,532.69 already paid
       refundsCount: 2,
       payoutHistory: [
         {

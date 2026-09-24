@@ -55,9 +55,26 @@ export class PesapalPaymentProvider implements PaymentProvider {
   constructor(config?: PesapalConfig) {
     this.consumerKey = config?.consumerKey || process.env.PESAPAL_CONSUMER_KEY || '';
     this.consumerSecret = config?.consumerSecret || process.env.PESAPAL_CONSUMER_SECRET || '';
-    this.environment = (config?.environment || (process.env.PESAPAL_ENVIRONMENT as any) || 'sandbox').toLowerCase() === 'live' ? 'live' : 'sandbox';
-    this.defaultIpnId = config?.defaultIpnId || process.env.PESAPAL_IPN_ID || '';
+    
+    // Normalize environment: strip any stray leading '=' and detect live merchant credentials
+    const envRaw = (config?.environment || (process.env.PESAPAL_ENVIRONMENT as any) || '').toString().replace(/^=/, '').trim().toLowerCase();
+    if (envRaw === 'sandbox') {
+      this.environment = 'sandbox';
+    } else if (envRaw === 'live') {
+      this.environment = 'live';
+    } else {
+      // Default to live when merchant credentials are configured for production
+      this.environment = this.isConfigured() ? 'live' : 'sandbox';
+    }
+
     this.appUrl = config?.appUrl || process.env.APP_URL || 'http://localhost:3000';
+    const cleanAppUrl = this.appUrl.replace(/\/$/, '');
+    const isPreHost = cleanAppUrl.includes('ais-pre');
+    const registeredIpn = isPreHost 
+      ? 'bb35412c-1b31-41e9-b82e-d9dff637965f' 
+      : 'e72acd10-cb96-4b1f-8d5d-d9df8e36b68d';
+
+    this.defaultIpnId = config?.defaultIpnId || process.env.PESAPAL_IPN_ID || registeredIpn;
     this.callbackUrl = config?.callbackUrl || process.env.PESAPAL_CALLBACK_URL;
     this.fetchFn = config?.fetchOverride || globalThis.fetch.bind(globalThis);
   }
@@ -209,7 +226,27 @@ export class PesapalPaymentProvider implements PaymentProvider {
     // 4. Construct Pesapal payload
     const amountMajor = Math.round(request.amountMinorUnits) / 100;
     const callback = request.callbackUrl || this.callbackUrl || `${this.appUrl}/billing?merchantRef=${request.merchantReference}`;
-    const notificationId = request.notificationId || this.defaultIpnId || '00000000-0000-0000-0000-000000000000';
+    
+    let notificationId = request.notificationId || this.defaultIpnId;
+    if (!notificationId) {
+      // Dynamically query registered IPNs from gateway
+      const ipnList = await this.getIpnList();
+      if (ipnList.ipns && ipnList.ipns.length > 0) {
+        notificationId = ipnList.ipns[0].ipn_id;
+      }
+    }
+
+    if (!notificationId) {
+      return {
+        status: 'FAILED',
+        provider: this.getProviderId(),
+        merchantReference: request.merchantReference,
+        errorMessage: 'Pesapal v3 order submission requires an active registered IPN notification_id. Please register the IPN endpoint first.',
+        isSandbox: this.environment === 'sandbox',
+        environment: this.environment,
+        timestamp: new Date().toISOString()
+      };
+    }
 
     const orderPayload = {
       id: request.merchantReference,
@@ -541,18 +578,114 @@ export class PesapalPaymentProvider implements PaymentProvider {
   }
 
   /**
-   * Parses and validates incoming IPN notifications
+   * Retrieves the list of registered IPN URLs from Pesapal v3
+   */
+  public async getIpnList(): Promise<{ status: string; ipns?: any[]; error?: string }> {
+    if (!this.isConfigured()) {
+      return {
+        status: 'NOT_CONFIGURED',
+        error: 'Pesapal consumer key and secret are not configured.'
+      };
+    }
+
+    const auth = await this.getAuthToken();
+    if (!auth.token) {
+      return {
+        status: 'FAILED',
+        error: auth.error || 'Failed to authenticate with Pesapal gateway.'
+      };
+    }
+
+    try {
+      const response = await this.fetchFn(`${this.getBaseUrl()}/api/URLSetup/GetIPNList`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${auth.token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          status: 'FAILED',
+          error: `Pesapal GetIPNList error (HTTP ${response.status}): ${errorText}`
+        };
+      }
+
+      const data: any = await response.json();
+      return {
+        status: 'SUCCESS',
+        ipns: Array.isArray(data) ? data : (data?.ipns || [])
+      };
+    } catch (err: any) {
+      return {
+        status: 'FAILED',
+        error: `Network error retrieving Pesapal IPN list: ${err?.message || err}`
+      };
+    }
+  }
+
+  /**
+   * Computes the public IPN webhook receiver URL based on public configuration
+   */
+  public getPublicIpnUrl(): string {
+    const rawUrl = (this.appUrl || process.env.APP_URL || 'http://localhost:3000').trim();
+    const cleanBase = rawUrl.replace(/\/+$/, '');
+    return `${cleanBase}/api/billing/pesapal/ipn`;
+  }
+
+  /**
+   * Registers standard CATALYX IPN webhook receiver
+   */
+  public async registerStandardIpn(): Promise<RegisterIpnResult> {
+    const ipnUrl = this.getPublicIpnUrl();
+    return this.registerNotificationEndpoint({
+      url: ipnUrl,
+      ipnNotificationType: 'POST'
+    });
+  }
+
+  /**
+   * Parses and validates incoming IPN notifications safely
+   * Does NOT trust client-supplied status, amount, currency, or credentials.
    */
   public async processNotification(payload: any, headers?: Record<string, string>): Promise<ProcessNotificationResult> {
-    const orderTrackingId = payload?.OrderTrackingId || payload?.orderTrackingId;
-    const orderMerchantReference = payload?.OrderMerchantReference || payload?.orderMerchantReference;
-    const notificationType = payload?.OrderNotificationType || payload?.orderNotificationType || 'IPNCHANGE';
+    if (!payload || typeof payload !== 'object') {
+      return {
+        status: 'FAILED',
+        errorMessage: 'Malformed IPN notification: payload is missing or not a valid object.',
+        ackPayload: {
+          orderNotificationType: 'IPNCHANGE',
+          orderTrackingId: '',
+          orderMerchantReference: '',
+          status: 400,
+          error: 'Missing or malformed notification payload.'
+        }
+      };
+    }
+
+    const orderTrackingId = typeof payload?.OrderTrackingId === 'string' 
+      ? payload.OrderTrackingId.trim() 
+      : (typeof payload?.orderTrackingId === 'string' ? payload.orderTrackingId.trim() : '');
+
+    const orderMerchantReference = typeof payload?.OrderMerchantReference === 'string'
+      ? payload.OrderMerchantReference.trim()
+      : (typeof payload?.orderMerchantReference === 'string' ? payload.orderMerchantReference.trim() : '');
+
+    const notificationType = (payload?.OrderNotificationType || payload?.orderNotificationType || 'IPNCHANGE').toString().trim();
 
     if (!orderTrackingId) {
       return {
         status: 'FAILED',
-        errorMessage: 'Malformed IPN notification: missing OrderTrackingId.',
-        ackPayload: { status: 400, error: 'missing OrderTrackingId' }
+        errorMessage: 'Malformed IPN notification: missing required OrderTrackingId.',
+        ackPayload: {
+          orderNotificationType: notificationType,
+          orderTrackingId: '',
+          orderMerchantReference,
+          status: 400,
+          error: 'Missing required OrderTrackingId in IPN payload.'
+        }
       };
     }
 

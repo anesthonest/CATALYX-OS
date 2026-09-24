@@ -161,6 +161,22 @@ export interface CircuitBreakerStatus {
   windowResetAt: string;
 }
 
+export interface UserEntitlement {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  customerId: string;
+  customerEmail: string;
+  organizationId: string;
+  productId: string;
+  productTitle: string;
+  entitlementType: 'SUBSCRIPTION' | 'MARKETPLACE_ASSET' | 'PLATFORM_LICENSE';
+  status: 'ACTIVE' | 'EXPIRED' | 'REVOKED';
+  grantedAt: string;
+  expiresAt?: string;
+  metadata?: Record<string, any>;
+}
+
 export class CatalyxEconomicEngine {
   private orders: Map<string, Order> = new Map();
   private paymentAttempts: Map<string, PaymentAttempt> = new Map();
@@ -171,6 +187,8 @@ export class CatalyxEconomicEngine {
   private reconciliationReports: ReconciliationReport[] = [];
   private providers: Map<string, PaymentProvider> = new Map();
   private primaryProviderId: string = 'pesapal';
+  private entitlements: Map<string, UserEntitlement> = new Map();
+  private activeVerifications: Map<string, Promise<any>> = new Map();
 
   // Circuit breaker state
   private failedAttemptsHistory: { ipOrUserId: string; timestamp: number }[] = [];
@@ -625,6 +643,38 @@ export class CatalyxEconomicEngine {
     message: string;
     discrepancies?: string[];
   }> {
+    const lockKey = params.orderTrackingId || params.merchantReference || params.paymentAttemptId || '';
+    if (lockKey && this.activeVerifications.has(lockKey)) {
+      return await this.activeVerifications.get(lockKey)!;
+    }
+
+    const verificationPromise = this.performVerifyAndSettlePayment(params);
+    if (lockKey) {
+      this.activeVerifications.set(lockKey, verificationPromise);
+    }
+
+    try {
+      return await verificationPromise;
+    } finally {
+      if (lockKey) {
+        this.activeVerifications.delete(lockKey);
+      }
+    }
+  }
+
+  private async performVerifyAndSettlePayment(params: {
+    orderTrackingId: string;
+    merchantReference?: string;
+    paymentAttemptId?: string;
+    operatorOrTrigger: string;
+  }): Promise<{
+    verified: boolean;
+    order?: Order;
+    paymentAttempt?: PaymentAttempt;
+    ledgerRecord?: DoubleEntryLedgerRecord;
+    message: string;
+    discrepancies?: string[];
+  }> {
     // 1. Locate Payment Attempt
     let attempt: PaymentAttempt | undefined;
     if (params.paymentAttemptId) {
@@ -759,6 +809,9 @@ export class CatalyxEconomicEngine {
       });
     }
 
+    // 8. Grant Entitlements Idempotently
+    this.grantOrderEntitlements(order);
+
     return {
       verified: true,
       order,
@@ -766,6 +819,51 @@ export class CatalyxEconomicEngine {
       ledgerRecord,
       message: `Payment verified and settled successfully! Order ${order.orderNumber} is now marked as PAID.`
     };
+  }
+
+  private grantOrderEntitlements(order: Order): void {
+    const now = new Date();
+    for (const item of order.items) {
+      const entitlementKey = `${order.customerEmail.toLowerCase()}::${item.productId}`;
+      if (!this.entitlements.has(entitlementKey)) {
+        const isSubscription = item.sku.includes('SUB') || item.productId.includes('plan_');
+        const expiresAt = isSubscription 
+          ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          : undefined;
+
+        this.entitlements.set(entitlementKey, {
+          id: `ent_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerId: order.customerId,
+          customerEmail: order.customerEmail.toLowerCase(),
+          organizationId: order.organizationId,
+          productId: item.productId,
+          productTitle: item.productTitle,
+          entitlementType: isSubscription ? 'SUBSCRIPTION' : 'MARKETPLACE_ASSET',
+          status: 'ACTIVE',
+          grantedAt: now.toISOString(),
+          expiresAt
+        });
+      }
+    }
+  }
+
+  public getEntitlements(filter?: { email?: string; organizationId?: string }): UserEntitlement[] {
+    const all = Array.from(this.entitlements.values());
+    if (!filter) return all;
+    return all.filter(e => {
+      if (filter.email && e.customerEmail !== filter.email.toLowerCase()) return false;
+      if (filter.organizationId && e.organizationId !== filter.organizationId) return false;
+      return true;
+    });
+  }
+
+  public hasEntitlement(email: string, productId: string): boolean {
+    const ent = this.entitlements.get(`${email.toLowerCase()}::${productId}`);
+    if (!ent || ent.status !== 'ACTIVE') return false;
+    if (ent.expiresAt && new Date(ent.expiresAt).getTime() < Date.now()) return false;
+    return true;
   }
 
   // ==========================================================================

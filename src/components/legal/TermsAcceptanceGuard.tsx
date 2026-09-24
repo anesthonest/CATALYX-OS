@@ -160,7 +160,7 @@ export const TermsAcceptanceGuard: React.FC<TermsAcceptanceGuardProps> = ({
               {[
                 { id: 'summary', label: '1. Executive Summary', icon: FileText },
                 { id: 'ownership', label: '2. IP & Content Ownership', icon: ShieldCheck },
-                { id: 'revenue', label: '3. Platform Fees (10% / 15%)', icon: Scale },
+                { id: 'revenue', label: '3. Platform Fees (0.25% - 0.50%)', icon: Scale },
                 { id: 'disclosure', label: '4. Legal Disclaimers', icon: AlertTriangle },
               ].map(tab => {
                 const Icon = tab.icon;
@@ -236,25 +236,32 @@ export const TermsAcceptanceGuard: React.FC<TermsAcceptanceGuardProps> = ({
                 <div className="space-y-3">
                   <h3 className="text-base font-semibold text-indigo-300 flex items-center">
                     <Scale className="w-5 h-5 mr-2 text-indigo-400" />
-                    Centralized Revenue Share & Platform Fee Policy
+                    Authoritative Centralized Revenue Share & Platform Fee Policy
                   </h3>
                   <p>
-                    When products, prompt workflows, or autonomous services are licensed or sold through the CATALYX marketplace, the
-                    following revenue-sharing policy applies:
+                    When products, prompt workflows, digital twins, datasets, or autonomous services are licensed or sold through the CATALYX marketplace, the
+                    following authoritative revenue-sharing policy applies:
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
                     <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700">
-                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Standard Individual Account</div>
-                      <div className="text-2xl font-bold text-white mt-1">10% <span className="text-xs text-slate-400 font-normal">platform fee</span></div>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Standard Individual</div>
+                      <div className="text-2xl font-bold text-white mt-1">0.25% <span className="text-xs text-slate-400 font-normal">fee (25 bps)</span></div>
                       <p className="text-xs text-slate-300 mt-1.5">
-                        Creator receives <strong className="text-emerald-400">90%</strong> gross platform earnings.
+                        Creator receives <strong className="text-emerald-400">99.75%</strong> gross platform earnings.
+                      </p>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Group / Syndicate</div>
+                      <div className="text-2xl font-bold text-white mt-1">0.27% <span className="text-xs text-slate-400 font-normal">fee (27 bps)</span></div>
+                      <p className="text-xs text-slate-300 mt-1.5">
+                        Group retains <strong className="text-emerald-400">99.73%</strong> gross platform earnings.
                       </p>
                     </div>
                     <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700">
                       <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">Organization / Enterprise</div>
-                      <div className="text-2xl font-bold text-white mt-1">15% <span className="text-xs text-slate-400 font-normal">platform fee</span></div>
+                      <div className="text-2xl font-bold text-white mt-1">0.50% <span className="text-xs text-slate-400 font-normal">fee (50 bps)</span></div>
                       <p className="text-xs text-slate-300 mt-1.5">
-                        Organization receives <strong className="text-emerald-400">85%</strong> gross platform earnings.
+                        Organization receives <strong className="text-emerald-400">99.50%</strong> gross platform earnings.
                       </p>
                     </div>
                   </div>

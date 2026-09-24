@@ -923,7 +923,7 @@ export const GlobalIntelligenceV10Tab: React.FC<Props> = ({ organizationId, user
                   </div>
 
                   <div className="p-3 bg-black/40 rounded-xl border border-white/5">
-                    <span className="text-[10px] font-mono text-gray-400 block">Net Creator Earnings (85%)</span>
+                    <span className="text-[10px] font-mono text-gray-400 block">Net Creator Earnings</span>
                     <span className="text-xl font-bold text-emerald-400 font-mono">
                       ${(creatorRevenue.creatorEarningsMinorUnits / 100).toFixed(2)}
                     </span>

@@ -13,6 +13,7 @@ import {
 import { safeStorage } from '../utils/safeStorage';
 import { universalWorkService } from './universalWorkService';
 import { MarketplaceService } from './marketplaceService';
+import { revenuePolicyEngine, SellerAccountType } from './payment/revenuePolicyEngine';
 
 const STORAGE_KEYS = {
   COMMERCE_LEDGER: 'catalyx_v27_commerce_ledger',
@@ -139,8 +140,9 @@ class WorkToMarketService {
         sellerName: 'CATALYX Systems Architecture',
         amountMinorUnits: 4900, // $49.00
         currency: 'USD',
-        platformCommissionMinorUnits: 735, // 15%
-        creatorPayoutMinorUnits: 4165,     // 85%
+        // Historical completed transaction preserved under legacy rate at transaction time (pol_v2026_3_1_legacy)
+        platformCommissionMinorUnits: 735,
+        creatorPayoutMinorUnits: 4165,
         paymentProvider: 'PESAPAL',
         paymentState: 'SETTLED',
         reconciliationState: 'MATCHED',
@@ -178,7 +180,14 @@ class WorkToMarketService {
     }
 
     const assetId = `asset_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
-    const commissionPercent = 15; // Standard 15% platform commission
+    const isOrg = payload.organizationId && payload.organizationId !== 'org_individual' && !payload.organizationId.startsWith('indiv_');
+    const sellerType: SellerAccountType = isOrg ? 'ORGANIZATION' : 'INDIVIDUAL';
+    const split = revenuePolicyEngine.calculateRevenueSplit({
+      grossAmountMinorUnits: payload.pricingModel === 'free' ? 0 : (payload.priceMinorUnits || 0),
+      currency: 'USD',
+      sellerAccountType: sellerType
+    });
+    const commissionPercent = split.catalyxFeePercent;
 
     const newAsset: MarketplaceAsset = {
       id: assetId,
@@ -452,9 +461,15 @@ class WorkToMarketService {
     }
 
     const priceMinor = asset.priceMinorUnits || 0;
-    const commissionRate = asset.commissionRatePercent || 15;
-    const platformCommission = Math.round((priceMinor * commissionRate) / 100);
-    const creatorPayout = priceMinor - platformCommission;
+    const isOrg = request.buyerOrganizationId && request.buyerOrganizationId !== 'org_individual' && !request.buyerOrganizationId.startsWith('indiv_');
+    const sellerType: SellerAccountType = isOrg ? 'ORGANIZATION' : 'INDIVIDUAL';
+    const split = revenuePolicyEngine.calculateRevenueSplit({
+      grossAmountMinorUnits: priceMinor,
+      currency: (asset.currency as any) || 'USD',
+      sellerAccountType: sellerType,
+    });
+    const platformCommission = split.catalyxFeeMinorUnits;
+    const creatorPayout = split.sellerGrossPlatformEarningsMinorUnits;
 
     const txId = `tx_leg_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
     const txRef = `TXN-CTX-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;

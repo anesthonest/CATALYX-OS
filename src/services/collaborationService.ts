@@ -3,6 +3,7 @@ import {
   EnterpriseActivityItem, 
   ShareableArtifactType 
 } from '../types';
+import { safeStorage } from '../utils/safeStorage';
 
 class CollaborationService {
   private readonly COMMENTS_KEY = 'catalyx_v24_comments';
@@ -17,17 +18,13 @@ class CollaborationService {
 
   private loadState() {
     try {
-      const storedComments = localStorage.getItem(this.COMMENTS_KEY);
-      if (storedComments) {
-        this.comments = JSON.parse(storedComments);
-      } else {
+      this.comments = safeStorage.getArray<UniversalComment>(this.COMMENTS_KEY, []);
+      if (this.comments.length === 0) {
         this.seedInitialComments();
       }
 
-      const storedActivities = localStorage.getItem(this.ACTIVITIES_KEY);
-      if (storedActivities) {
-        this.activities = JSON.parse(storedActivities);
-      } else {
+      this.activities = safeStorage.getArray<EnterpriseActivityItem>(this.ACTIVITIES_KEY, []);
+      if (this.activities.length === 0) {
         this.seedInitialActivities();
       }
     } catch {
@@ -38,8 +35,8 @@ class CollaborationService {
 
   private saveState() {
     try {
-      localStorage.setItem(this.COMMENTS_KEY, JSON.stringify(this.comments));
-      localStorage.setItem(this.ACTIVITIES_KEY, JSON.stringify(this.activities));
+      safeStorage.set(this.COMMENTS_KEY, this.comments);
+      safeStorage.set(this.ACTIVITIES_KEY, this.activities);
     } catch (e) {
       console.warn('Failed to save collaboration state', e);
     }

@@ -471,9 +471,9 @@ export class IntelligenceCommerceV12Service {
       recipientName: 'Apex Supply Systems (Creator)',
       role: 'CREATOR',
       grossEarningsMinor: 1050000, // $10,500.00
-      platformCommissionMinor: 210000, // 20% platform share ($2,100.00)
+      platformCommissionMinor: 2625, // 0.25% platform fee (25 bps = $26.25)
       taxesWithheldMinor: 52500,  // $525.00
-      payableBalanceMinor: 787500, // $7,875.00
+      payableBalanceMinor: 994875, // $9,948.75
       currency: 'USD',
       status: 'SETTLED',
       payoutMethod: 'PESAPAL_EFT',
@@ -485,9 +485,9 @@ export class IntelligenceCommerceV12Service {
       recipientName: 'Vanguard Solutions Group (Partner)',
       role: 'PARTNER',
       grossEarningsMinor: 450000, // $4,500.00
-      platformCommissionMinor: 45000, // 10%
+      platformCommissionMinor: 1215, // 0.27% group platform fee (27 bps = $12.15)
       taxesWithheldMinor: 22500,
-      payableBalanceMinor: 382500, // $3,825.00
+      payableBalanceMinor: 426285, // $4,262.85
       currency: 'USD',
       status: 'SETTLED',
       payoutMethod: 'SWIFT_WIRE',

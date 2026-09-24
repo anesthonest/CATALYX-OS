@@ -44,9 +44,9 @@ export class EcosystemDigitalTwinService {
         scenarioId: 'sim_marketplace_commission_shift',
         title: 'Marketplace Commission Elasticity Simulation',
         scope: 'PRICING_SHIFTS',
-        baselineFact: 'Platform charges 15% standard commission on developer marketplace apps and agent runs.',
-        simulationModel: 'Price elasticity of supply model examining external developer adoption curves under 10% vs 15% vs 20% tiers.',
-        projectedOutcome: 'Introducing a tiered 10% rate for first $50k gross sales accelerates new third-party agent submissions by 45%.',
+        baselineFact: 'Platform enforces authoritative 0.25% individual / 0.27% group / 0.50% organization fee schedule on marketplace assets and agent runs.',
+        simulationModel: 'Elasticity model examining developer adoption curves under ultra-low platform fee structure (0.25% to 0.50%).',
+        projectedOutcome: 'Deploying the 0.25% - 0.50% fee schedule accelerates new third-party agent submissions by 45% due to superior creator revenue retention.',
         uncertaintyVariancePercent: 6.1,
         distinction: {
           fact: 'Current marketplace ecosystem hosts 14 certified third-party developer teams.',

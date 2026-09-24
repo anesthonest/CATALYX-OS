@@ -23,12 +23,9 @@ export interface SavedFirebaseConfig {
 const STORAGE_CONFIG_KEY = 'catalyx_firebase_config';
 export const getSavedFirebaseConfig = (): SavedFirebaseConfig | null => {
   try {
-    const data = localStorage.getItem(STORAGE_CONFIG_KEY);
-    if (data) {
-      const parsed = JSON.parse(data);
-      if (parsed.apiKey && parsed.projectId) {
-        return parsed as SavedFirebaseConfig;
-      }
+    const parsed = safeStorage.get<SavedFirebaseConfig | null>(STORAGE_CONFIG_KEY, null);
+    if (parsed && parsed.apiKey && parsed.projectId) {
+      return parsed;
     }
   } catch (e) {
     console.error('Error loading saved firebase config', e);
@@ -38,12 +35,14 @@ export const getSavedFirebaseConfig = (): SavedFirebaseConfig | null => {
 
 export const saveFirebaseConfig = (config: SavedFirebaseConfig | null) => {
   if (config) {
-    localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(config));
+    safeStorage.set(STORAGE_CONFIG_KEY, config);
   } else {
-    localStorage.removeItem(STORAGE_CONFIG_KEY);
+    safeStorage.remove(STORAGE_CONFIG_KEY);
   }
-  // Force reload to apply config
-  window.location.reload();
+  // Force reload to apply config if in browser
+  if (typeof window !== 'undefined' && window.location) {
+    window.location.reload();
+  }
 };
 
 let app: FirebaseApp | null = null;
@@ -96,7 +95,7 @@ export const saveSimData = <T>(collectionName: string, data: T[]) => {
 };
 
 // Initialize mock DB structure if empty
-if (!localStorage.getItem(`${SIM_KEY_PREFIX}users`)) {
+if (getSimData<UserProfile>('users').length === 0) {
   const defaultUser: UserProfile = {
     uid: 'vine_demo_user',
     username: 'vine_executor',
@@ -413,9 +412,9 @@ const runRuleEngine = (user: UserProfile, tasks: Task[]): UserProfile => {
 
 export const dbService = {
   // --- AUTH SERVICES ---
-  getCurrentUserId(): string {
-    const active = localStorage.getItem('catalyx_active_session');
-    return active || 'vine_demo_user';
+  getCurrentUserId(): string | null {
+    const active = safeStorage.get<string | null>('catalyx_active_session', null);
+    return active || null;
   },
 
   async registerUser(username: string, email: string): Promise<UserProfile> {
@@ -446,7 +445,7 @@ export const dbService = {
     saveSimData('users', users);
     
     // Set active session
-    localStorage.setItem('catalyx_active_session', newUser.uid);
+    safeStorage.set('catalyx_active_session', newUser.uid);
     
     // Initialize default tables
     saveSimData(`tasks_${newUser.uid}`, []);
@@ -470,7 +469,7 @@ export const dbService = {
     const users = getSimData<UserProfile>('users');
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (found) {
-      localStorage.setItem('catalyx_active_session', found.uid);
+      safeStorage.set('catalyx_active_session', found.uid);
       return found;
     }
     // Auto-create for seamless UX
@@ -478,7 +477,7 @@ export const dbService = {
   },
 
   async logout(): Promise<void> {
-    localStorage.removeItem('catalyx_active_session');
+    safeStorage.remove('catalyx_active_session');
   },
 
   async getUserProfile(uid: string): Promise<UserProfile | null> {

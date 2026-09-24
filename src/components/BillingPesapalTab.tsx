@@ -616,7 +616,7 @@ export const BillingPesapalTab: React.FC<Props> = ({ orgId, userEmail }) => {
           }`}
         >
           <DollarSign className="w-4 h-4 text-emerald-400" />
-          <span>Revenue Splits (10% / 15%)</span>
+          <span>Marketplace Revenue Splits (0.25% - 0.50%)</span>
         </button>
       </div>
 
@@ -1245,43 +1245,68 @@ export const BillingPesapalTab: React.FC<Props> = ({ orgId, userEmail }) => {
             </div>
           </div>
 
-          {/* Core Platform Fee Rules */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Core Authoritative Platform Fee Rules (0.25% / 0.27% / 0.50%) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-purple-300">Standard Individual Account</span>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold">10% Platform Fee</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-300">Individual Account</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold">
+                  {revenuePolicyEngine.getActiveConfig().individualFeePercent}% Platform Fee
+                </span>
               </div>
               <div className="text-3xl font-extrabold text-white">
-                10% <span className="text-xs text-gray-400 font-normal">CATALYX share</span>
+                {revenuePolicyEngine.getActiveConfig().individualFeePercent}% <span className="text-xs text-gray-400 font-normal">CATALYX share</span>
               </div>
               <p className="text-xs text-gray-300 leading-relaxed">
-                Standard users and independent creators retain <strong className="text-emerald-400 font-bold">90%</strong> of eligible gross platform earnings
-                prior to applicable third-party gateway deductions, taxes, and cooling-off refunds.
+                Standard users and independent creators retain <strong className="text-emerald-400 font-bold">{(100 - revenuePolicyEngine.getActiveConfig().individualFeePercent).toFixed(2)}%</strong> of eligible gross platform earnings
+                prior to applicable third-party gateway deductions.
               </p>
               <div className="pt-2 border-t border-white/10 flex justify-between text-[11px] text-gray-400 font-mono">
                 <span>Gross: 100%</span>
-                <span className="text-purple-300">Platform: 10%</span>
-                <span className="text-emerald-400">Creator: 90%</span>
+                <span className="text-amber-300">Platform: {revenuePolicyEngine.getActiveConfig().individualFeePercent}%</span>
+                <span className="text-emerald-400">Creator: {(100 - revenuePolicyEngine.getActiveConfig().individualFeePercent).toFixed(2)}%</span>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-300">Group / Syndicate</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-mono font-bold">
+                  {revenuePolicyEngine.getActiveConfig().groupFeePercent}% Platform Fee
+                </span>
+              </div>
+              <div className="text-3xl font-extrabold text-white">
+                {revenuePolicyEngine.getActiveConfig().groupFeePercent}% <span className="text-xs text-gray-400 font-normal">CATALYX share</span>
+              </div>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                Collaborative teams and multi-seat guilds contribute a <strong className="text-blue-400 font-bold">{revenuePolicyEngine.getActiveConfig().groupFeePercent}%</strong> platform fee,
+                retaining <strong className="text-emerald-400 font-bold">{(100 - revenuePolicyEngine.getActiveConfig().groupFeePercent).toFixed(2)}%</strong> of gross earnings.
+              </p>
+              <div className="pt-2 border-t border-white/10 flex justify-between text-[11px] text-gray-400 font-mono">
+                <span>Gross: 100%</span>
+                <span className="text-blue-300">Platform: {revenuePolicyEngine.getActiveConfig().groupFeePercent}%</span>
+                <span className="text-emerald-400">Team: {(100 - revenuePolicyEngine.getActiveConfig().groupFeePercent).toFixed(2)}%</span>
               </div>
             </div>
 
             <div className="p-5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-purple-300">Organization / Enterprise</span>
-                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-mono font-bold">15% Platform Fee</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-mono font-bold">
+                  {revenuePolicyEngine.getActiveConfig().organizationFeePercent}% Platform Fee
+                </span>
               </div>
               <div className="text-3xl font-extrabold text-white">
-                15% <span className="text-xs text-gray-400 font-normal">CATALYX share</span>
+                {revenuePolicyEngine.getActiveConfig().organizationFeePercent}% <span className="text-xs text-gray-400 font-normal">CATALYX share</span>
               </div>
               <p className="text-xs text-gray-300 leading-relaxed">
-                Institutional, enterprise, and team organizational workspaces contribute a <strong className="text-blue-400 font-bold">15%</strong> platform fee,
-                retaining <strong className="text-emerald-400 font-bold">85%</strong> of eligible gross earnings before third-party processing.
+                Institutional, enterprise, and corporate workspaces contribute a <strong className="text-purple-400 font-bold">{revenuePolicyEngine.getActiveConfig().organizationFeePercent}%</strong> platform fee,
+                retaining <strong className="text-emerald-400 font-bold">{(100 - revenuePolicyEngine.getActiveConfig().organizationFeePercent).toFixed(2)}%</strong> of gross earnings.
               </p>
               <div className="pt-2 border-t border-white/10 flex justify-between text-[11px] text-gray-400 font-mono">
                 <span>Gross: 100%</span>
-                <span className="text-purple-300">Platform: 15%</span>
-                <span className="text-emerald-400">Organization: 85%</span>
+                <span className="text-purple-300">Platform: {revenuePolicyEngine.getActiveConfig().organizationFeePercent}%</span>
+                <span className="text-emerald-400">Org: {(100 - revenuePolicyEngine.getActiveConfig().organizationFeePercent).toFixed(2)}%</span>
               </div>
             </div>
           </div>
@@ -1344,7 +1369,18 @@ export const BillingPesapalTab: React.FC<Props> = ({ orgId, userEmail }) => {
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
-                    Individual (10%)
+                    Individual (0.25%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalcSellerType('GROUP')}
+                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition cursor-pointer ${
+                      calcSellerType === 'GROUP'
+                        ? 'bg-brand-purple text-white shadow'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Group (0.27%)
                   </button>
                   <button
                     type="button"
@@ -1355,7 +1391,7 @@ export const BillingPesapalTab: React.FC<Props> = ({ orgId, userEmail }) => {
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
-                    Org (15%)
+                    Org (0.50%)
                   </button>
                 </div>
               </div>
@@ -1428,7 +1464,7 @@ export const BillingPesapalTab: React.FC<Props> = ({ orgId, userEmail }) => {
                         Estimated Net Seller Earnings:
                       </span>
                       <span className="text-[10px] text-gray-400">
-                        {calcResult.sellerAccountType === 'ORGANIZATION' ? '85% Organization Share' : '90% Individual Creator Share'} (post-deductions)
+                        {calcResult.sellerAccountType === 'ORGANIZATION' ? '99.50% Organization Share' : (calcResult.sellerAccountType === 'GROUP' ? '99.73% Group Share' : '99.75% Individual Creator Share')} (post-deductions)
                       </span>
                     </div>
                     <strong className="font-mono text-xl font-extrabold text-emerald-400">

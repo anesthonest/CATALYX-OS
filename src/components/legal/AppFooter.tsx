@@ -117,7 +117,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({
               <span>Creator IP Preservation Guarantee</span>
             </div>
             <p className="leading-relaxed">
-              Users retain 100% intellectual property ownership of their uploaded workflows, models, and prompts. Platform fees: 10% standard / 15% organizational.
+              Users retain 100% intellectual property ownership of their uploaded workflows, models, and prompts. Platform fees: 0.25% individual / 0.27% group / 0.50% organizational.
             </p>
           </div>
         </div>

@@ -56,8 +56,8 @@ export class PayoutEligibilityEngine {
       creatorName: 'Dr. Elena Rostova',
       productTitle: 'Enterprise Knowledge Graph Template & Neural Ontologies',
       grossAmountMinorUnits: 14900, // $149.00
-      platformCommissionMinorUnits: 2235, // 15% ($22.35)
-      netCreatorEarningsMinorUnits: 12665, // $126.65
+      platformCommissionMinorUnits: 37, // 0.25% ($0.37)
+      netCreatorEarningsMinorUnits: 14863, // $148.63
       currency: 'USD',
       status: 'ELIGIBLE',
       refundCoolingOffEndsAt: new Date(oldDate.getTime() + 14 * 86400 * 1000).toISOString(),
@@ -75,8 +75,8 @@ export class PayoutEligibilityEngine {
       creatorName: 'Dr. Elena Rostova',
       productTitle: 'Enterprise Knowledge Graph Template & Neural Ontologies',
       grossAmountMinorUnits: 14900,
-      platformCommissionMinorUnits: 2235,
-      netCreatorEarningsMinorUnits: 12665,
+      platformCommissionMinorUnits: 37,
+      netCreatorEarningsMinorUnits: 14863,
       currency: 'USD',
       status: 'PENDING_COOLING_OFF',
       refundCoolingOffEndsAt: new Date(recentDate.getTime() + 14 * 86400 * 1000).toISOString(),
@@ -112,7 +112,8 @@ export class PayoutEligibilityEngine {
     commissionPercent: number;
     currency: StandardCurrency;
   }): CreatorEarningRecord {
-    const commMinor = Math.round((params.grossAmountMinorUnits * params.commissionPercent) / 100);
+    const commBps = Math.round(params.commissionPercent * 100);
+    const commMinor = Math.round((params.grossAmountMinorUnits * commBps) / 10000);
     const netMinor = Math.max(0, params.grossAmountMinorUnits - commMinor);
     const paidTime = new Date(params.paidAt).getTime();
     const coolingEnd = new Date(paidTime + this.REFUND_COOLING_DAYS * 86400 * 1000).toISOString();

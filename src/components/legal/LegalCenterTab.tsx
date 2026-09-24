@@ -192,8 +192,8 @@ export const LegalCenterTab: React.FC<LegalCenterTabProps> = ({
 
         <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">
           <div className="text-xs font-medium text-slate-400">Platform Revenue Share</div>
-          <div className="text-2xl font-bold text-white mt-1">10% / 15%</div>
-          <div className="text-[11px] text-slate-400 mt-1">10% User • 15% Organization</div>
+          <div className="text-2xl font-bold text-white mt-1">0.25% - 0.50%</div>
+          <div className="text-[11px] text-slate-400 mt-1">0.25% Indiv • 0.27% Group • 0.50% Org</div>
         </div>
 
         <div className="p-5 rounded-xl bg-slate-900 border border-slate-800">

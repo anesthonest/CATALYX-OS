@@ -10,6 +10,7 @@ import {
   PricingModel,
   StandardCurrency
 } from './paymentProvider.types';
+import { revenuePolicyEngine } from './revenuePolicyEngine';
 
 export interface CalculateTotalsRequest {
   items: {
@@ -179,7 +180,7 @@ export class UniversalPricingEngine {
         pricingModel: 'ONE_TIME',
         amountMinorUnits: 14900, // $149.00
         currency: 'USD',
-        commissionPercent: 15, // 15% platform commission, 85% creator
+        commissionPercent: 0.25, // 0.25% platform fee (25 bps) under authoritative RevenuePolicyEngine
         effectiveFrom: now,
         status: 'ACTIVE',
         version: 1,
@@ -194,7 +195,7 @@ export class UniversalPricingEngine {
         pricingModel: 'ONE_TIME',
         amountMinorUnits: 8900, // $89.00
         currency: 'USD',
-        commissionPercent: 15,
+        commissionPercent: 0.25,
         effectiveFrom: now,
         status: 'ACTIVE',
         version: 1,
@@ -209,7 +210,7 @@ export class UniversalPricingEngine {
         pricingModel: 'ONE_TIME',
         amountMinorUnits: 4900, // $49.00
         currency: 'USD',
-        commissionPercent: 15,
+        commissionPercent: 0.25,
         effectiveFrom: now,
         status: 'ACTIVE',
         version: 1,
@@ -225,7 +226,7 @@ export class UniversalPricingEngine {
         pricingModel: 'SERVICE',
         amountMinorUnits: 35000, // $350.00
         currency: 'USD',
-        commissionPercent: 20, // 20% platform commission
+        commissionPercent: 0.50, // 0.50% platform fee (50 bps) for enterprise services
         effectiveFrom: now,
         status: 'ACTIVE',
         version: 1,
@@ -240,7 +241,7 @@ export class UniversalPricingEngine {
         pricingModel: 'LICENSE',
         amountMinorUnits: 49900, // $499.00
         currency: 'USD',
-        commissionPercent: 15,
+        commissionPercent: 0.50,
         effectiveFrom: now,
         status: 'ACTIVE',
         version: 1,
@@ -346,7 +347,7 @@ export class UniversalPricingEngine {
       trialPeriodDays: params.trialPeriodDays || 0,
       taxRatePercent: params.taxRatePercent || 0,
       discountPercent: params.discountPercent || 0,
-      commissionPercent: params.commissionPercent !== undefined ? params.commissionPercent : 15,
+      commissionPercent: params.commissionPercent !== undefined ? params.commissionPercent : revenuePolicyEngine.getActiveConfig().individualFeePercent,
       effectiveFrom: now,
       status: 'ACTIVE',
       version: newVersion,
@@ -400,8 +401,9 @@ export class UniversalPricingEngine {
       const itemTax = Math.round((itemTotal * taxRate) / 100);
       totalTaxMinor += itemTax;
 
-      const commRate = price ? price.commissionPercent : 15;
-      const itemComm = Math.round((itemTotal * commRate) / 100);
+      const commRate = price ? price.commissionPercent : revenuePolicyEngine.getActiveConfig().individualFeePercent;
+      const commBps = Math.round(commRate * 100);
+      const itemComm = Math.round((itemTotal * commBps) / 10000);
       totalPlatformCommissionMinor += itemComm;
 
       const snapshot = price ? this.createPriceSnapshot(price) : {
@@ -466,8 +468,9 @@ export class UniversalPricingEngine {
     netCreatorEarningsMinorUnits: number;
     currency: StandardCurrency;
   } {
-    const commRate = params.commissionPercent !== undefined ? params.commissionPercent : 15;
-    const commMinor = Math.round((params.amountMinorUnits * commRate) / 100);
+    const commRate = params.commissionPercent !== undefined ? params.commissionPercent : revenuePolicyEngine.getActiveConfig().individualFeePercent;
+    const commBps = Math.round(commRate * 100);
+    const commMinor = Math.round((params.amountMinorUnits * commBps) / 10000);
     const netMinor = Math.max(0, params.amountMinorUnits - commMinor);
 
     return {

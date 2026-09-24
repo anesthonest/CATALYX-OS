@@ -6,6 +6,8 @@ import {
 import { GovernanceService } from './governanceService';
 import { BillingService } from './billingService';
 import { WebhookService } from './webhookService';
+import { revenuePolicyEngine, SellerAccountType } from './payment/revenuePolicyEngine';
+import { safeStorage } from '../utils/safeStorage';
 
 const STORAGE_KEYS = {
   MARKETPLACE_ASSETS: 'catalyx_v8_marketplace_assets',
@@ -18,13 +20,9 @@ export class MarketplaceService {
    * Fetch all marketplace assets across categories
    */
   public static getAssets(): MarketplaceAsset[] {
-    const raw = localStorage.getItem(STORAGE_KEYS.MARKETPLACE_ASSETS);
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.error('Failed to parse marketplace assets:', e);
-      }
+    const raw = safeStorage.getArray<MarketplaceAsset>(STORAGE_KEYS.MARKETPLACE_ASSETS, []);
+    if (raw && raw.length > 0) {
+      return raw;
     }
 
     const defaultAssets: MarketplaceAsset[] = [
@@ -38,7 +36,7 @@ export class MarketplaceService {
         pricingModel: 'free',
         priceMinorUnits: 0,
         currency: 'USD',
-        commissionRatePercent: 15,
+        commissionRatePercent: 0,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: ['READ_KNOWLEDGE', 'READ_ANALYTICS', 'REQUEST_APPROVAL'],
@@ -59,7 +57,7 @@ export class MarketplaceService {
         pricingModel: 'one_time',
         priceMinorUnits: 1500, // $15.00
         currency: 'USD',
-        commissionRatePercent: 20,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: ['EXECUTE_WORKFLOW', 'SEND_NOTIFICATION', 'USE_INTEGRATION'],
@@ -101,7 +99,7 @@ export class MarketplaceService {
         pricingModel: 'subscription',
         priceMinorUnits: 4900, // $49.00 / month
         currency: 'USD',
-        commissionRatePercent: 25,
+        commissionRatePercent: 0.50,
         securityStatus: 'sandboxed',
         lifecycleStatus: 'published',
         permissionsRequired: ['READ_KNOWLEDGE', 'WRITE_KNOWLEDGE', 'REQUEST_APPROVAL'],
@@ -122,7 +120,7 @@ export class MarketplaceService {
         pricingModel: 'one_time',
         priceMinorUnits: 1900, // $19.00
         currency: 'USD',
-        commissionRatePercent: 20,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: ['READ_ANALYTICS', 'EXECUTE_WORKFLOW'],
@@ -143,7 +141,7 @@ export class MarketplaceService {
         pricingModel: 'subscription',
         priceMinorUnits: 2900, // $29.00
         currency: 'USD',
-        commissionRatePercent: 20,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: ['READ_KNOWLEDGE'],
@@ -185,7 +183,7 @@ export class MarketplaceService {
         pricingModel: 'one_time',
         priceMinorUnits: 3500, // $35.00
         currency: 'USD',
-        commissionRatePercent: 20,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: ['READ_ANALYTICS'],
@@ -206,7 +204,7 @@ export class MarketplaceService {
         pricingModel: 'subscription',
         priceMinorUnits: 5900, // $59.00
         currency: 'USD',
-        commissionRatePercent: 25,
+        commissionRatePercent: 0.50,
         securityStatus: 'sandboxed',
         lifecycleStatus: 'published',
         permissionsRequired: ['READ_ANALYTICS', 'REQUEST_APPROVAL'],
@@ -230,7 +228,7 @@ export class MarketplaceService {
         pricingModel: 'paid_download',
         priceMinorUnits: 4900, // $49.00
         currency: 'USD',
-        commissionRatePercent: 15,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: [],
@@ -275,7 +273,7 @@ export class MarketplaceService {
         pricingModel: 'paid_access',
         priceMinorUnits: 2500, // $25.00
         currency: 'USD',
-        commissionRatePercent: 15,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: [],
@@ -318,7 +316,7 @@ export class MarketplaceService {
         pricingModel: 'licensing',
         priceMinorUnits: 14900, // $149.00
         currency: 'USD',
-        commissionRatePercent: 15,
+        commissionRatePercent: 0.50,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: ['EXECUTE_WORKFLOW'],
@@ -354,7 +352,7 @@ export class MarketplaceService {
         pricingModel: 'paid_download',
         priceMinorUnits: 1900, // $19.00
         currency: 'USD',
-        commissionRatePercent: 15,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: [],
@@ -387,7 +385,7 @@ export class MarketplaceService {
         pricingModel: 'one_time',
         priceMinorUnits: 8900, // $89.00
         currency: 'USD',
-        commissionRatePercent: 15,
+        commissionRatePercent: 0.25,
         securityStatus: 'verified',
         lifecycleStatus: 'published',
         permissionsRequired: [],
@@ -411,7 +409,7 @@ export class MarketplaceService {
       }
     ];
 
-    localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(defaultAssets));
+    safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, defaultAssets);
     return defaultAssets;
   }
 
@@ -434,7 +432,7 @@ export class MarketplaceService {
     } else {
       assets.unshift(newAsset);
     }
-    localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(assets));
+    safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, assets);
   }
 
   /**
@@ -445,7 +443,7 @@ export class MarketplaceService {
     const index = assets.findIndex(a => a.id === assetId);
     if (index >= 0) {
       assets[index] = { ...assets[index], ...updates, updatedAt: new Date().toISOString() };
-      localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(assets));
+      safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, assets);
     }
   }
 
@@ -458,7 +456,7 @@ export class MarketplaceService {
     if (asset) {
       asset.installCount = (asset.installCount || 0) + 1;
       asset.verifiedSalesCount = (asset.verifiedSalesCount || 0) + 1;
-      localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(assets));
+      safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, assets);
     }
   }
 
@@ -552,13 +550,20 @@ export class MarketplaceService {
     }
 
     asset.installCount++;
-    localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(assets));
+    safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, assets);
 
-    // Calculate revenue split with integer minor units
+    // Calculate revenue split authoritatively using centralized revenuePolicyEngine (0.25% Indiv / 0.27% Group / 0.50% Org)
     const priceMinorUnits = asset.priceMinorUnits || 0;
-    const commissionPercent = asset.commissionRatePercent || 15;
-    const platformCommissionMinorUnits = Math.round((priceMinorUnits * commissionPercent) / 100);
-    const creatorEarningsMinorUnits = priceMinorUnits - platformCommissionMinorUnits;
+    const isOrg = orgId && orgId !== 'org_individual' && !orgId.startsWith('indiv_');
+    const sellerType: SellerAccountType = isOrg ? 'ORGANIZATION' : 'INDIVIDUAL';
+    const split = revenuePolicyEngine.calculateRevenueSplit({
+      grossAmountMinorUnits: priceMinorUnits,
+      currency: currency as any,
+      sellerAccountType: sellerType,
+      paymentChannel: 'pesapal'
+    });
+    const platformCommissionMinorUnits = split.catalyxFeeMinorUnits;
+    const creatorEarningsMinorUnits = split.sellerGrossPlatformEarningsMinorUnits;
     const txRef = `MP-PURCHASE-${Date.now().toString().slice(-8)}`;
 
     // If paid asset, record revenue ledger entry
@@ -637,13 +642,9 @@ export class MarketplaceService {
   // ==========================================================================
 
   public static getDeveloperAccount(orgId: string): DeveloperAccount {
-    const raw = localStorage.getItem(`${STORAGE_KEYS.DEVELOPER_ACCOUNTS}_${orgId}`);
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.error('Failed to parse developer account:', e);
-      }
+    const account = safeStorage.getObject<DeveloperAccount>(`${STORAGE_KEYS.DEVELOPER_ACCOUNTS}_${orgId}`, null as any);
+    if (account && account.id) {
+      return account;
     }
 
     const defaultAccount: DeveloperAccount = {
@@ -665,12 +666,12 @@ export class MarketplaceService {
       createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    localStorage.setItem(`${STORAGE_KEYS.DEVELOPER_ACCOUNTS}_${orgId}`, JSON.stringify(defaultAccount));
+    safeStorage.set(`${STORAGE_KEYS.DEVELOPER_ACCOUNTS}_${orgId}`, defaultAccount);
     return defaultAccount;
   }
 
   public static saveDeveloperAccount(orgId: string, account: DeveloperAccount): void {
-    localStorage.setItem(`${STORAGE_KEYS.DEVELOPER_ACCOUNTS}_${orgId}`, JSON.stringify(account));
+    safeStorage.set(`${STORAGE_KEYS.DEVELOPER_ACCOUNTS}_${orgId}`, account);
   }
 
   public static updatePayoutSettings(
@@ -732,7 +733,9 @@ export class MarketplaceService {
       pricingModel: payload.pricingModel,
       priceMinorUnits: payload.priceMinorUnits,
       currency: (payload.currency as any) || 'USD',
-      commissionRatePercent: 15,
+      commissionRatePercent: (orgId && orgId !== 'org_individual' && !orgId.startsWith('indiv_'))
+        ? revenuePolicyEngine.getActiveConfig().organizationFeePercent
+        : revenuePolicyEngine.getActiveConfig().individualFeePercent,
       securityStatus: 'in_review',
       lifecycleStatus: 'draft',
       permissionsRequired: payload.permissionsRequired,
@@ -745,7 +748,7 @@ export class MarketplaceService {
     };
 
     assets.unshift(newAsset);
-    localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(assets));
+    safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, assets);
 
     GovernanceService.addAuditLog({
       id: `audit_asset_create_${Date.now()}`,
@@ -775,7 +778,7 @@ export class MarketplaceService {
     asset.lifecycleStatus = report.verdict === 'approved' ? 'approved' : 'security_review';
     asset.securityStatus = report.sandboxRequired ? 'sandboxed' : (report.verdict === 'approved' ? 'verified' : 'in_review');
 
-    localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(assets));
+    safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, assets);
 
     GovernanceService.addAuditLog({
       id: `audit_sec_scan_${Date.now()}`,
@@ -807,7 +810,7 @@ export class MarketplaceService {
 
     asset.lifecycleStatus = 'published';
     asset.published = true;
-    localStorage.setItem(STORAGE_KEYS.MARKETPLACE_ASSETS, JSON.stringify(assets));
+    safeStorage.set(STORAGE_KEYS.MARKETPLACE_ASSETS, assets);
 
     const devAccount = this.getDeveloperAccount(orgId);
     devAccount.publishedAssetsCount += 1;
@@ -842,13 +845,9 @@ export class MarketplaceService {
   // ==========================================================================
 
   public static getApiKeys(orgId: string): ApiKeyCredential[] {
-    const raw = localStorage.getItem(`${STORAGE_KEYS.API_KEYS}_${orgId}`);
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.error('Failed to parse API keys:', e);
-      }
+    const keys = safeStorage.getArray<ApiKeyCredential>(`${STORAGE_KEYS.API_KEYS}_${orgId}`, []);
+    if (keys.length > 0) {
+      return keys;
     }
 
     const defaultKey: ApiKeyCredential = {
@@ -865,7 +864,7 @@ export class MarketplaceService {
       createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
-    localStorage.setItem(`${STORAGE_KEYS.API_KEYS}_${orgId}`, JSON.stringify([defaultKey]));
+    safeStorage.set(`${STORAGE_KEYS.API_KEYS}_${orgId}`, [defaultKey]);
     return [defaultKey];
   }
 
@@ -896,7 +895,7 @@ export class MarketplaceService {
     };
 
     keys.unshift(newKey);
-    localStorage.setItem(`${STORAGE_KEYS.API_KEYS}_${orgId}`, JSON.stringify(keys));
+    safeStorage.set(`${STORAGE_KEYS.API_KEYS}_${orgId}`, keys);
 
     GovernanceService.addAuditLog({
       id: `audit_key_${Date.now()}`,
@@ -921,7 +920,7 @@ export class MarketplaceService {
     if (!key) return false;
 
     key.status = 'revoked';
-    localStorage.setItem(`${STORAGE_KEYS.API_KEYS}_${orgId}`, JSON.stringify(keys));
+    safeStorage.set(`${STORAGE_KEYS.API_KEYS}_${orgId}`, keys);
 
     GovernanceService.addAuditLog({
       id: `audit_rev_key_${Date.now()}`,

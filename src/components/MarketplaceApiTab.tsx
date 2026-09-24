@@ -10,6 +10,7 @@ import { MarketplaceService } from '../services/marketplaceService';
 import { WebhookService } from '../services/webhookService';
 import { DeveloperSandboxService } from '../services/developerSandboxService';
 import { workToMarketService } from '../services/workToMarketService';
+import { revenuePolicyEngine } from '../services/payment/revenuePolicyEngine';
 import { 
   MarketplaceAsset, ApiKeyCredential, DeveloperAccount, 
   WebhookSubscription, WebhookDeliveryLog, SandboxExecutionResult,
@@ -614,7 +615,7 @@ export default defineAgent({
                         {asset.priceMinorUnits === 0 ? 'Free / Open' : `$${priceDollars} ${asset.currency || 'USD'}`}
                       </span>
                       <span className="text-[10px] text-neutral-400">
-                        {asset.priceMinorUnits === 0 ? 'Immediate install' : asset.pricingModel === 'subscription' ? 'per month' : 'one-time license (15% platform split)'}
+                        {asset.priceMinorUnits === 0 ? 'Immediate install' : asset.pricingModel === 'subscription' ? 'per month' : `one-time license (${asset.commissionRatePercent || 0.25}% platform fee)`}
                       </span>
                     </div>
 
@@ -666,7 +667,7 @@ export default defineAgent({
               <div className="text-2xl font-bold text-neutral-900 mt-1">
                 ${(devAccount.totalEarnedMinorUnits / 100).toFixed(2)} USD
               </div>
-              <p className="text-[11px] text-emerald-600 font-medium mt-1">80-85% Creator revenue split</p>
+              <p className="text-[11px] text-emerald-600 font-medium mt-1">99.50% - 99.75% Creator revenue split</p>
             </div>
 
             <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
@@ -805,7 +806,7 @@ export default defineAgent({
             </div>
 
             <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-              <span className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider">Creator Net Payouts (85%)</span>
+              <span className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider">Creator Net Payouts</span>
               <div className="text-2xl font-bold text-emerald-700 mt-1">
                 ${(ledgerEntries.reduce((acc, e) => acc + e.creatorPayoutMinorUnits, 0) / 100).toFixed(2)} USD
               </div>
@@ -813,7 +814,7 @@ export default defineAgent({
             </div>
 
             <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-xs">
-              <span className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider">Platform Protocol Share (15%)</span>
+              <span className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider">Platform Protocol Share (0.25% - 0.50%)</span>
               <div className="text-2xl font-bold text-purple-700 mt-1">
                 ${(ledgerEntries.reduce((acc, e) => acc + e.platformFeeMinorUnits, 0) / 100).toFixed(2)} USD
               </div>
@@ -885,7 +886,7 @@ export default defineAgent({
                         <td className="px-4 py-3">
                           <div className="font-bold text-neutral-900">${gross} {tx.currency}</div>
                           <div className="text-[10px] text-neutral-500">
-                            Creator: <span className="text-emerald-700 font-medium">${net}</span> • Fee (15%): <span className="text-purple-700 font-medium">${fee}</span>
+                            Creator: <span className="text-emerald-700 font-medium">${net}</span> • Platform Fee: <span className="text-purple-700 font-medium">${fee}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 font-mono text-[10px] text-neutral-500">
@@ -1808,7 +1809,7 @@ export default defineAgent({
               </div>
 
               <div className="p-3 bg-neutral-50 rounded-lg text-neutral-600 text-[11px]">
-                Platform commission: 15%. Creator revenue: 85%. Payouts settle automatically on the 1st of each calendar month.
+                Platform fee: 0.25% Individual / 0.27% Group / 0.50% Organization. Creator revenue: 99.50% - 99.75%. Payouts settle automatically on the 1st of each calendar month.
               </div>
             </div>
 
@@ -1852,26 +1853,36 @@ export default defineAgent({
             </div>
 
             {/* Financial Transparency Split */}
-            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-2 text-xs">
-              <div className="font-semibold text-neutral-800 border-b border-neutral-200 pb-1.5 flex items-center justify-between">
-                <span>License Price Breakdown</span>
-                <span className="text-sm font-bold text-neutral-900">
-                  ${(selectedAssetForPurchase.priceMinorUnits / 100).toFixed(2)} USD
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-neutral-600">
-                <span>Creator Net Proceeds (85%):</span>
-                <span className="font-semibold text-emerald-700">
-                  ${((selectedAssetForPurchase.priceMinorUnits * 0.85) / 100).toFixed(2)} USD
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-neutral-600">
-                <span>Platform Protocol Share (15%):</span>
-                <span className="font-semibold text-purple-700">
-                  ${((selectedAssetForPurchase.priceMinorUnits * 0.15) / 100).toFixed(2)} USD
-                </span>
-              </div>
-            </div>
+            {(() => {
+              const isOrg = organizationId && organizationId !== 'org_individual' && !organizationId.startsWith('indiv_');
+              const split = revenuePolicyEngine.calculateRevenueSplit({
+                grossAmountMinorUnits: selectedAssetForPurchase.priceMinorUnits,
+                currency: (selectedAssetForPurchase.currency as any) || 'USD',
+                sellerAccountType: isOrg ? 'ORGANIZATION' : 'INDIVIDUAL'
+              });
+              return (
+                <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 space-y-2 text-xs">
+                  <div className="font-semibold text-neutral-800 border-b border-neutral-200 pb-1.5 flex items-center justify-between">
+                    <span>License Price Breakdown</span>
+                    <span className="text-sm font-bold text-neutral-900">
+                      ${(selectedAssetForPurchase.priceMinorUnits / 100).toFixed(2)} USD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-neutral-600">
+                    <span>Creator Net Proceeds ({(100 - split.catalyxFeePercent).toFixed(2)}%):</span>
+                    <span className="font-semibold text-emerald-700">
+                      ${(split.sellerGrossPlatformEarningsMinorUnits / 100).toFixed(2)} USD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-neutral-600">
+                    <span>Platform Protocol Share ({split.catalyxFeePercent}%):</span>
+                    <span className="font-semibold text-purple-700">
+                      ${(split.catalyxFeeMinorUnits / 100).toFixed(2)} USD
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Licensing Terms */}
             <div className="rounded-xl border border-neutral-200 p-3 text-xs space-y-1 bg-white">

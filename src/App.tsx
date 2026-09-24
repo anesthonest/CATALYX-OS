@@ -8,6 +8,8 @@ import {
 } from './types';
 import { dbService, registerNotifications } from './firebase';
 import { v21ExperienceService } from './services/v21ExperienceService';
+import { authService } from './services/authService';
+import { AuthLandingPage } from './components/auth/AuthLandingPage';
 
 // V21 Unified Intelligence Experience Components
 import { UnifiedHomeV21 } from './components/UnifiedHomeV21';
@@ -111,6 +113,10 @@ import { UniversalWorkHubView } from './components/UniversalWorkHubView';
 import { PartnershipCollaborationView } from './components/PartnershipCollaborationView';
 import { V25CertificationView } from './components/V25CertificationView';
 import { MarketplaceHubView } from './components/MarketplaceHubView';
+import { DeepResearchView } from './components/research/DeepResearchView';
+import { AdvertisingHubView } from './components/advertising/AdvertisingHubView';
+import { ProfessionalServicesView } from './components/services/ProfessionalServicesView';
+import { MarketplaceSettingsTab } from './components/marketplace/MarketplaceSettingsTab';
 
 // Production Legal, Governance & Compliance Components
 import { TermsAcceptanceGuard } from './components/legal/TermsAcceptanceGuard';
@@ -134,12 +140,7 @@ import {
 export default function App() {
   // Authentication State
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [authEmail, setAuthEmail] = useState('');
-  const [authUsername, setAuthUsername] = useState('');
-  const [authPassword, setAuthPassword] = useState(''); // Simulated validation
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [authTermsChecked, setAuthTermsChecked] = useState(false);
-  const [authError, setAuthError] = useState('');
+  const [isGuestBrowsingMarketplace, setIsGuestBrowsingMarketplace] = useState(false);
 
   // V21 Unified Navigation Architecture state
   const [activeDomain, setActiveDomain] = useState<PrimaryDomainId>('home');
@@ -237,11 +238,38 @@ export default function App() {
       }
     );
 
-    // Auto load current session or default dev user
-    const currentId = dbService.getCurrentUserId();
-    if (currentId) {
-      loadUserData(currentId);
-    }
+    // Auto load current session or verify via authoritative auth endpoint
+    const initSession = async () => {
+      try {
+        const sessionToken = localStorage.getItem('catalyx_session_token');
+        if (sessionToken) {
+          const res = await fetch('/api/auth/me', {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.authenticated && data.user) {
+              const prof = await dbService.getUserProfile(data.user.uid) || await dbService.registerUser(data.user.username, data.user.email);
+              setUser(prof);
+              loadUserData(prof.uid);
+              return;
+            }
+          }
+        }
+      } catch {
+        // Fallback to local session if server offline
+      }
+
+      const currentId = dbService.getCurrentUserId();
+      if (currentId) {
+        loadUserData(currentId);
+      }
+    };
+
+    initSession();
 
     // Subscribe to browser navigation events
     const unsubRouter = navigationRouterService.onPopState((route) => {
@@ -322,58 +350,22 @@ export default function App() {
 
   // --- ACTIONS TRICOLOR DISPATCHERS ---
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    if (!authTermsChecked) {
-      setAuthError('Mandatory Agreement: You must review and agree to the Terms of Service, Privacy Policy, and creator fee structure before creating an account.');
-      return;
-    }
-    if (!authEmail.trim() || !authUsername.trim() || !authPassword.trim()) {
-      setAuthError('All parameters required for registration.');
-      return;
-    }
-    try {
-      const newUserProfile = await dbService.registerUser(authUsername.trim(), authEmail.trim());
-      // Authoritatively record terms acceptance on server audit ledger
-      await fetch('/api/legal/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: newUserProfile.uid,
-          userEmail: newUserProfile.email,
-          termsVersion: LegalPolicyService.CURRENT_VERSION,
-        }),
-      }).catch(err => console.warn('Terms audit recording notice:', err));
-
-      const compliantProfile = await dbService.updateUserTermsAcceptance(newUserProfile.uid, LegalPolicyService.CURRENT_VERSION);
-      setUser(compliantProfile);
-      loadUserData(compliantProfile.uid);
-    } catch (e: any) {
-      setAuthError(e.message || 'Unable to secure token profile.');
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    if (!authEmail.trim() || !authPassword.trim()) {
-      setAuthError('Email and Password must be validation checked.');
-      return;
-    }
-    try {
-      const loginProfile = await dbService.loginUser(authEmail.trim());
-      setUser(loginProfile);
-      loadUserData(loginProfile.uid);
-    } catch (e: any) {
-      setAuthError(e.message || 'Incorrect credentials verified.');
-    }
-  };
-
   const handleLogout = async () => {
-    await dbService.logout();
+    try {
+      const sessionToken = localStorage.getItem('catalyx_session_token');
+      if (sessionToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'x-session-token': sessionToken }
+        });
+      }
+    } catch {}
+    localStorage.removeItem('catalyx_session_token');
+    await authService.logout();
     setUser(null);
+    setIsGuestBrowsingMarketplace(false);
     setActiveWorkspace(null);
+    navigationRouterService.pushRoute({ domain: 'home', tab: 'home' });
   };
 
   // --- PERSONAL TASKS INTERFACES ---
@@ -630,6 +622,8 @@ export default function App() {
             user={user}
             onUpgrade={handleUpgradeAccount}
             onUpdateUsername={handleUpdateUsernameInApp}
+            onUserUpdated={(updated) => setUser(updated)}
+            onLogout={handleLogout}
           />
         );
       // V8 Universal Intelligence Infrastructure Modules
@@ -692,6 +686,40 @@ export default function App() {
         );
       case 'marketplace-api':
         return <MarketplaceApiTab organizationId={user.uid} currentUserEmail={user.email} />;
+      case 'deep-research':
+      case 'research':
+        return (
+          <DeepResearchView
+            user={user}
+            activeRole={activeRole}
+            onNavigate={handleSelectTab}
+          />
+        );
+      case 'advertising':
+      case 'ads':
+        return (
+          <AdvertisingHubView
+            user={user}
+            activeRole={activeRole}
+          />
+        );
+      case 'services':
+      case 'professional-services':
+        return (
+          <ProfessionalServicesView
+            user={user}
+            activeRole={activeRole}
+            onNavigate={handleSelectTab}
+          />
+        );
+      case 'marketplace-settings':
+      case 'rate-policy':
+        return (
+          <MarketplaceSettingsTab
+            user={user}
+            activeRole={activeRole}
+          />
+        );
       // V23 Universal Workspace, Workforce, Social Connectivity, Commerce & Intelligence OS
       case 'worker-center':
         return (
@@ -896,193 +924,91 @@ export default function App() {
 
   // --- AUTHENTICATION INTERFACE IF NO ACTIVE SESSION ---
   if (!user) {
-    return (
-      <div className="min-h-screen bg-[#030712] text-gray-200 flex items-center justify-center p-4 relative font-sans overflow-hidden">
-        {/* Futuristic glowing grids */}
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,rgba(157,78,221,0.06),transparent_60%)] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-brand-cyan/5 rounded-full blur-3xl pointer-events-none -mr-20 -mb-20" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-purple/5 rounded-full blur-3xl pointer-events-none" />
+    if (isGuestBrowsingMarketplace) {
+      const guestUser: UserProfile = {
+        uid: 'guest_observer',
+        username: 'Guest Observer',
+        email: 'guest@catalyx.vinexsah.io',
+        createdAt: new Date().toISOString(),
+        executionScore: 0,
+        streak: 0,
+        focusScore: 0,
+        consistencyScore: 0,
+        momentumScore: 0,
+        xp: 0,
+        premium: false,
+        level: 1,
+        achievements: [],
+        termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
+        termsAcceptedAt: new Date().toISOString()
+      };
+      return (
+        <div className="min-h-screen bg-[#020617] text-gray-200 flex flex-col font-sans">
+          {/* Guest Marketplace Navigation Bar */}
+          <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#030712]/90 border-b border-white/10 px-4 py-3">
+            <div className="max-w-7xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-cyan p-[1px]">
+                  <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-brand-cyan" />
+                  </div>
+                </div>
+                <div>
+                  <div className="font-display font-bold text-base text-white tracking-widest leading-none">
+                    CATA<span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-cyan">LYX</span>
+                  </div>
+                  <div className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
+                    PUBLIC INTELLIGENCE MARKETPLACE
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsGuestBrowsingMarketplace(false)}
+                  className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-brand-purple to-brand-cyan text-slate-950 font-semibold text-xs font-mono uppercase tracking-wider hover:opacity-95 shadow transition-all cursor-pointer"
+                >
+                  SIGN IN / REGISTER TO TRANSACT
+                </button>
+              </div>
+            </div>
+          </header>
 
-        <div className="w-full max-w-md glass-panel p-8 rounded-3xl relative overflow-hidden z-10 glow-brand">
-          <div className="text-center mb-6">
-            <span className="px-2.5 py-0.5 text-[9px] font-mono tracking-widest text-brand-cyan border border-brand-cyan/20 bg-brand-cyan/5 rounded-full uppercase">
-              VINEXSAH TECHNOLOGIES INTEGRATED COMMAND
-            </span>
-            <h1 className="text-4xl font-display font-medium text-white tracking-widest mt-4">
-              CATA<span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-cyan">LYX</span>
-            </h1>
-            <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-              Activate your Executive profile portal to align checklists, real-time scrums, and AI coach analytics.
-            </p>
+          {/* Guest Advisory Banner */}
+          <div className="bg-brand-purple/10 border-b border-brand-purple/20 px-4 py-2.5 text-center text-xs text-gray-300 flex items-center justify-center gap-2">
+            <Shield className="w-4 h-4 text-brand-purple" />
+            <span>Public Catalog Preview Mode: You are viewing verified intelligence items and agents. Authenticate to purchase or deploy.</span>
+            <button
+              onClick={() => setIsGuestBrowsingMarketplace(false)}
+              className="text-brand-cyan font-bold hover:underline cursor-pointer ml-1"
+            >
+              Sign In Now →
+            </button>
           </div>
 
-          <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-4">
-            {isRegistering && (
-              <div>
-                <label className="block text-[10px] font-mono text-gray-400 uppercase mb-1">COMMAND USERNAME</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. vine_executor"
-                  value={authUsername}
-                  onChange={(e) => setAuthUsername(e.target.value)}
-                  className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder-gray-700 focus:outline-[#9d4edd] focus:outline-1 transition-all"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-[10px] font-mono text-gray-400 uppercase mb-1">SECURE ELECTRONIC MAIL</label>
-              <input
-                type="email"
-                required
-                placeholder="anesthonest81@gmail.com"
-                value={authEmail}
-                onChange={(e) => setAuthEmail(e.target.value)}
-                className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder-gray-700 focus:outline-[#00f5d4] focus:outline-1 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-mono text-gray-400 uppercase mb-1">SECURITY ACCESS TOKEN</label>
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={authPassword}
-                onChange={(e) => setAuthPassword(e.target.value)}
-                className="w-full bg-slate-950/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-indigo-500 focus:outline-1 transition-all"
-              />
-            </div>
-
-            {isRegistering && (
-              <div className="pt-2">
-                <label className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-950/70 border border-white/10 text-left cursor-pointer hover:border-brand-purple/40 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={authTermsChecked}
-                    onChange={(e) => setAuthTermsChecked(e.target.checked)}
-                    className="mt-0.5 rounded border-white/20 bg-slate-900 text-brand-purple focus:ring-brand-purple accent-[#9d4edd] cursor-pointer"
-                  />
-                  <span className="text-xs text-gray-300 leading-snug">
-                    I agree unconditionally to the{' '}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setUser({
-                          uid: 'preview-visitor',
-                          username: 'Guest Visitor',
-                          email: 'visitor@catalyx.io',
-                          termsAcceptedVersion: '',
-                          accountType: 'INDIVIDUAL',
-                          role: 'EXECUTIVE',
-                          createdAt: new Date().toISOString()
-                        } as any);
-                        setActiveTab('terms');
-                      }}
-                      className="text-brand-cyan hover:underline font-semibold"
-                    >
-                      Terms of Service
-                    </button>
-                    ,{' '}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setUser({
-                          uid: 'preview-visitor',
-                          username: 'Guest Visitor',
-                          email: 'visitor@catalyx.io',
-                          termsAcceptedVersion: '',
-                          accountType: 'INDIVIDUAL',
-                          role: 'EXECUTIVE',
-                          createdAt: new Date().toISOString()
-                        } as any);
-                        setActiveTab('privacy');
-                      }}
-                      className="text-brand-cyan hover:underline font-semibold"
-                    >
-                      Privacy Policy
-                    </button>
-                    , and platform revenue sharing schedule (10% Creator / 15% Organization under Vinexsah Technologies).
-                  </span>
-                </label>
-              </div>
-            )}
-
-            {authError && (
-              <p className="text-xs text-brand-pink font-mono text-center">{authError}</p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-3 bg-gradient-to-r from-brand-purple to-brand-cyan text-slate-950 font-bold hover:opacity-95 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-[0.98] transition-all font-display mt-6 cursor-pointer"
-            >
-              <span>{isRegistering ? 'INITIALIZE NEW MATRIX' : 'SECURE SECRETS ACCESS'}</span>
-            </button>
-          </form>
-
-          <div className="mt-6 text-center border-t border-white/5 pt-4 space-y-3">
-            <button
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setAuthError('');
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 overflow-y-auto">
+            <MarketplaceHubView
+              user={guestUser}
+              activeRole={activeRole}
+              onNavigate={(tab) => {
+                if (tab !== 'marketplace') {
+                  setIsGuestBrowsingMarketplace(false);
+                }
               }}
-              className="text-xs text-brand-cyan hover:underline hover:text-brand-purple font-mono cursor-pointer block mx-auto"
-            >
-              {isRegistering ? 'Already unified? Access active secrets' : 'New Commander profile? Register credentials'}
-            </button>
-
-            <div className="text-[10px] text-gray-500 leading-relaxed pt-2 border-t border-white/5">
-              <p>
-                By proceeding, you acknowledge the binding{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUser({
-                      uid: 'preview-visitor',
-                      username: 'Guest Visitor',
-                      email: 'visitor@catalyx.io',
-                      termsAcceptedVersion: '',
-                      accountType: 'INDIVIDUAL',
-                      role: 'EXECUTIVE',
-                      createdAt: new Date().toISOString()
-                    } as any);
-                    setActiveTab('terms');
-                  }}
-                  className="text-indigo-400 hover:underline cursor-pointer"
-                >
-                  Terms of Service
-                </button>
-                ,{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUser({
-                      uid: 'preview-visitor',
-                      username: 'Guest Visitor',
-                      email: 'visitor@catalyx.io',
-                      termsAcceptedVersion: '',
-                      accountType: 'INDIVIDUAL',
-                      role: 'EXECUTIVE',
-                      createdAt: new Date().toISOString()
-                    } as any);
-                    setActiveTab('privacy');
-                  }}
-                  className="text-indigo-400 hover:underline cursor-pointer"
-                >
-                  Privacy Policy
-                </button>
-                , and Creator IP Covenants.
-              </p>
-              <p className="text-[9px] text-gray-600 mt-1">
-                CATALYX is developed & operated under the <strong className="text-gray-400">VINEXSAH TECHNOLOGIES</strong> project name.
-              </p>
-            </div>
-          </div>
+            />
+          </main>
+          <AppFooter onNavigateToLegal={() => {}} />
         </div>
-      </div>
+      );
+    }
+
+    return (
+      <AuthLandingPage
+        onAuthSuccess={(authenticatedUser) => {
+          setUser(authenticatedUser);
+          loadUserData(authenticatedUser.uid);
+        }}
+        onExploreMarketplace={() => setIsGuestBrowsingMarketplace(true)}
+      />
     );
   }
 

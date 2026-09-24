@@ -66,6 +66,16 @@ export interface PaymentProvider {
   registerNotificationEndpoint(request: RegisterIpnRequest): Promise<RegisterIpnResult>;
 
   /**
+   * Retrieves the list of registered IPN URLs from provider
+   */
+  getIpnList?(): Promise<{ status: string; ipns?: any[]; error?: string }>;
+
+  /**
+   * Computes the public IPN webhook receiver URL
+   */
+  getPublicIpnUrl?(): string;
+
+  /**
    * Ingests and parses raw webhook/IPN notifications
    */
   processNotification(payload: any, headers?: Record<string, string>): Promise<ProcessNotificationResult>;

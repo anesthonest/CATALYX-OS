@@ -1517,8 +1517,8 @@ export const UniversalWorkHubView: React.FC<UniversalWorkHubViewProps> = ({
                     onChange={(e) => setPublishPrice(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-brand-purple"
                   />
-                  <span className="text-[10px] text-gray-400 mt-1 block">
-                    85% creator split (${(parseFloat(publishPrice || '0') * 0.85).toFixed(2)})
+                  <span className="text-[10px] text-emerald-400 mt-1 block">
+                    99.75% creator platform split (${(parseFloat(publishPrice || '0') * 0.9975).toFixed(2)}) • 0.25% platform fee
                   </span>
                 </div>
 

@@ -14,8 +14,10 @@ export interface UserProfile {
   achievements: string[]; // ids of unlocked achievements
   termsAcceptedVersion?: string;
   termsAcceptedAt?: string;
-  accountType?: 'INDIVIDUAL' | 'ORGANIZATION';
+  accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
   role?: 'user' | 'creator' | 'admin' | 'superadmin';
+  emailVerified?: boolean;
+  emailVerifiedAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -1131,7 +1133,7 @@ export interface MarketplaceAsset {
   pricingModel: MarketplacePricingModel;
   priceMinorUnits: number;
   currency: CurrencyCode;
-  commissionRatePercent: number; // e.g. 15% platform commission, 85% creator
+  commissionRatePercent: number; // Authoritative platform fee percent (0.25% Indiv / 0.27% Group / 0.50% Org)
   securityStatus: 'verified' | 'sandboxed' | 'in_review' | 'quarantined';
   lifecycleStatus: MarketplaceLifecycleStatus;
   permissionsRequired: AgentPermission[];

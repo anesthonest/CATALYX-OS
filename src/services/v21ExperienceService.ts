@@ -70,21 +70,25 @@ class V21ExperienceService {
     {
       id: 'marketplace',
       label: 'Marketplace',
-      tagline: 'Digital Work, Listings & Developer APIs',
+      tagline: 'Universal Digital Economy, Services & Ads',
       iconName: 'ShoppingBag',
       subItems: [
-        { id: 'marketplace-hub', label: 'Digital Work Marketplace', description: 'Discover, buy, sell, and manage digital products, decks, software & media', iconName: 'ShoppingBag', isPrimary: true, versionBadge: 'NEW' },
+        { id: 'marketplace-hub', label: 'Digital Work Marketplace', description: 'Discover, buy, sell, and manage software, media, creative goods & templates', iconName: 'ShoppingBag', isPrimary: true, versionBadge: 'EXPANDED' },
+        { id: 'services', label: 'Professional Services & Freelance', description: 'Verified consultants, engineers, designers, tutors & escrow contracts', iconName: 'Briefcase', versionBadge: 'NEW' },
+        { id: 'advertising', label: 'Advertising & Sponsored Media', description: 'Create and run video ads, sponsored placements, and real-time telemetry', iconName: 'TrendingUp', versionBadge: 'NEW' },
+        { id: 'rate-policy', label: 'Marketplace Rate Policy', description: 'Authoritative economic settings (0.25% - 0.50% basis points policy)', iconName: 'Sliders', versionBadge: 'UPDATED' },
         { id: 'marketplace-api', label: 'Developer APIs & Sandbox', description: 'API tokens, webhook relays, and runtime test sandbox', iconName: 'Key' }
       ]
     },
     {
       id: 'intelligence',
       label: 'Intelligence',
-      tagline: 'AI Assistant, Autonomous Agents & Insights',
+      tagline: 'AI Assistant, Deep Research & Insights',
       iconName: 'Brain',
       badge: 'AI',
       subItems: [
-        { id: 'ai-coach', label: 'AI Assistant & Coach', description: 'Adaptive cognitive performance copilot & task guidance', iconName: 'Bot', isPrimary: true },
+        { id: 'deep-research', label: 'Deep Research AI Engine', description: 'Rigorous multi-stage analytical synthesis across global corpora with citation integrity', iconName: 'Microscope', isPrimary: true, versionBadge: 'NEW' },
+        { id: 'ai-coach', label: 'AI Assistant & Coach', description: 'Adaptive cognitive performance copilot & task guidance', iconName: 'Bot' },
         { id: 'ai-workforce', label: 'AI Agent Workforce (11 Agents)', description: 'Specialized autonomous agents and task delegations', iconName: 'Bot' },
         { id: 'executive-brief', label: 'Executive Briefing', description: 'Holistic synthesized organizational intelligence', iconName: 'Activity' },
         { id: 'analytics', label: 'Analytics & Burnout', description: 'Cognitive load, velocity, and predictive burn risk', iconName: 'BarChart3' },

@@ -5,16 +5,20 @@
  */
 
 class SafeStorageEngine {
+  private memoryStore = new Map<string, string>();
+
   /**
    * Safely retrieve and parse a JSON item from localStorage.
    * If parsing fails or data is corrupt, returns the fallback value.
    */
   get<T>(key: string, fallback: T, validator?: (data: unknown) => boolean): T {
     try {
-      if (typeof window === 'undefined' || !window.localStorage) {
-        return fallback;
+      let raw: string | null = null;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        raw = localStorage.getItem(key);
+      } else {
+        raw = this.memoryStore.get(key) ?? null;
       }
-      const raw = localStorage.getItem(key);
       if (raw === null || raw === undefined || raw.trim() === '') {
         return fallback;
       }
@@ -40,9 +44,9 @@ class SafeStorageEngine {
 
   /**
    * Safely retrieve an object from localStorage.
-   * Guarantees a non-null Record is returned.
+   * Guarantees a non-null object is returned.
    */
-  getObject<T extends Record<string, unknown>>(key: string, defaultObject: T): T {
+  getObject<T extends object>(key: string, defaultObject: T): T {
     return this.get<T>(key, defaultObject, (val) => typeof val === 'object' && val !== null && !Array.isArray(val));
   }
 
@@ -52,11 +56,12 @@ class SafeStorageEngine {
    */
   set(key: string, value: unknown): boolean {
     try {
-      if (typeof window === 'undefined' || !window.localStorage) {
-        return false;
-      }
       const serialized = JSON.stringify(value);
-      localStorage.setItem(key, serialized);
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(key, serialized);
+      } else {
+        this.memoryStore.set(key, serialized);
+      }
       return true;
     } catch (err: unknown) {
       console.error(`[safeStorage] Failed to write key "${key}". Possible quota exceeded or circular structure.`, err);
@@ -69,10 +74,11 @@ class SafeStorageEngine {
    */
   remove(key: string): boolean {
     try {
-      if (typeof window === 'undefined' || !window.localStorage) {
-        return false;
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(key);
+      } else {
+        this.memoryStore.delete(key);
       }
-      localStorage.removeItem(key);
       return true;
     } catch (err) {
       console.warn(`[safeStorage] Failed to remove key "${key}".`, err);

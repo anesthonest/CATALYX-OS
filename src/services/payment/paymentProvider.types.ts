@@ -298,7 +298,7 @@ export interface PriceConfiguration {
   };
   taxRatePercent?: number;
   discountPercent?: number;
-  commissionPercent: number; // Platform commission % (e.g. 15 for 15%)
+  commissionPercent: number; // Platform fee % (e.g. 0.25 for 0.25%, 0.50 for 0.50%)
   effectiveFrom: string;
   effectiveUntil?: string;
   status: 'ACTIVE' | 'ARCHIVED' | 'SCHEDULED';

@@ -40,8 +40,8 @@ export interface LegalVersionMetadata {
 }
 
 export class LegalPolicyService {
-  public static readonly CURRENT_VERSION = 'v2026.3.1';
-  public static readonly EFFECTIVE_DATE = '2026-03-01T00:00:00.000Z';
+  public static readonly CURRENT_VERSION = 'v2026.3.2';
+  public static readonly EFFECTIVE_DATE = '2026-03-24T00:00:00.000Z';
   public static readonly PROJECT_NAME_NOTICE = 
     'CATALYX is developed and operated under the VINEXSAH TECHNOLOGIES project.';
 
@@ -49,9 +49,9 @@ export class LegalPolicyService {
   private static versionMetadata: LegalVersionMetadata = {
     version: LegalPolicyService.CURRENT_VERSION,
     effectiveDate: LegalPolicyService.EFFECTIVE_DATE,
-    termsHash: 'sha256:ctx_legal_hash_v2026_3_1_sec_provenance',
+    termsHash: 'sha256:ctx_legal_hash_v2026_3_2_universal_expansion',
     mandatoryReconsent: true,
-    changelogSummary: 'Initial comprehensive legal policy suite codifying 10% standard / 15% organizational platform fees, Pesapal integration, bank transfer settlement, and user IP preservation.',
+    changelogSummary: 'Universal Digital Work legal policy suite codifying authoritative 0.25% Individual / 0.27% Group / 0.50% Organization platform fees, Pesapal integration, bank transfer settlement, and user IP preservation.',
     registeredProjectNotice: LegalPolicyService.PROJECT_NAME_NOTICE
   };
 
@@ -197,11 +197,12 @@ By transmitting content into CATALYX, you grant the Platform a worldwide, non-ex
 ---
 
 ### 3. Platform Revenue Share & Commission Structure
-Eligible earnings generated through CATALYX marketplace transactions, asset publishing, or commercial services are subject to platform revenue-sharing fees:
-* **Standard Individual User Rate:** CATALYX receives a platform fee of **10%** of eligible gross earnings. The creator or seller receives **90%** prior to applicable payment processing fees, statutory taxes, refunds, or chargebacks.
-* **Organization / Institutional Rate:** CATALYX receives a platform fee of **15%** of eligible gross earnings for accounts registered under institutional, enterprise, or commercial organizational classifications. The organization receives **85%** prior to applicable payment processing fees, statutory taxes, refunds, or chargebacks.
+Eligible earnings generated through CATALYX marketplace transactions, asset publishing, advertising, or commercial services are subject to platform revenue-sharing fees under the authoritative Economic Policy:
+* **Standard Individual User Rate:** CATALYX receives an ultra-low platform transaction fee of **0.25%** (25 basis points) of eligible gross earnings. The creator or seller receives **99.75%** prior to applicable third-party gateway deductions, statutory taxes, refunds, or cooling-off adjustments.
+* **Group / Syndicate Rate:** CATALYX receives a platform transaction fee of **0.27%** (27 basis points) of eligible gross earnings for multi-seat collaborative teams or guilds. The group retains **99.73%** prior to applicable deductions.
+* **Organization / Institutional Rate:** CATALYX receives a platform transaction fee of **0.50%** (50 basis points) of eligible gross earnings for accounts registered under enterprise, corporate, or institutional organizational classifications. The organization receives **99.50%** prior to applicable deductions.
 
-All fee breakdowns are computed server-side and transparently itemized on financial summaries. Stated figures represent pre-payout calculations and do not constitute guaranteed net payouts.
+All fee breakdowns are computed server-side using immutable integer minor-unit basis-point arithmetic and transparently itemized in double-entry commerce ledgers. Historical transactions strictly retain the policy rate in effect at time of transaction.
 
 ---
 
@@ -361,7 +362,7 @@ To request a payout of accumulated earnings from the CATALYX marketplace:
 ---
 
 ### 2. Platform Revenue Withholding
-CATALYX automatically retains its platform fee (10% for individual creators, 15% for organizations) upon sale completion. Payout requests reflect net creator earnings.`
+CATALYX automatically retains its platform fee (0.25% for individual creators, 0.27% for collaborative groups, 0.50% for organizations) upon sale completion under the authoritative Revenue Policy Engine. Payout requests reflect net creator earnings.`
     };
   }
 

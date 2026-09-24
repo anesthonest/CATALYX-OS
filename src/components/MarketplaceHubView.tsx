@@ -5,7 +5,8 @@ import {
   Layers, CheckCircle2, ChevronRight, Eye, Sparkles, Filter, FileText, 
   Presentation, Database, Scale, Receipt, Shield, X, Play, Video, 
   TrendingUp, ArrowRight, Package, Tag, User, Users, Globe, Lock,
-  Key, Webhook, Terminal, Send, ArrowUpRight, CheckSquare, Clock
+  Key, Webhook, Terminal, Send, ArrowUpRight, CheckSquare, Clock,
+  Settings, Megaphone, Briefcase
 } from 'lucide-react';
 import { MarketplaceService } from '../services/marketplaceService';
 import { WebhookService } from '../services/webhookService';
@@ -13,6 +14,10 @@ import { DeveloperSandboxService } from '../services/developerSandboxService';
 import { workToMarketService } from '../services/workToMarketService';
 import { universalWorkService } from '../services/universalWorkService';
 import { presentationsService } from '../services/presentationsService';
+import { revenuePolicyEngine, SellerAccountType } from '../services/payment/revenuePolicyEngine';
+import { MarketplaceSettingsTab } from './marketplace/MarketplaceSettingsTab';
+import { AdvertisingHubView } from './advertising/AdvertisingHubView';
+import { ProfessionalServicesView } from './services/ProfessionalServicesView';
 import { 
   MarketplaceAsset, ApiKeyCredential, DeveloperAccount, 
   WebhookSubscription, WebhookDeliveryLog, SandboxExecutionResult,
@@ -34,7 +39,7 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
   onNavigate
 }) => {
   // Main Section Navigation
-  const [activeSection, setActiveSection] = useState<'discover' | 'shop' | 'sell' | 'my_listings' | 'purchases' | 'earnings' | 'developer'>('discover');
+  const [activeSection, setActiveSection] = useState<'discover' | 'shop' | 'sell' | 'my_listings' | 'purchases' | 'earnings' | 'developer' | 'settings' | 'advertising' | 'services'>('discover');
   
   // Search & Filtering State
   const [searchQuery, setSearchQuery] = useState('');
@@ -185,9 +190,18 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
     return assets.filter(a => a.author === user.username || a.author === user.email || a.developerId === user.email || a.id.includes('custom_') || a.id.includes('pub_'));
   }, [assets, user]);
 
-  // Financial Calculations
-  const calculatedFee = (sellPriceUsd * 0.10).toFixed(2);
-  const calculatedEarnings = (sellPriceUsd * 0.90).toFixed(2);
+  // Authoritative Financial Calculations via revenuePolicyEngine (0.25% Indiv / 0.27% Group / 0.50% Org)
+  const sellerAccountType: SellerAccountType = user.accountType === 'ORGANIZATION' ? 'ORGANIZATION' : 'INDIVIDUAL';
+  const activeFeePercent = revenuePolicyEngine.getFeePercentForAccount(sellerAccountType);
+  const activeRoyaltyPercent = (100 - activeFeePercent).toFixed(2);
+  const splitSim = revenuePolicyEngine.calculateRevenueSplit({
+    grossAmountMinorUnits: Math.round(sellPriceUsd * 100),
+    currency: 'USD',
+    sellerAccountType: sellerAccountType,
+    paymentChannel: 'pesapal'
+  });
+  const calculatedFee = (splitSim.catalyxFeeMinorUnits / 100).toFixed(2);
+  const calculatedEarnings = (splitSim.sellerGrossPlatformEarningsMinorUnits / 100).toFixed(2);
 
   // Execute Quality Scan in Sell Flow
   const handleRunQualityScan = () => {
@@ -302,7 +316,7 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
           </h1>
           <p className="text-sm text-gray-300 mt-2 leading-relaxed max-w-2xl">
             Explore verified software, slide decks, media packages, autonomous agents, and enterprise workflows. 
-            Publish your own CATALYX work in minutes with automated 90% creator payouts.
+            Publish your own CATALYX work in minutes with industry-leading {activeRoyaltyPercent}% creator payouts ({activeFeePercent}% platform fee).
           </p>
 
           {/* Unified Search Input */}
@@ -398,7 +412,10 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
           {[
             { id: 'discover', label: 'Discover', icon: Sparkles },
             { id: 'shop', label: 'Shop All', icon: ShoppingBag, count: filteredAssets.length },
-            { id: 'sell', label: 'Sell / Publish', icon: Plus, badge: '90% Share' },
+            { id: 'services', label: 'Services & Freelance', icon: Briefcase },
+            { id: 'advertising', label: 'Advertising & Ads', icon: Megaphone },
+            { id: 'settings', label: 'Rate Policy', icon: Settings, badge: `${activeFeePercent}% Fee` },
+            { id: 'sell', label: 'Sell / Publish', icon: Plus, badge: `${activeRoyaltyPercent}% Share` },
             { id: 'my_listings', label: 'My Listings', icon: Package, count: userListings.length },
             { id: 'purchases', label: 'My Purchases', icon: Download, count: userPurchases.length },
             { id: 'earnings', label: 'Earnings & Payouts', icon: Wallet },
@@ -520,7 +537,7 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
             <div className="space-y-1 text-center md:text-left">
               <h3 className="text-base font-bold text-white">Have a Project, Slide Deck, or Workflow in CATALYX?</h3>
               <p className="text-xs text-gray-300 max-w-xl">
-                Turn any existing work object into a commercial product in 3 minutes. Keep 90% of earnings with automatic instant settlements and Pesapal integration.
+                Turn any existing work object into a commercial product in 3 minutes. Keep up to 99.75% of earnings with automatic instant settlements and Pesapal integration.
               </p>
             </div>
             <button
@@ -875,7 +892,7 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
               <div>
                 <h3 className="text-lg font-bold text-white">Step 3: Pricing, Royalties & Licensing</h3>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Set transparent pricing with clear creator payouts (90% to you, 10% platform fee).
+                  Set transparent pricing with clear creator payouts ({activeRoyaltyPercent}% to you, {activeFeePercent}% platform fee).
                 </p>
               </div>
 
@@ -914,7 +931,7 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
               {/* Creator Earnings Breakdown Card */}
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
                 <span className="text-[10px] font-mono text-amber-400 uppercase tracking-wider font-bold">
-                  Transparent Revenue Share (10% Platform Fee / 90% Creator Royalties)
+                  Authoritative Revenue Share ({activeFeePercent}% Platform Fee / {activeRoyaltyPercent}% Creator Royalties)
                 </span>
                 <div className="grid grid-cols-3 gap-2 pt-1 text-center font-mono">
                   <div className="p-2.5 rounded-lg bg-black/40 border border-white/10">
@@ -922,11 +939,11 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
                     <span className="text-sm font-bold text-white">${sellPriceUsd.toFixed(2)}</span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-black/40 border border-white/10">
-                    <span className="text-[10px] text-gray-400 block">Platform Fee (10%)</span>
+                    <span className="text-[10px] text-gray-400 block">Platform Fee ({activeFeePercent}%)</span>
                     <span className="text-sm font-bold text-rose-400">-${calculatedFee}</span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40">
-                    <span className="text-[10px] text-emerald-300 block">You Receive (90%)</span>
+                    <span className="text-[10px] text-emerald-300 block">You Receive ({activeRoyaltyPercent}%)</span>
                     <span className="text-sm font-bold text-emerald-400">+${calculatedEarnings}</span>
                   </div>
                 </div>
@@ -1062,7 +1079,7 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
                   <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
                   <h4 className="text-base font-bold text-white">Product Published Successfully!</h4>
                   <p className="text-xs text-gray-300 max-w-sm mx-auto">
-                    Your product is live in the CATALYX Marketplace. You will receive 90% royalties on every purchase directly into your earnings ledger.
+                    Your product is live in the CATALYX Marketplace. You will receive up to 99.75% royalties on every purchase directly into your earnings ledger.
                   </p>
                   <div className="flex justify-center gap-3 pt-2">
                     <button
@@ -1134,7 +1151,7 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
               <Package className="w-10 h-10 text-gray-500 mx-auto mb-2" />
               <h4 className="text-sm font-bold text-white">No listings published yet</h4>
               <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
-                Turn your presentations, workflows, and projects into digital products and earn 90% royalties.
+                Turn your presentations, workflows, and projects into digital products and earn up to 99.75% royalties.
               </p>
               <button
                 onClick={() => {
@@ -1317,8 +1334,8 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
                     <th className="py-2">Transaction ID</th>
                     <th className="py-2">Asset</th>
                     <th className="py-2">Gross</th>
-                    <th className="py-2">Creator Share (90%)</th>
-                    <th className="py-2">Platform Fee (10%)</th>
+                    <th className="py-2">Creator Share ({activeRoyaltyPercent}%)</th>
+                    <th className="py-2">Platform Fee ({activeFeePercent}%)</th>
                     <th className="py-2">Date</th>
                   </tr>
                 </thead>
@@ -1480,6 +1497,27 @@ export const MarketplaceHubView: React.FC<MarketplaceHubViewProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB: RATE POLICY & ECONOMIC SETTINGS                          */}
+      {/* ============================================================== */}
+      {activeSection === 'settings' && (
+        <MarketplaceSettingsTab user={user} activeRole={activeRole} />
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB: ADVERTISING & SPONSORED MEDIA                            */}
+      {/* ============================================================== */}
+      {activeSection === 'advertising' && (
+        <AdvertisingHubView user={user} activeRole={activeRole} />
+      )}
+
+      {/* ============================================================== */}
+      {/* TAB: PROFESSIONAL SERVICES & FREELANCE PACKAGES               */}
+      {/* ============================================================== */}
+      {activeSection === 'services' && (
+        <ProfessionalServicesView user={user} activeRole={activeRole} onNavigate={onNavigate} />
       )}
 
       {/* ============================================================== */}

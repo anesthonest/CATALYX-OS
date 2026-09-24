@@ -452,7 +452,7 @@ class SystemKnowledgeService {
         'Curated catalog across 16 professional digital work categories',
         'Full asset preview including slide count, chapters, transcripts, and licensing terms',
         'Verified buyer badges and cryptographic receipt generation',
-        'Immutable double-entry transaction ledger with automated 15% platform split'
+        'Immutable double-entry transaction ledger with automated platform fee split (0.25% - 0.50%)'
       ],
       primaryActions: [
         { label: 'Browse Catalog', description: 'Explore verified professional work products', permissionRequired: 'standard:read' },
@@ -485,7 +485,7 @@ class SystemKnowledgeService {
       domain: 'COMMERCE',
       tabId: 'marketplace-api',
       summary: 'Idempotent, audit-ready commercial transaction ledger and creator payout dashboard.',
-      description: 'Maintains an immutable record of all marketplace transactions with SHA-256 cryptographic signatures, idempotency guarantees, transparent 15% platform commission vs 85% creator payout calculation, and Pesapal V3 integration.',
+      description: 'Maintains an immutable record of all marketplace transactions with SHA-256 cryptographic signatures, idempotency guarantees, transparent platform fee (0.25% Indiv / 0.27% Group / 0.50% Org) vs creator payout calculation, and Pesapal V3 integration.',
       keyFeatures: [
         'Idempotent payment deduplication to prevent double-charging',
         'Tamper-resistant cryptographic signature per transaction',
@@ -875,7 +875,15 @@ class SystemKnowledgeService {
 
     // 5. Contextual Query: What can I do here? / What does this dashboard mean?
     const currentMod = this.getModuleByTab(activeTab) || this.modules[0];
-    if (q.includes('where am i') || q.includes('what can i do here') || q.includes('this dashboard') || q.includes('what is this page') || q.includes('what should i do next')) {
+    if (
+      q.includes('where am i') ||
+      q.includes('what can i do') ||
+      q.includes('this dashboard') ||
+      q.includes('this screen') ||
+      q.includes('this tab') ||
+      q.includes('what is this page') ||
+      q.includes('what should i do next')
+    ) {
       return {
         answer: `### Current Context: ${currentMod.name}\n\n` +
           `${currentMod.description}\n\n` +

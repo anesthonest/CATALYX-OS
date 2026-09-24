@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Task } from '../types';
 import { 
   Plus, Check, Trash2, Calendar, ClipboardList, 
-  Sparkles, CheckCircle2, ChevronRight, Zap
+  Sparkles, CheckCircle2, ChevronRight, Zap, Search, X
 } from 'lucide-react';
 
 interface TasksTabProps {
@@ -22,6 +22,7 @@ export const TasksTab: React.FC<TasksTabProps> = ({
   username
 }) => {
   const [newText, setNewText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showXPToast, setShowXPToast] = useState<{ show: boolean; msg: string; color: string }>({
     show: false,
     msg: '',
@@ -48,8 +49,13 @@ export const TasksTab: React.FC<TasksTabProps> = ({
     triggerXPToast('+20 XP: Micro Sprints Conquered!', 'text-brand-cyan fill-brand-[#00f5d4]/20');
   };
 
-  const pendingTasks = tasks.filter(t => !t.completed);
-  const completedTasks = tasks.filter(t => t.completed);
+  const normalizedQuery = searchQuery.toLowerCase().trim();
+  const filteredTasks = normalizedQuery
+    ? tasks.filter(t => t.text.toLowerCase().includes(normalizedQuery))
+    : tasks;
+
+  const pendingTasks = filteredTasks.filter(t => !t.completed);
+  const completedTasks = filteredTasks.filter(t => t.completed);
 
   return (
     <div className="space-y-6" id="tasks-tab">
@@ -118,6 +124,40 @@ export const TasksTab: React.FC<TasksTabProps> = ({
         {/* Right Side: Task Active and Completed lists */}
         <div className="lg:col-span-2 space-y-6">
           
+          {/* Real-time Task Search Bar */}
+          <div className="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                id="tasks-search-bar"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Filter active and completed tasks by keyword..."
+                className="w-full bg-slate-950/60 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all font-sans"
+              />
+              {searchQuery && (
+                <button
+                  id="tasks-search-clear-btn"
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 rounded transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <div className="flex items-center gap-2 text-[11px] font-mono text-gray-400 whitespace-nowrap px-1">
+                <span>Matching:</span>
+                <span className="text-brand-pink font-semibold">{pendingTasks.length} active</span>
+                <span>•</span>
+                <span className="text-brand-cyan font-semibold">{completedTasks.length} done</span>
+              </div>
+            )}
+          </div>
+
           {/* Pending Objectives List */}
           <div className="glass-panel p-6 rounded-2xl">
             <div className="flex justify-between items-center mb-4">
@@ -131,9 +171,13 @@ export const TasksTab: React.FC<TasksTabProps> = ({
             {pendingTasks.length === 0 ? (
               <div className="py-12 text-center border border-dashed border-white/5 rounded-xl bg-white/[0.01]">
                 <CheckCircle2 className="w-10 h-10 text-brand-purple mx-auto mb-3 opacity-40" />
-                <h4 className="text-sm font-semibold text-gray-300">No pending objectives found</h4>
+                <h4 className="text-sm font-semibold text-gray-300">
+                  {searchQuery ? 'No active tasks match your search' : 'No pending objectives found'}
+                </h4>
                 <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                  All active parameters are clear. Great job executing! Pin some new goals on the left panel.
+                  {searchQuery 
+                    ? `No active objectives contain "${searchQuery}". Try a different keyword or clear the search.` 
+                    : 'All active parameters are clear. Great job executing! Pin some new goals on the left panel.'}
                 </p>
               </div>
             ) : (
@@ -188,7 +232,9 @@ export const TasksTab: React.FC<TasksTabProps> = ({
 
             {completedTasks.length === 0 ? (
               <p className="text-xs text-gray-500 py-6 text-center italic">
-                Archives empty. Secure your first active objective to stream telemetry logs.
+                {searchQuery 
+                  ? `No completed tasks match "${searchQuery}".` 
+                  : 'Archives empty. Secure your first active objective to stream telemetry logs.'}
               </p>
             ) : (
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
