@@ -3,13 +3,15 @@ import { GovernanceService } from './governanceService';
 
 // Deterministic valid transition graph
 const VALID_TRANSITIONS: Record<SubscriptionStatus, SubscriptionStatus[]> = {
-  trial: ['active', 'expired', 'cancelled'],
-  payment_pending: ['active', 'past_due', 'expired', 'cancelled'],
-  active: ['past_due', 'cancelled', 'payment_pending'],
-  past_due: ['active', 'grace_period', 'expired', 'cancelled'],
-  grace_period: ['active', 'expired', 'cancelled'],
-  expired: ['active', 'payment_pending'],
-  cancelled: ['active', 'payment_pending'],
+  trial: ['active', 'expired', 'cancelled', 'suspended'],
+  pending: ['active', 'payment_pending', 'past_due', 'expired', 'cancelled', 'suspended'],
+  payment_pending: ['active', 'past_due', 'expired', 'cancelled', 'suspended'],
+  active: ['past_due', 'cancelled', 'payment_pending', 'suspended'],
+  past_due: ['active', 'grace_period', 'expired', 'cancelled', 'suspended'],
+  grace_period: ['active', 'expired', 'cancelled', 'suspended'],
+  suspended: ['active', 'payment_pending', 'cancelled', 'expired'],
+  expired: ['active', 'payment_pending', 'pending'],
+  cancelled: ['active', 'payment_pending', 'pending'],
 };
 
 export class SubscriptionStateMachine {

@@ -19,6 +19,7 @@ import { bankAccountManager } from './bankAccountManager';
 import { payoutEligibilityEngine } from './payoutEligibilityEngine';
 import { collectionScheduler } from './collectionScheduler';
 import { revenuePolicyEngine, SellerAccountType } from './revenuePolicyEngine';
+import { assertAuthorizedPaymentProvider, AuthorizedPaymentProvider } from './paymentProviderPolicy';
 
 export interface OrderItem {
   productId: string;
@@ -212,6 +213,7 @@ export class CatalyxEconomicEngine {
 
   public getProvider(id?: string): PaymentProvider {
     const targetId = id || this.primaryProviderId;
+    assertAuthorizedPaymentProvider(targetId);
     const provider = this.providers.get(targetId);
     if (!provider) {
       throw new Error(`Payment provider "${targetId}" is not registered in CATALYX.`);
@@ -220,11 +222,13 @@ export class CatalyxEconomicEngine {
   }
 
   public setProvider(provider: PaymentProvider): void {
+    assertAuthorizedPaymentProvider(provider.getProviderId());
     this.providers.set(provider.getProviderId(), provider);
     this.primaryProviderId = provider.getProviderId();
   }
 
   public registerProvider(provider: PaymentProvider): void {
+    assertAuthorizedPaymentProvider(provider.getProviderId());
     this.providers.set(provider.getProviderId(), provider);
   }
 
@@ -492,7 +496,7 @@ export class CatalyxEconomicEngine {
     callbackUrl?: string;
     idempotencyKey: string;
     ipOrUserId: string;
-    channel?: 'pesapal' | 'bank_transfer';
+    channel?: AuthorizedPaymentProvider | string;
   }): Promise<{
     success: boolean;
     paymentAttempt: PaymentAttempt;
@@ -500,19 +504,22 @@ export class CatalyxEconomicEngine {
     message: string;
     error?: string;
   }> {
-    // 1. Idempotency Check
+    // 1. Authoritative Provider Policy Check
+    const channel = (params.channel || 'pesapal') as string;
+    assertAuthorizedPaymentProvider(channel);
+
+    // 2. Idempotency Check
     const idempCheck = this.checkIdempotency(params.idempotencyKey, JSON.stringify(params));
     if (idempCheck.duplicate) {
       return idempCheck.cachedResult;
     }
 
-    // 2. Fetch Order
+    // 3. Fetch Order
     const order = this.orders.get(params.orderId);
     if (!order) {
       throw new Error(`Order ${params.orderId} not found.`);
     }
 
-    const channel = params.channel || 'pesapal';
     const provider = this.getProvider(channel);
 
     // 3. Risk & Circuit Breaker Check

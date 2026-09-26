@@ -265,7 +265,7 @@ export class AuthService {
     if (credIndex === -1) {
       return {
         success: false,
-        error: 'Invalid credentials. No account found with this email. Please check your credentials or create a new account.'
+        error: 'Invalid credentials. Please verify your email and password or use account recovery.'
       };
     }
 
@@ -277,7 +277,7 @@ export class AuthService {
       const remainingSeconds = Math.ceil((cred.lockedUntil - now) / 1000);
       return {
         success: false,
-        error: `Account temporarily locked due to excessive failed attempts. Please try again in ${remainingSeconds} seconds.`,
+        error: `Account temporarily locked due to excessive failed attempts. Please try again in ${remainingSeconds} seconds or use account recovery.`,
         retryAfterSeconds: remainingSeconds
       };
     }
@@ -292,16 +292,15 @@ export class AuthService {
         this.saveCredentials(credentials);
         return {
           success: false,
-          error: `Too many failed attempts. Security lockout engaged for 60 seconds.`,
+          error: `Account temporarily locked due to excessive failed attempts. Please try again in 60 seconds or use account recovery.`,
           retryAfterSeconds: 60
         };
       }
 
       this.saveCredentials(credentials);
-      const remainingAttempts = MAX_FAILED_ATTEMPTS - cred.failedAttempts;
       return {
         success: false,
-        error: `Invalid password. ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining before security lockout.`
+        error: 'Invalid credentials. Please verify your email and password or use account recovery.'
       };
     }
 
@@ -653,7 +652,7 @@ export class AuthService {
       if (stored.code !== cleanCode) {
         stored.attempts = (stored.attempts || 5) - 1;
         safeStorage.set(`catalyx_pending_otp_${cleanEmail}`, stored);
-        return { success: false, error: `Invalid verification code. ${stored.attempts} attempts remaining.` };
+        return { success: false, error: 'Invalid verification code. Please check your code or request a new one.' };
       }
 
       // Provision account

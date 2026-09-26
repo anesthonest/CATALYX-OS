@@ -70,7 +70,7 @@ export interface CommerceOrder {
   status: OrderLifecycleState;
   paymentMethod?: string;
   paymentTransactionId?: string;
-  paymentProvider?: 'pesapal' | 'stripe' | 'wire' | 'sandbox';
+  paymentProvider?: 'pesapal' | 'bank_transfer';
   assignedWorkerUid?: string;
   assignedWorkerName?: string;
   assignedWorkerRole?: 'fulfillment' | 'support' | 'delivery' | 'account_manager';

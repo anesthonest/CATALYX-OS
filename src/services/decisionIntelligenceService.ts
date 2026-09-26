@@ -40,8 +40,8 @@ export class DecisionIntelligenceService {
             strategicAlignmentScore: 96,
           },
           {
-            optionId: 'opt_intl_stripe_only',
-            optionName: 'Option B: Retain International Card Rail Only (USD Only)',
+            optionId: 'opt_legacy_card_rail_only',
+            optionName: 'Option B: Retain Legacy International Card Rail Only (USD Only)',
             description: 'Force all African enterprise clients to pay in USD via international payment rails.',
             estimatedCostMinorUnits: 0,
             estimatedBenefit: 'Zero engineering effort; uses legacy single-currency billing pipeline.',

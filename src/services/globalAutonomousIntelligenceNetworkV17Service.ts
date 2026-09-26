@@ -50,7 +50,7 @@ class GlobalAutonomousIntelligenceNetworkV17Service {
     { layerId: 'EXECUTION_FABRIC', name: 'Execution Gateway & Sandboxing', category: 'CORE_EXECUTION', status: 'OPTIMAL', uptimePct: 99.99, activeTransactionsPerSec: 2800, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Process virtualization, tool allowlists, memory boundaries, and wall-clock execution limits.' },
     { layerId: 'TRUST_FABRIC', name: 'Dynamic Trust & Attestation', category: 'SECURITY_GOVERNANCE', status: 'OPTIMAL', uptimePct: 99.99, activeTransactionsPerSec: 1560, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Continuous identity attestation, tamper-proof audit trails, and multi-party quorum verifications.' },
     { layerId: 'POLICY_FABRIC', name: 'Declarative Policy Fabric', category: 'SECURITY_GOVERNANCE', status: 'OPTIMAL', uptimePct: 99.99, activeTransactionsPerSec: 4100, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Open Policy Agent / Rego rules engine evaluating every ingress, egress, action, and spend intent.' },
-    { layerId: 'COMMERCE_FABRIC', name: 'Commerce & Reconciliation Fabric', category: 'COMMERCE_ECOSYSTEM', status: 'OPTIMAL', uptimePct: 99.98, activeTransactionsPerSec: 940, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Dual-ledger immutable accounting, multi-gateway support (Pesapal/Stripe), and autonomous reconciliation.' },
+    { layerId: 'COMMERCE_FABRIC', name: 'Commerce & Reconciliation Fabric', category: 'COMMERCE_ECOSYSTEM', status: 'OPTIMAL', uptimePct: 99.98, activeTransactionsPerSec: 940, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Dual-ledger immutable accounting, approved gateway support (Pesapal v3 & Direct Bank Wire Transfer), and autonomous reconciliation.' },
     { layerId: 'RESOURCE_FABRIC', name: 'Resource & AI Economics Fabric', category: 'COMMERCE_ECOSYSTEM', status: 'OPTIMAL', uptimePct: 99.96, activeTransactionsPerSec: 1720, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Real-time compute, GPU, token, human, and financial resource allocation and metering.' },
     { layerId: 'EVENT_FABRIC', name: 'Global Event Fabric 3.0', category: 'CORE_EXECUTION', status: 'OPTIMAL', uptimePct: 99.99, activeTransactionsPerSec: 6800, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Exactly-once delivery semantics, immutable event streaming, and replay idempotency guards.' },
     { layerId: 'OBSERVABILITY_FABRIC', name: 'Telemetry & Anomaly Fabric', category: 'INTELLIGENCE_DATA', status: 'OPTIMAL', uptimePct: 99.99, activeTransactionsPerSec: 8400, securityPolicyEnforced: true, auditProvenanceVerified: true, description: 'Sub-millisecond tracing, predictive degradation warnings, and automated root-cause isolation.' },
@@ -686,12 +686,12 @@ class GlobalAutonomousIntelligenceNetworkV17Service {
       reconciliationAuditMatched: true
     },
     {
-      adapterId: 'gw_stripe_prod_global',
-      providerName: 'STRIPE',
+      adapterId: 'gw_bank_transfer_prod_global',
+      providerName: 'BANK_TRANSFER',
       status: 'OPERATIONAL',
       serverSideVerificationMandatory: true,
       idempotencyVerified: true,
-      supportedCurrencies: ['USD', 'EUR', 'GBP', 'CAD', 'JPY'],
+      supportedCurrencies: ['USD', 'EUR', 'GBP', 'KES'],
       reconciliationAuditMatched: true
     }
   ];
@@ -1084,7 +1084,7 @@ class GlobalAutonomousIntelligenceNetworkV17Service {
         { checkId: 'GATE-09', section: 'Supply Network & Problem Solving', requirement: 'Autonomous decomposition of complex challenges and disruption simulation', status: 'VERIFIED_PASS', evidence: 'Monte Carlo scenario competition verified across multiple strategic plans.' },
         { checkId: 'GATE-10', section: 'Solution Marketplace 3.0 Security', requirement: 'Automated package scanning, dependency auditing, and malware detection', status: 'VERIFIED_PASS', evidence: 'Zero malicious packages permitted; sandboxed execution pre-certification active.' },
         { checkId: 'GATE-11', section: 'Zero-Trust Identity & Security 5.0', requirement: 'Continuous 7-vector authorization check (Who, What, Why, Where, Authority, Resource, Policy)', status: 'VERIFIED_PASS', evidence: 'Zero-Trust Assessment active across all ingress/egress boundaries.' },
-        { checkId: 'GATE-12', section: 'Commerce & Financial Integrity', requirement: 'Provider-agnostic payment gateway adapters with server-side validation and automated reconciliation', status: 'VERIFIED_PASS', evidence: 'Pesapal and Stripe adapters verified; ledger discrepancy detection active.' }
+        { checkId: 'GATE-12', section: 'Commerce & Financial Integrity', requirement: 'Provider-agnostic payment gateway adapters with server-side validation and automated reconciliation', status: 'VERIFIED_PASS', evidence: 'Pesapal and Bank Transfer adapters verified; ledger discrepancy detection active.' }
       ]
     };
   }

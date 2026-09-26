@@ -58,19 +58,135 @@ export class UniversalPricingEngine {
     const now = '2026-01-01T00:00:00.000Z';
 
     const canonical: PriceConfiguration[] = [
-      // 1. Subscriptions
+      // 1. Authoritative Mandatory Subscriptions
       {
-        priceId: 'pr_sub_starter_usd',
-        productId: 'plan_starter',
-        productTitle: 'CATALYX Starter Operating System',
+        priceId: 'pr_sub_individual_usd',
+        productId: 'plan_individual',
+        productTitle: 'CATALYX Individual Monthly Subscription',
         pricingModel: 'SUBSCRIPTION',
-        amountMinorUnits: 2900, // $29.00
+        amountMinorUnits: 1000, // $10.00 / month
         currency: 'USD',
         billingInterval: 'monthly',
         trialPeriodDays: 14,
         taxRatePercent: 0,
         discountPercent: 0,
-        commissionPercent: 100, // 100% platform revenue
+        commissionPercent: 100, // 100% platform subscription revenue
+        effectiveFrom: now,
+        status: 'ACTIVE',
+        version: 1,
+        createdBy: 'CATALYX Governance',
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        priceId: 'pr_sub_group_usd',
+        productId: 'plan_group',
+        productTitle: 'CATALYX Group / Team Monthly Subscription',
+        pricingModel: 'SUBSCRIPTION',
+        amountMinorUnits: 1300, // $13.00 / month
+        currency: 'USD',
+        billingInterval: 'monthly',
+        trialPeriodDays: 14,
+        taxRatePercent: 0,
+        discountPercent: 0,
+        commissionPercent: 100,
+        effectiveFrom: now,
+        status: 'ACTIVE',
+        version: 1,
+        createdBy: 'CATALYX Governance',
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        priceId: 'pr_sub_organization_usd',
+        productId: 'plan_organization',
+        productTitle: 'CATALYX Organization Monthly Subscription',
+        pricingModel: 'SUBSCRIPTION',
+        amountMinorUnits: 2500, // $25.00 / month
+        currency: 'USD',
+        billingInterval: 'monthly',
+        trialPeriodDays: 30,
+        taxRatePercent: 0,
+        discountPercent: 0,
+        commissionPercent: 100,
+        effectiveFrom: now,
+        status: 'ACTIVE',
+        version: 1,
+        createdBy: 'CATALYX Governance',
+        createdAt: now,
+        updatedAt: now
+      },
+      // Regional Currency Entries
+      {
+        priceId: 'pr_sub_individual_kes',
+        productId: 'plan_individual',
+        productTitle: 'CATALYX Individual Monthly Subscription (KES)',
+        pricingModel: 'SUBSCRIPTION',
+        amountMinorUnits: 130000, // 1,300 KES
+        currency: 'KES',
+        billingInterval: 'monthly',
+        trialPeriodDays: 14,
+        taxRatePercent: 16,
+        discountPercent: 0,
+        commissionPercent: 100,
+        effectiveFrom: now,
+        status: 'ACTIVE',
+        version: 1,
+        createdBy: 'CATALYX Governance',
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        priceId: 'pr_sub_group_kes',
+        productId: 'plan_group',
+        productTitle: 'CATALYX Group Monthly Subscription (KES)',
+        pricingModel: 'SUBSCRIPTION',
+        amountMinorUnits: 170000, // 1,700 KES
+        currency: 'KES',
+        billingInterval: 'monthly',
+        trialPeriodDays: 14,
+        taxRatePercent: 16,
+        discountPercent: 0,
+        commissionPercent: 100,
+        effectiveFrom: now,
+        status: 'ACTIVE',
+        version: 1,
+        createdBy: 'CATALYX Governance',
+        createdAt: now,
+        updatedAt: now
+      },
+      {
+        priceId: 'pr_sub_organization_kes',
+        productId: 'plan_organization',
+        productTitle: 'CATALYX Organization Monthly Subscription (KES)',
+        pricingModel: 'SUBSCRIPTION',
+        amountMinorUnits: 325000, // 3,250 KES
+        currency: 'KES',
+        billingInterval: 'monthly',
+        trialPeriodDays: 30,
+        taxRatePercent: 16,
+        discountPercent: 0,
+        commissionPercent: 100,
+        effectiveFrom: now,
+        status: 'ACTIVE',
+        version: 1,
+        createdBy: 'CATALYX Governance',
+        createdAt: now,
+        updatedAt: now
+      },
+      // Legacy Aliases
+      {
+        priceId: 'pr_sub_starter_usd',
+        productId: 'plan_starter',
+        productTitle: 'CATALYX Starter Operating System',
+        pricingModel: 'SUBSCRIPTION',
+        amountMinorUnits: 1000, // $10.00
+        currency: 'USD',
+        billingInterval: 'monthly',
+        trialPeriodDays: 14,
+        taxRatePercent: 0,
+        discountPercent: 0,
+        commissionPercent: 100,
         effectiveFrom: now,
         status: 'ACTIVE',
         version: 1,
@@ -83,7 +199,7 @@ export class UniversalPricingEngine {
         productId: 'plan_professional',
         productTitle: 'CATALYX Professional Multi-Agent Suite',
         pricingModel: 'SUBSCRIPTION',
-        amountMinorUnits: 7900, // $79.00
+        amountMinorUnits: 1300, // $13.00
         currency: 'USD',
         billingInterval: 'monthly',
         trialPeriodDays: 14,
@@ -102,7 +218,7 @@ export class UniversalPricingEngine {
         productId: 'plan_enterprise',
         productTitle: 'CATALYX Enterprise Intelligence Operating System',
         pricingModel: 'SUBSCRIPTION',
-        amountMinorUnits: 29900, // $299.00
+        amountMinorUnits: 2500, // $25.00
         currency: 'USD',
         billingInterval: 'monthly',
         trialPeriodDays: 30,

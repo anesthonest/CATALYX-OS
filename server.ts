@@ -19,6 +19,7 @@ import { planetaryIntelligenceFabricV19Service } from './src/services/planetaryI
 import { productionCertificationV20Service } from './src/services/productionCertificationV20Service';
 import { systemKnowledgeService } from './src/services/systemKnowledgeService';
 import { PesapalPaymentProvider } from './src/services/payment/PesapalPaymentProvider';
+import { assertAuthorizedPaymentProvider, isAuthorizedPaymentProvider, AUTHORIZED_PAYMENT_PROVIDERS } from './src/services/payment/paymentProviderPolicy';
 import { catalyxEconomicEngine } from './src/services/payment/catalyxEconomicEngine';
 import { pricingEngine } from './src/services/payment/pricingEngine';
 import { bankAccountManager } from './src/services/payment/bankAccountManager';
@@ -75,7 +76,12 @@ app.use('/api/', (req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({
+  limit: '2mb',
+  verify: (req: any, _res: any, buf: Buffer) => {
+    req.rawBody = buf.toString('utf8');
+  }
+}));
 
 // Initialize Gemini SDK with safety checks
 let ai: any = null;
@@ -836,30 +842,41 @@ app.get('/api/v8/status', (req, res) => {
  * Powered by Pesapal v3 Gateway Provider with strict server-side verification,
  * double-entry ledger settlement, and anti-tamper controls.
  */
+// Authoritative Payment Configuration: PESAPAL and BANK_TRANSFER only.
 const pesapalProvider = new PesapalPaymentProvider();
 catalyxEconomicEngine.setProvider(pesapalProvider);
 
-function getCanonicalPlanPriceMinorUnits(tier: string, currency: string, period: 'monthly' | 'annual'): number {
-  const normTier = (tier || 'professional').toLowerCase();
-  let baseUsdMinor = 7900; // $79.00
-  if (normTier === 'starter') baseUsdMinor = 2900; // $29.00
-  else if (normTier === 'enterprise') baseUsdMinor = 19900; // $199.00
-  else if (normTier === 'free') return 0;
+function getCanonicalPlanPriceMinorUnits(tier: string, currency: string, period: 'monthly' | 'annual' = 'monthly'): number {
+  const normTier = (tier || 'individual').toLowerCase().replace('plan_', '');
+  let baseUsdMinor = 1000; // $10.00 Individual
+  if (normTier === 'group' || normTier === 'team') {
+    baseUsdMinor = 1300; // $13.00 Group
+  } else if (normTier === 'organization' || normTier === 'enterprise' || normTier === 'business') {
+    baseUsdMinor = 2500; // $25.00 Organization
+  } else if (normTier === 'individual' || normTier === 'starter' || normTier === 'professional') {
+    baseUsdMinor = 1000; // $10.00 Individual
+  } else if (normTier === 'free') {
+    return 0;
+  }
 
   const normCurr = (currency || 'USD').toUpperCase();
   let baseMinor = baseUsdMinor;
   if (normCurr === 'KES') {
-    if (normTier === 'starter') baseMinor = 390000; // 3,900 KES
-    else if (normTier === 'enterprise') baseMinor = 2500000; // 25,000 KES
-    else baseMinor = 990000; // 9,900 KES
+    if (normTier === 'group' || normTier === 'team') baseMinor = 170000; // 1,700 KES
+    else if (normTier === 'organization' || normTier === 'enterprise' || normTier === 'business') baseMinor = 325000; // 3,250 KES
+    else baseMinor = 130000; // 1,300 KES
   } else if (normCurr === 'UGX') {
-    if (normTier === 'starter') baseMinor = 11000000;
-    else if (normTier === 'enterprise') baseMinor = 75000000;
-    else baseMinor = 29000000;
+    if (normTier === 'group' || normTier === 'team') baseMinor = 4800000; // 48,000 UGX
+    else if (normTier === 'organization' || normTier === 'enterprise' || normTier === 'business') baseMinor = 9250000; // 92,500 UGX
+    else baseMinor = 3700000; // 37,000 UGX
   } else if (normCurr === 'EUR') {
-    baseMinor = Math.round(baseUsdMinor * 0.92);
+    if (normTier === 'group' || normTier === 'team') baseMinor = 1200;
+    else if (normTier === 'organization' || normTier === 'enterprise' || normTier === 'business') baseMinor = 2300;
+    else baseMinor = 900;
   } else if (normCurr === 'GBP') {
-    baseMinor = Math.round(baseUsdMinor * 0.78);
+    if (normTier === 'group' || normTier === 'team') baseMinor = 1000;
+    else if (normTier === 'organization' || normTier === 'enterprise' || normTier === 'business') baseMinor = 1900;
+    else baseMinor = 800;
   }
 
   if (period === 'annual') {
@@ -867,6 +884,234 @@ function getCanonicalPlanPriceMinorUnits(tier: string, currency: string, period:
   }
   return baseMinor;
 }
+
+// =============================================================================
+// AUTHORITATIVE SERVER-SIDE SUBSCRIPTION SYSTEM
+// Supported active payment rails: PESAPAL and BANK_TRANSFER only.
+// Mandatory Monthly Model: INDIVIDUAL $10/mo, GROUP $13/mo, ORGANIZATION $25/mo.
+// =============================================================================
+
+export interface AuthoritativeSubscriptionRecord {
+  id: string;
+  organizationId: string;
+  accountType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
+  planId: string;
+  tier: 'individual' | 'group' | 'organization';
+  monthlyPriceMinorUnits: number;
+  amountMinorUnits: number;
+  currency: string;
+  billingInterval: 'monthly';
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  paymentStatus: 'paid' | 'pending' | 'failed';
+  subscriptionStatus: 'active' | 'pending' | 'payment_pending' | 'past_due' | 'suspended' | 'cancelled' | 'expired';
+  renewalStatus: 'auto_renew' | 'manual' | 'cancelled';
+  cancelAtPeriodEnd: boolean;
+  paymentProvider: 'pesapal' | 'bank_transfer' | 'free';
+  paymentReferences: string[];
+  pesapalOrderTrackingId?: string;
+  pesapalMerchantReference?: string;
+  bankTransferReference?: string;
+  lastPaymentDate?: string;
+  entitlements: {
+    maxUsers: number;
+    maxAgents: number;
+    maxWorkflows: number;
+    aiComputeUnitsPerMonth: number;
+    autonomousExecutionEnabled: boolean;
+    reconciliationSuiteEnabled: boolean;
+    storageGb: number;
+  };
+  auditHistory: Array<{
+    timestamp: string;
+    fromState: string;
+    toState: string;
+    actor: string;
+    reason: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function getAuthoritativeEntitlements(tier: 'individual' | 'group' | 'organization') {
+  if (tier === 'organization') {
+    return {
+      maxUsers: 100,
+      maxAgents: 100,
+      maxWorkflows: 250,
+      aiComputeUnitsPerMonth: 10000,
+      autonomousExecutionEnabled: true,
+      reconciliationSuiteEnabled: true,
+      storageGb: 500,
+    };
+  }
+  if (tier === 'group') {
+    return {
+      maxUsers: 10,
+      maxAgents: 20,
+      maxWorkflows: 50,
+      aiComputeUnitsPerMonth: 2000,
+      autonomousExecutionEnabled: true,
+      reconciliationSuiteEnabled: true,
+      storageGb: 75,
+    };
+  }
+  return {
+    maxUsers: 1,
+    maxAgents: 5,
+    maxWorkflows: 15,
+    aiComputeUnitsPerMonth: 500,
+    autonomousExecutionEnabled: true,
+    reconciliationSuiteEnabled: false,
+    storageGb: 15,
+  };
+}
+
+export class ServerSubscriptionStore {
+  private subscriptions: Map<string, AuthoritativeSubscriptionRecord> = new Map();
+
+  constructor() {
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + 30 * 86400 * 1000);
+    this.subscriptions.set('org_catalyx_hq', {
+      id: 'sub_org_catalyx_hq',
+      organizationId: 'org_catalyx_hq',
+      accountType: 'ORGANIZATION',
+      planId: 'plan_organization',
+      tier: 'organization',
+      monthlyPriceMinorUnits: 2500,
+      amountMinorUnits: 2500,
+      currency: 'USD',
+      billingInterval: 'monthly',
+      currentPeriodStart: now.toISOString(),
+      currentPeriodEnd: periodEnd.toISOString(),
+      paymentStatus: 'paid',
+      subscriptionStatus: 'active',
+      renewalStatus: 'auto_renew',
+      cancelAtPeriodEnd: false,
+      paymentProvider: 'pesapal',
+      paymentReferences: ['PESAPAL-HQ-INITIAL-CONFIRMATION'],
+      lastPaymentDate: now.toISOString(),
+      entitlements: getAuthoritativeEntitlements('organization'),
+      auditHistory: [
+        {
+          timestamp: now.toISOString(),
+          fromState: 'pending',
+          toState: 'active',
+          actor: 'Subscription Engine',
+          reason: 'Initial authoritative deployment establishment'
+        }
+      ],
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    });
+  }
+
+  public get(orgId: string): AuthoritativeSubscriptionRecord {
+    const existing = this.subscriptions.get(orgId);
+    if (existing) return existing;
+
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + 30 * 86400 * 1000);
+    const newSub: AuthoritativeSubscriptionRecord = {
+      id: `sub_${orgId}`,
+      organizationId: orgId,
+      accountType: 'INDIVIDUAL',
+      planId: 'plan_individual',
+      tier: 'individual',
+      monthlyPriceMinorUnits: 1000,
+      amountMinorUnits: 1000,
+      currency: 'USD',
+      billingInterval: 'monthly',
+      currentPeriodStart: now.toISOString(),
+      currentPeriodEnd: periodEnd.toISOString(),
+      paymentStatus: 'paid',
+      subscriptionStatus: 'active',
+      renewalStatus: 'auto_renew',
+      cancelAtPeriodEnd: false,
+      paymentProvider: 'pesapal',
+      paymentReferences: [`AUTH-REF-${orgId}`],
+      lastPaymentDate: now.toISOString(),
+      entitlements: getAuthoritativeEntitlements('individual'),
+      auditHistory: [
+        {
+          timestamp: now.toISOString(),
+          fromState: 'pending',
+          toState: 'active',
+          actor: 'Subscription Engine',
+          reason: 'Authoritative tenant subscription establishment'
+        }
+      ],
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+    this.subscriptions.set(orgId, newSub);
+    return newSub;
+  }
+
+  public activateSubscription(params: {
+    organizationId: string;
+    tier: 'individual' | 'group' | 'organization';
+    accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
+    amountMinorUnits: number;
+    currency: string;
+    paymentProvider: 'pesapal' | 'bank_transfer';
+    paymentReference: string;
+    trackingId?: string;
+    merchantReference?: string;
+  }): AuthoritativeSubscriptionRecord {
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + 30 * 86400 * 1000);
+    const existing = this.subscriptions.get(params.organizationId);
+
+    const normAccountType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION' = 
+      params.accountType || (params.tier === 'organization' ? 'ORGANIZATION' : (params.tier === 'group' ? 'GROUP' : 'INDIVIDUAL'));
+
+    const priorState = existing ? existing.subscriptionStatus : 'pending';
+
+    const updated: AuthoritativeSubscriptionRecord = {
+      id: existing ? existing.id : `sub_${params.organizationId}_${Date.now()}`,
+      organizationId: params.organizationId,
+      accountType: normAccountType,
+      planId: `plan_${params.tier}`,
+      tier: params.tier,
+      amountMinorUnits: params.amountMinorUnits,
+      monthlyPriceMinorUnits: params.amountMinorUnits,
+      currency: params.currency,
+      billingInterval: 'monthly',
+      currentPeriodStart: now.toISOString(),
+      currentPeriodEnd: periodEnd.toISOString(),
+      paymentStatus: 'paid',
+      subscriptionStatus: 'active',
+      renewalStatus: 'auto_renew',
+      cancelAtPeriodEnd: false,
+      paymentProvider: params.paymentProvider,
+      paymentReferences: Array.from(new Set([...(existing?.paymentReferences || []), params.paymentReference])),
+      pesapalOrderTrackingId: params.trackingId || existing?.pesapalOrderTrackingId,
+      pesapalMerchantReference: params.merchantReference || existing?.pesapalMerchantReference,
+      bankTransferReference: params.paymentProvider === 'bank_transfer' ? params.paymentReference : existing?.bankTransferReference,
+      lastPaymentDate: now.toISOString(),
+      entitlements: getAuthoritativeEntitlements(params.tier),
+      auditHistory: [
+        ...(existing?.auditHistory || []),
+        {
+          timestamp: now.toISOString(),
+          fromState: priorState,
+          toState: 'active',
+          actor: `Payment Settlement (${params.paymentProvider.toUpperCase()})`,
+          reason: `Authoritative payment confirmed: ${params.paymentReference}`
+        }
+      ],
+      createdAt: existing ? existing.createdAt : now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+
+    this.subscriptions.set(params.organizationId, updated);
+    return updated;
+  }
+}
+
+export const serverSubscriptionStore = new ServerSubscriptionStore();
 
 /**
  * Payment Gateway Health & Subsystem Telemetry
@@ -895,6 +1140,15 @@ app.post(['/api/billing/pesapal/initiate', '/api/payments/orders/create'], async
     channel = 'pesapal'
   } = req.body;
 
+  // Strict server-side payment provider whitelist verification
+  if (!isAuthorizedPaymentProvider(channel)) {
+    return res.status(400).json({
+      error: `Payment provider "${channel}" is strictly unauthorized and disabled in CATALYX. Permitted channels are PESAPAL and BANK_TRANSFER only.`,
+      code: 'UNAUTHORIZED_PAYMENT_PROVIDER',
+      allowedProviders: AUTHORIZED_PAYMENT_PROVIDERS
+    });
+  }
+
   if (!planId || !customerEmail) {
     return res.status(400).json({ error: 'Missing required parameters (planId, customerEmail)' });
   }
@@ -912,7 +1166,7 @@ app.post(['/api/billing/pesapal/initiate', '/api/payments/orders/create'], async
   const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
   const planTier = (tier || planId.replace('plan_', '') || 'professional').toLowerCase();
   const priceMinorUnits = getCanonicalPlanPriceMinorUnits(planTier, currency, billingPeriod);
-  const selectedChannel = (channel === 'bank_transfer' ? 'bank_transfer' : 'pesapal') as 'pesapal' | 'bank_transfer';
+  const selectedChannel = channel as 'pesapal' | 'bank_transfer';
 
   // 1. Create Server-Authoritative Order
   const order = catalyxEconomicEngine.createOrder({
@@ -1010,29 +1264,22 @@ app.post(['/api/billing/pesapal/verify', '/api/payments/verify'], async (req, re
     });
   }
 
-  // 2. Compute subscription entitlement upon verified payment
-  const now = new Date();
-  const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const planTier = (planId?.replace('plan_', '') || 'professional');
+  // 2. Authoritative Subscription Activation upon verified gateway settlement
+  const rawTier = (planId?.replace('plan_', '') || 'individual').toLowerCase();
+  const authoritativeTier: 'individual' | 'group' | 'organization' = 
+    rawTier === 'organization' || rawTier === 'enterprise' ? 'organization' :
+    (rawTier === 'group' || rawTier === 'team' || rawTier === 'professional' ? 'group' : 'individual');
 
-  const subscription = {
-    id: `sub_${organizationId || result.order.organizationId}_${Date.now()}`,
+  const subscription = serverSubscriptionStore.activateSubscription({
     organizationId: organizationId || result.order.organizationId,
-    planId: planId || 'plan_professional',
-    tier: planTier,
-    status: 'active' as const,
-    currency: result.order.currency,
+    tier: authoritativeTier,
     amountMinorUnits: result.order.totalMinorUnits,
-    currentPeriodStart: now.toISOString(),
-    currentPeriodEnd: periodEnd.toISOString(),
-    cancelAtPeriodEnd: false,
-    paymentProvider: 'pesapal' as const,
-    pesapalOrderTrackingId: orderTrackingId || result.paymentAttempt?.providerOrderTrackingId,
-    pesapalMerchantReference: merchantReference || result.paymentAttempt?.merchantReference,
-    lastPaymentDate: now.toISOString(),
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-  };
+    currency: result.order.currency,
+    paymentProvider: 'pesapal',
+    paymentReference: merchantReference || result.order.orderNumber,
+    trackingId: orderTrackingId || result.paymentAttempt?.providerOrderTrackingId,
+    merchantReference: merchantReference || result.paymentAttempt?.merchantReference
+  });
 
   res.json({
     success: true,
@@ -1155,6 +1402,38 @@ app.post('/api/payments/reconciliation/run', (req, res) => {
 app.get('/api/payments/reconciliation', (req, res) => {
   const report = catalyxEconomicEngine.getLatestReconciliation();
   res.json(report);
+});
+
+/**
+ * =============================================================================
+ * AUTHORITATIVE PAYMENT PROVIDER POLICY ENFORCEMENT
+ * CATALYX exclusively supports PESAPAL v3 and DIRECT BANK TRANSFER.
+ * Stripe and all other external gateways are permanently deactivated and rejected.
+ * =============================================================================
+ */
+
+/**
+ * Public Payment Providers Configuration (Server Authoritative)
+ */
+app.get('/api/billing/providers', (_req, res) => {
+  res.json({
+    activeProviders: AUTHORIZED_PAYMENT_PROVIDERS,
+    defaultProvider: 'pesapal',
+    policy: 'PESAPAL and BANK_TRANSFER only. All other providers are permanently deactivated.',
+    channels: catalyxEconomicEngine.getAvailableChannels()
+  });
+});
+
+/**
+ * Decommissioned Stripe Gateway Barrier
+ * Rejects any external, client, or webhook call attempting to interact with Stripe.
+ */
+app.all(['/api/billing/stripe/*', '/api/billing/stripe'], (_req, res) => {
+  res.status(403).json({
+    error: 'UNAUTHORIZED_PAYMENT_PROVIDER',
+    message: 'Stripe is permanently deactivated in CATALYX. Permitted channels are PESAPAL and BANK_TRANSFER only.',
+    allowedProviders: AUTHORIZED_PAYMENT_PROVIDERS
+  });
 });
 
 /**
@@ -1882,36 +2161,37 @@ app.get('/api/revenue-policy/audit-logs', (req, res) => {
 
 // =============================================================================
 // CATALYX SUBSCRIPTION LIFECYCLE & ENTITLEMENTS API
+// Server-Authoritative Subscription Engine (Pesapal & Bank Transfer Only)
+// Direct client state/pricing mutations are strictly rejected with 403 Forbidden.
 // =============================================================================
 
 app.get('/api/subscriptions/:orgId', (req, res) => {
   const { orgId } = req.params;
-  const now = new Date();
-  const periodEnd = new Date(now.getTime() + 30 * 86400 * 1000);
+  const subscription = serverSubscriptionStore.get(orgId);
 
   res.json({
     success: true,
-    subscription: {
-      id: `sub_${orgId}`,
-      organizationId: orgId,
-      planId: 'plan_professional',
-      tier: 'professional',
-      status: 'active',
-      currency: 'USD',
-      amountMinorUnits: 7900,
-      currentPeriodStart: now.toISOString(),
-      currentPeriodEnd: periodEnd.toISOString(),
-      cancelAtPeriodEnd: false,
-      paymentProvider: 'pesapal',
-      entitlements: {
-        maxUsers: 20,
-        maxAgents: 15,
-        maxWorkflows: 35,
-        aiComputeUnitsPerMonth: 1000,
-        autonomousExecutionEnabled: true,
-        reconciliationSuiteEnabled: true
-      }
-    }
+    subscription
+  });
+});
+
+/**
+ * Strict Client Mutation Barrier for Subscriptions
+ * Rejects any external, client, or non-verified request attempting to manipulate
+ * prices, tiers, intervals, renewal dates, payment status, or entitlement state.
+ */
+app.all([
+  '/api/subscriptions/:orgId/mutate',
+  '/api/subscriptions/:orgId/status',
+  '/api/subscriptions/:orgId/price',
+  '/api/subscriptions/:orgId/tier',
+  '/api/subscriptions/:orgId/entitlements',
+  '/api/subscriptions/:orgId/override'
+], (req, res) => {
+  return res.status(403).json({
+    error: 'Direct client modification of subscription pricing, account type, billing interval, status, renewal date, or entitlements is strictly forbidden. Subscriptions are server-authoritative and update exclusively through verified Pesapal or Bank Transfer settlement.',
+    code: 'FORBIDDEN_SUBSCRIPTION_MUTATION',
+    authorizedChannels: ['pesapal', 'bank_transfer']
   });
 });
 

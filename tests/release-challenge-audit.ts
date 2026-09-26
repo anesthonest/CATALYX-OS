@@ -36,6 +36,14 @@ import { deepResearchService } from '../src/services/research/deepResearchServic
 import { universalWorkService } from '../src/services/universalWorkService';
 import { MarketplaceService } from '../src/services/marketplaceService';
 import { serverAuthStore } from '../src/services/serverAuthStore';
+import {
+  assertAuthorizedPaymentProvider,
+  isAuthorizedPaymentProvider,
+  AUTHORIZED_PAYMENT_PROVIDERS,
+  PaymentProviderPolicyViolationError
+} from '../src/services/payment/paymentProviderPolicy';
+import crypto from 'crypto';
+import fs from 'fs';
 
 interface TestResult {
   suite: string;
@@ -1365,6 +1373,126 @@ async function runApplicationPerformanceMeasurements() {
   assert(resDuration < 200, suite, `Deep Research query execution completed within sub-200ms (measured: ${resDuration.toFixed(2)}ms)`);
 }
 
+async function runAuthoritativePaymentProviderPolicyTests() {
+  const suite = 'Authoritative Payment Provider Policy & Decommission Verification';
+
+  // 1. Policy Whitelist Verification: PESAPAL and BANK_TRANSFER only
+  assert(AUTHORIZED_PAYMENT_PROVIDERS.length === 2, suite, 'Authorized payment providers list contains exactly 2 channels');
+  assert(AUTHORIZED_PAYMENT_PROVIDERS.includes('pesapal'), suite, 'Pesapal is in authorized providers');
+  assert(AUTHORIZED_PAYMENT_PROVIDERS.includes('bank_transfer'), suite, 'Bank Transfer is in authorized providers');
+
+  // 2. Provider validation functions
+  assert(isAuthorizedPaymentProvider('pesapal') === true, suite, 'pesapal is identified as authorized');
+  assert(isAuthorizedPaymentProvider('bank_transfer') === true, suite, 'bank_transfer is identified as authorized');
+  assert(isAuthorizedPaymentProvider('stripe') === false, suite, 'stripe is rejected as unauthorized');
+  assert(isAuthorizedPaymentProvider('paypal') === false, suite, 'paypal is rejected as unauthorized');
+  assert(isAuthorizedPaymentProvider('crypto') === false, suite, 'crypto is rejected as unauthorized');
+  assert(isAuthorizedPaymentProvider('mock') === false, suite, 'mock is rejected as unauthorized');
+  assert(isAuthorizedPaymentProvider('flutterwave') === false, suite, 'flutterwave is rejected as unauthorized');
+
+  // 3. Exception throwing on unauthorized providers
+  let stripeBlocked = false;
+  try {
+    assertAuthorizedPaymentProvider('stripe');
+  } catch (err: any) {
+    if (err instanceof PaymentProviderPolicyViolationError || err?.code === 'UNAUTHORIZED_PAYMENT_PROVIDER') {
+      stripeBlocked = true;
+    }
+  }
+  assert(stripeBlocked === true, suite, 'assertAuthorizedPaymentProvider strictly throws on stripe');
+
+  // 4. Economic Engine channels inspection
+  const availableChannels = catalyxEconomicEngine.getAvailableChannels();
+  const channelIds = availableChannels.map(c => c.id);
+  assert(channelIds.includes('pesapal'), suite, 'Economic engine registers pesapal channel');
+  assert(channelIds.includes('bank_transfer'), suite, 'Economic engine registers bank_transfer channel');
+  assert(!channelIds.includes('stripe'), suite, 'Economic engine contains zero active stripe channels');
+
+  // 5. Server-side payment attempt rejection on unauthorized provider
+  const testOrder = catalyxEconomicEngine.createOrder({
+    organizationId: 'org_test_policy',
+    customerId: 'cust_policy_test',
+    customerName: 'Security Tester',
+    customerEmail: 'security@catalyx.io',
+    billingAddress: { emailAddress: 'security@catalyx.io' },
+    items: [{
+      productId: 'item_test',
+      productTitle: 'Test Service',
+      sku: 'TEST-SKU',
+      quantity: 1,
+      unitPriceMinorUnits: 1000,
+      totalPriceMinorUnits: 1000
+    }],
+    currency: 'USD',
+    idempotencyKey: `idemp_policy_ord_${Date.now()}`
+  });
+
+  let engineBlockedStripe = false;
+  try {
+    await catalyxEconomicEngine.initiatePaymentAttempt({
+      orderId: testOrder.id,
+      idempotencyKey: `idemp_policy_att_${Date.now()}`,
+      ipOrUserId: '127.0.0.1',
+      channel: 'stripe' as any
+    });
+  } catch (err: any) {
+    if (err instanceof PaymentProviderPolicyViolationError || err?.message?.includes('unauthorized and disabled')) {
+      engineBlockedStripe = true;
+    }
+  }
+  assert(engineBlockedStripe === true, suite, 'initiatePaymentAttempt strictly blocks unauthorized provider channel=stripe');
+
+  // 6. Codebase static scan: zero active stripe keys or secrets
+  const envExample = fs.readFileSync('.env.example', 'utf-8');
+  assert(!envExample.includes('STRIPE_SECRET_KEY='), suite, '.env.example contains zero STRIPE_SECRET_KEY');
+  assert(!envExample.includes('STRIPE_WEBHOOK_SECRET='), suite, '.env.example contains zero STRIPE_WEBHOOK_SECRET');
+  assert(!envExample.includes('STRIPE_PUBLISHABLE_KEY='), suite, '.env.example contains zero STRIPE_PUBLISHABLE_KEY');
+
+  const devEco = fs.readFileSync('src/services/developerEcosystemService.ts', 'utf-8');
+  assert(!devEco.includes('STRIPE_WEBHOOK_SECRET'), suite, 'developerEcosystemService contains zero STRIPE_WEBHOOK_SECRET');
+
+  const webhookSvc = fs.readFileSync('src/services/webhookService.ts', 'utf-8');
+  assert(!webhookSvc.includes('STRIPE_WEBHOOK_SECRET'), suite, 'webhookService contains zero STRIPE_WEBHOOK_SECRET');
+
+  // 7. Verification of integer minor unit precision across all mandated price points
+  const testAmounts = [1, 10, 100, 999, 9999, 99999, 1000000]; // $0.01, $0.10, $1.00, $9.99, $99.99, $999.99, $10,000.00
+  const tiers: ('INDIVIDUAL' | 'GROUP' | 'ORGANIZATION')[] = ['INDIVIDUAL', 'GROUP', 'ORGANIZATION'];
+
+  for (const amount of testAmounts) {
+    for (const tier of tiers) {
+      const split = revenuePolicyEngine.calculateRevenueSplit({
+        grossAmountMinorUnits: amount,
+        currency: 'USD',
+        sellerAccountType: tier
+      });
+      assert(
+        split.catalyxFeeMinorUnits + split.sellerGrossPlatformEarningsMinorUnits === amount,
+        suite,
+        `Exact mathematical balance preserved for ${tier} at minor units ${amount} (Fee: ${split.catalyxFeeMinorUnits}, Gross Earnings: ${split.sellerGrossPlatformEarningsMinorUnits})`
+      );
+    }
+  }
+
+  // 8. Bank Transfer Provider verification
+  const bankProvider = catalyxEconomicEngine.getBankTransferProvider();
+  assert(bankProvider !== undefined, suite, 'Bank Transfer provider is registered and accessible');
+  const bankAccounts = bankAccountManager.getClientSafeReceivingAccounts();
+  assert(bankAccounts.length > 0, suite, 'Bank Account Manager exposes active receiving bank accounts');
+
+  const bankSubmit = await bankProvider.submitOrder({
+    internalOrderId: testOrder.id,
+    merchantReference: testOrder.orderNumber,
+    amountMinorUnits: testOrder.totalMinorUnits,
+    currency: testOrder.currency,
+    description: 'Bank Wire Payment Test',
+    callbackUrl: 'https://catalyx.io/callback',
+    billingAddress: testOrder.billingAddress,
+    idempotencyKey: `idemp_bank_test_${Date.now()}`
+  });
+  assert(bankSubmit.status === 'SUCCESS', suite, 'Bank transfer submission creates authoritative payment reference successfully');
+  assert(bankSubmit.orderTrackingId !== undefined, suite, 'Bank transfer returns tracking identifier');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -1380,6 +1508,7 @@ async function main() {
     await runAdvertisingEngineRealEventTelemetryTests();
     await runDeepResearchEngineIntegrityTests();
     await runApplicationPerformanceMeasurements();
+    await runAuthoritativePaymentProviderPolicyTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }

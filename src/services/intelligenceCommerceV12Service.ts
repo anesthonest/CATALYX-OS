@@ -15,6 +15,7 @@ import {
   ScaleEconomicModelScenario,
   V12ProductionCertificationReport,
 } from '../types';
+import { RevenuePolicyEngine } from './payment/revenuePolicyEngine';
 
 /**
  * CATALYX V12: GLOBAL INTELLIGENCE COMMERCE & PLATFORM INFRASTRUCTURE SERVICE
@@ -697,9 +698,14 @@ export class IntelligenceCommerceV12Service {
 
     product.activeInstalls += 1;
 
-    // Platform take rate is 20%, creator receives 80%
-    const platformShare = Math.floor(product.priceMinor * 0.20);
-    const creatorShare = product.priceMinor - platformShare;
+    // Server-authoritative platform fee calculation under RevenuePolicyEngine (0.25% Individual rate)
+    const split = RevenuePolicyEngine.calculateRevenueSplit({
+      grossAmountMinorUnits: product.priceMinor,
+      currency: (product.currency || 'USD') as any,
+      sellerAccountType: 'INDIVIDUAL'
+    });
+    const platformShare = split.catalyxFeeMinorUnits;
+    const creatorShare = split.sellerGrossPlatformEarningsMinorUnits;
 
     const event = this.recordFinancialEvent({
       idempotencyKey: `idem_mkt_${productId}_${Date.now()}`,

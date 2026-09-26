@@ -478,14 +478,13 @@ export class ServerAuthStore {
         account.lockedUntil = now + 60 * 1000; // 60s lockout
         return {
           success: false,
-          error: 'Too many failed login attempts. Security lockout engaged for 60 seconds.',
+          error: 'Account temporarily locked due to excessive failed attempts. Please try again in 60 seconds.',
           retryAfterSeconds: 60
         };
       }
-      const attemptsLeft = 5 - account.failedAttempts;
       return {
         success: false,
-        error: `Invalid credentials. ${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} remaining before security lockout.`
+        error: 'Invalid credentials. Please verify your email and password or use account recovery.'
       };
     }
 

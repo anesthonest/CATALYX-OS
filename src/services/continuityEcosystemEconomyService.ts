@@ -47,7 +47,7 @@ class ContinuityEcosystemEconomyService {
       costModel: '$0.05 / 100 reconciliation operations',
       performanceScore: 99.2,
       securityAuditPassed: true,
-      compatibilityTags: ['Pesapal v3', 'Stripe', 'Drizzle SQL', 'GCP Billing'],
+      compatibilityTags: ['Pesapal v3', 'Bank Transfer', 'Drizzle SQL', 'GCP Billing'],
     },
     {
       listingId: 'mkt-res-02',

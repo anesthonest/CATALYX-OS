@@ -12,10 +12,118 @@ import {
 
 export const DEFAULT_BILLING_PLANS: BillingPlan[] = [
   {
+    id: 'plan_individual',
+    tier: 'individual',
+    name: 'Individual',
+    description: 'Autonomous sovereign intelligence workspace for developers, operators, and creators.',
+    pricesMinorUnits: {
+      USD: 1000,     // $10.00 USD
+      KES: 130000,   // 1,300 KES
+      UGX: 3700000,  // 37,000 UGX
+      EUR: 900,      // €9.00 EUR
+      GBP: 800,      // £8.00 GBP
+      TZS: 2600000,  // 26,000 TZS
+      RWF: 1300000,  // 13,000 RWF
+      NGN: 1500000,  // 15,000 NGN
+      GHS: 14000,    // 140 GHS
+      ZAR: 18000,    // 180 ZAR
+    },
+    billingPeriod: 'monthly',
+    limits: {
+      maxUsers: 1,
+      maxAgents: 5,
+      maxWorkflows: 15,
+      aiComputeUnitsPerMonth: 500,
+      storageGb: 15,
+    },
+    features: [
+      'Single Sovereign Operator Seat',
+      '5 Active AI Agents (Level 0-2)',
+      '15 Intelligent Automated Workflows',
+      'Marketplace Creator Rights & Selling (0.25% fee)',
+      'Direct Bank Transfer & Pesapal v3 Gateway',
+      'Personal Digital Twin & Memory Vault',
+      'Universal Work Object Generation',
+    ],
+  },
+  {
+    id: 'plan_group',
+    tier: 'group',
+    name: 'Group / Team',
+    description: 'Collaborative autonomous operations for high-velocity teams, squads, and partnerships.',
+    pricesMinorUnits: {
+      USD: 1300,     // $13.00 USD
+      KES: 170000,   // 1,700 KES
+      UGX: 4800000,  // 48,000 UGX
+      EUR: 1200,     // €12.00 EUR
+      GBP: 1000,     // £10.00 GBP
+      TZS: 3400000,  // 34,000 TZS
+      RWF: 1700000,  // 17,000 RWF
+      NGN: 1950000,  // 19,500 NGN
+      GHS: 18000,    // 180 GHS
+      ZAR: 24000,    // 240 ZAR
+    },
+    billingPeriod: 'monthly',
+    popular: true,
+    limits: {
+      maxUsers: 10,
+      maxAgents: 20,
+      maxWorkflows: 50,
+      aiComputeUnitsPerMonth: 2000,
+      storageGb: 75,
+    },
+    features: [
+      'Up to 10 Team Members',
+      '20 Active AI Agents (Level 0-3)',
+      '50 Multi-Step Shared Workflows',
+      'Collaborative Multi-Agent Societies',
+      'Shared Team Knowledge Universe',
+      'Marketplace Creator Rights & Selling (0.27% fee)',
+      'Direct Bank Transfer & Pesapal v3 Processing',
+      'Daily Executive Briefings & Audit Logs',
+    ],
+  },
+  {
+    id: 'plan_organization',
+    tier: 'organization',
+    name: 'Organization',
+    description: 'Full-spectrum institutional intelligence, sovereign governance, and multi-department controls.',
+    pricesMinorUnits: {
+      USD: 2500,     // $25.00 USD
+      KES: 325000,   // 3,250 KES
+      UGX: 9250000,  // 92,500 UGX
+      EUR: 2300,     // €23.00 EUR
+      GBP: 1900,     // £19.00 GBP
+      TZS: 6500000,  // 65,000 TZS
+      RWF: 3250000,  // 32,500 RWF
+      NGN: 3750000,  // 37,500 NGN
+      GHS: 35000,    // 350 GHS
+      ZAR: 46000,    // 460 ZAR
+    },
+    billingPeriod: 'monthly',
+    limits: {
+      maxUsers: 100,
+      maxAgents: 100,
+      maxWorkflows: 250,
+      aiComputeUnitsPerMonth: 10000,
+      storageGb: 500,
+    },
+    features: [
+      'Up to 100 Organization Members & Departments',
+      '100 Autonomous AI Agents (Level 0-4)',
+      '250 Enterprise Workflows & Scenario Simulators',
+      'Institutional Governance & Immutable Audit Ledger',
+      'Marketplace Creator Rights & Selling (0.50% fee)',
+      'Custom Roles, SSO & Sovereign Connectors',
+      'Direct Bank Transfer & Pesapal v3 Gateway',
+      'Priority Sovereign SLA Support',
+    ],
+  },
+  {
     id: 'plan_free',
     tier: 'free',
     name: 'Free Community',
-    description: 'Foundational execution tools for solo founders and micro-teams.',
+    description: 'Foundational execution tools for solo exploration.',
     pricesMinorUnits: {
       UGX: 0,
       KES: 0,
@@ -30,7 +138,7 @@ export const DEFAULT_BILLING_PLANS: BillingPlan[] = [
     },
     billingPeriod: 'monthly',
     limits: {
-      maxUsers: 2,
+      maxUsers: 1,
       maxAgents: 2,
       maxWorkflows: 3,
       aiComputeUnitsPerMonth: 50,
@@ -41,148 +149,47 @@ export const DEFAULT_BILLING_PLANS: BillingPlan[] = [
       '2 AI Workforce Agents (Level 0-1)',
       'Basic Personal Goals & Initiatives',
       'Community Knowledge Wiki',
-      'Community Discord Support',
     ],
   },
+  // Backward compatibility aliases
   {
     id: 'plan_starter',
     tier: 'starter',
-    name: 'Starter Team',
-    description: 'For agile startups accelerating growth and early automation.',
+    name: 'Starter Individual',
+    description: 'Legacy alias mapped to Individual plan.',
     pricesMinorUnits: {
-      UGX: 11000000, // 110,000 UGX
-      KES: 390000,   // 3,900 KES
-      TZS: 7500000,  // 75,000 TZS
-      RWF: 3800000,  // 38,000 RWF
-      NGN: 4500000,  // 45,000 NGN
-      GHS: 42000,    // 420 GHS
-      ZAR: 55000,    // 550 ZAR
-      USD: 2900,     // $29.00 USD
-      EUR: 2700,     // €27.00 EUR
-      GBP: 2300,     // £23.00 GBP
+      USD: 1000, KES: 130000, UGX: 3700000, EUR: 900, GBP: 800,
+      TZS: 2600000, RWF: 1300000, NGN: 1500000, GHS: 14000, ZAR: 18000
     },
     billingPeriod: 'monthly',
-    limits: {
-      maxUsers: 5,
-      maxAgents: 5,
-      maxWorkflows: 10,
-      aiComputeUnitsPerMonth: 250,
-      storageGb: 10,
-    },
-    features: [
-      'Up to 5 Team Members',
-      '5 Active AI Agents (Level 0-2)',
-      '10 Intelligent Workflows',
-      'Digital Twin Personal Predictions',
-      'Standard Organizational Memory',
-      'Email & Slack Support',
-    ],
+    limits: { maxUsers: 1, maxAgents: 5, maxWorkflows: 15, aiComputeUnitsPerMonth: 500, storageGb: 15 },
+    features: ['Single Operator Sovereign Workspace', '5 Active AI Agents'],
   },
   {
     id: 'plan_professional',
     tier: 'professional',
-    name: 'Professional Business',
-    description: 'Comprehensive intelligent execution suite for high-velocity companies.',
+    name: 'Professional Group',
+    description: 'Legacy alias mapped to Group plan.',
     pricesMinorUnits: {
-      UGX: 30000000, // 300,000 UGX
-      KES: 1050000,  // 10,500 KES
-      TZS: 20000000, // 200,000 TZS
-      RWF: 10500000, // 105,000 RWF
-      NGN: 12000000, // 120,000 NGN
-      GHS: 110000,   // 1,100 GHS
-      ZAR: 150000,   // 1,500 ZAR
-      USD: 7900,     // $79.00 USD
-      EUR: 7500,     // €75.00 EUR
-      GBP: 6400,     // £64.00 GBP
+      USD: 1300, KES: 170000, UGX: 4800000, EUR: 1200, GBP: 1000,
+      TZS: 3400000, RWF: 1700000, NGN: 1950000, GHS: 18000, ZAR: 24000
     },
     billingPeriod: 'monthly',
-    popular: true,
-    limits: {
-      maxUsers: 20,
-      maxAgents: 15,
-      maxWorkflows: 35,
-      aiComputeUnitsPerMonth: 1000,
-      storageGb: 50,
-    },
-    features: [
-      'Up to 20 Team Members',
-      '15 AI Agents with Autonomy Level 0-3',
-      'Autonomous Orchestration Engine',
-      'Human-in-the-Loop Approval Center',
-      'Business Digital Twin & Scenario Simulator',
-      'Executive Intelligence Briefings (Daily/Weekly)',
-      'Pesapal Local & Global Gateway Integration',
-      'Priority 4-hour Support SLA',
-    ],
-  },
-  {
-    id: 'plan_business',
-    tier: 'business',
-    name: 'Enterprise Scale',
-    description: 'High-compute governance, advanced simulation, and multi-department controls.',
-    pricesMinorUnits: {
-      UGX: 75000000, // 750,000 UGX
-      KES: 2600000,  // 26,000 KES
-      TZS: 50000000, // 500,000 TZS
-      RWF: 26000000, // 260,000 RWF
-      NGN: 30000000, // 300,000 NGN
-      GHS: 280000,   // 2,800 GHS
-      ZAR: 380000,   // 3,800 ZAR
-      USD: 19900,    // $199.00 USD
-      EUR: 18500,    // €185.00 EUR
-      GBP: 15900,    // £159.00 GBP
-    },
-    billingPeriod: 'monthly',
-    limits: {
-      maxUsers: 100,
-      maxAgents: 50,
-      maxWorkflows: 150,
-      aiComputeUnitsPerMonth: 5000,
-      storageGb: 250,
-    },
-    features: [
-      'Up to 100 Users & Multiple Departments',
-      '50 Multi-Agent Society Instances (Level 0-4)',
-      'Controlled Autonomous Execution Guardrails',
-      'Department-Level Knowledge Silos & Provenance',
-      'Continuous Threat Modeling & Immutable Audit Ledger',
-      'Dedicated Customer Success Architect',
-      'Custom Developer API Gateway & Webhook Triggers',
-    ],
+    limits: { maxUsers: 10, maxAgents: 20, maxWorkflows: 50, aiComputeUnitsPerMonth: 2000, storageGb: 75 },
+    features: ['Up to 10 Team Members', '20 Active AI Agents'],
   },
   {
     id: 'plan_enterprise',
     tier: 'enterprise',
-    name: 'Custom Sovereign',
-    description: 'Bespoke deployments for governments, conglomerates, and financial institutions.',
+    name: 'Enterprise Organization',
+    description: 'Legacy alias mapped to Organization plan.',
     pricesMinorUnits: {
-      UGX: 200000000, // 2,000,000 UGX custom base
-      KES: 7000000,   // 70,000 KES
-      TZS: 135000000, // 135,000 TZS
-      RWF: 70000000,  // 700,000 RWF
-      NGN: 80000000,  // 800,000 NGN
-      GHS: 750000,    // 7,500 GHS
-      ZAR: 1000000,   // 10,000 ZAR
-      USD: 52000,     // $520.00 USD
-      EUR: 48000,     // €480.00 EUR
-      GBP: 41000,     // £410.00 GBP
+      USD: 2500, KES: 325000, UGX: 9250000, EUR: 2300, GBP: 1900,
+      TZS: 6500000, RWF: 3250000, NGN: 3750000, GHS: 35000, ZAR: 46000
     },
     billingPeriod: 'monthly',
-    limits: {
-      maxUsers: 10000,
-      maxAgents: 500,
-      maxWorkflows: 1000,
-      aiComputeUnitsPerMonth: 50000,
-      storageGb: 2000,
-    },
-    features: [
-      'Unlimited Users, Organizations & Workspaces',
-      'Full Autonomy Level 4 Custom Deployment',
-      'Sovereign Dedicated Cloud Run / VPC Instance',
-      'Custom Pesapal & Multi-Currency Merchant Accounts',
-      '99.99% Uptime Guarantee & 24/7 Phone Support',
-      'Full Compliance & Security Attestation Package',
-    ],
+    limits: { maxUsers: 100, maxAgents: 100, maxWorkflows: 250, aiComputeUnitsPerMonth: 10000, storageGb: 500 },
+    features: ['Up to 100 Members', '100 Active AI Agents'],
   },
 ];
 
@@ -280,13 +287,17 @@ export class BillingService {
     const defaultSub: Subscription = {
       id: `sub_${orgId}_default`,
       organizationId: orgId,
-      planId: 'plan_starter',
-      tier: 'starter',
+      planId: 'plan_individual',
+      tier: 'individual',
+      accountType: 'INDIVIDUAL',
       status: 'trial',
       currency: 'USD',
-      amountMinorUnits: 2900,
+      amountMinorUnits: 1000,
+      monthlyPriceMinorUnits: 1000,
+      billingInterval: 'monthly',
       currentPeriodStart: now.toISOString(),
       currentPeriodEnd: periodEnd.toISOString(),
+      renewalStatus: 'auto_renew',
       cancelAtPeriodEnd: false,
       paymentProvider: 'free',
       createdAt: now.toISOString(),

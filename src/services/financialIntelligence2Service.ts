@@ -27,7 +27,7 @@ class FinancialIntelligence2Service {
     marketplaceEconomicsMinorUnits: 620000, // $6,200 / mo Gross Marketplace volume
     apiRevenueMinorUnits: 410000, // $4,100 / mo Direct API consumption
     creatorEconomyPayoutsMinorUnits: 434000, // $4,340 paid to creator partners
-    paymentFeesMinorUnits: 85350, // $853.50 Pesapal / Stripe processing fees
+    paymentFeesMinorUnits: 85350, // $853.50 Pesapal / Direct Gateway processing fees
     isAccountingActual: true,
     sourceTimeframe: 'Q3 2026 Settled Ledger (Updated Daily via Reconciliation Engine)',
   };

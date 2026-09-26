@@ -569,16 +569,18 @@ export interface ExecutiveBriefing {
 }
 
 // 9. Billing, Pesapal Subscription Engine & Revenue Ledger
-export type BillingTier = 'free' | 'starter' | 'professional' | 'business' | 'enterprise';
+export type BillingTier = 'free' | 'individual' | 'group' | 'organization' | 'starter' | 'professional' | 'business' | 'enterprise';
 export type BillingPeriod = 'monthly' | 'annually';
 export type CurrencyCode = 'UGX' | 'KES' | 'TZS' | 'RWF' | 'NGN' | 'GHS' | 'ZAR' | 'USD' | 'EUR' | 'GBP';
 
 export type SubscriptionStatus = 
   | 'trial'
+  | 'pending'
   | 'active'
   | 'payment_pending'
   | 'past_due'
   | 'grace_period'
+  | 'suspended'
   | 'expired'
   | 'cancelled';
 
@@ -605,15 +607,28 @@ export interface Subscription {
   organizationId: string;
   planId: string;
   tier: BillingTier;
+  accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
   status: SubscriptionStatus;
   currency: CurrencyCode;
   amountMinorUnits: number;
+  monthlyPriceMinorUnits?: number;
+  billingInterval?: 'monthly' | 'annually';
   currentPeriodStart: string;
   currentPeriodEnd: string;
+  renewalStatus?: 'auto_renew' | 'manual' | 'cancelled';
   cancelAtPeriodEnd: boolean;
-  paymentProvider: 'pesapal' | 'invoice' | 'free';
+  paymentProvider: 'pesapal' | 'bank_transfer' | 'invoice' | 'free';
+  paymentReferences?: string[];
   pesapalOrderTrackingId?: string;
   pesapalMerchantReference?: string;
+  bankTransferReference?: string;
+  auditHistory?: Array<{
+    timestamp: string;
+    fromState: SubscriptionStatus;
+    toState: SubscriptionStatus;
+    actor: string;
+    reason: string;
+  }>;
   lastPaymentDate?: string;
   createdAt: string;
   updatedAt: string;
@@ -1086,7 +1101,7 @@ export interface ImmutableCommerceLedgerEntry {
   platformCommissionMinorUnits: number;
   platformFeeMinorUnits?: number;
   creatorPayoutMinorUnits: number;
-  paymentProvider: 'PESAPAL' | 'CATALYX_INTERNAL_BALANCE' | 'CORPORATE_INVOICE' | 'STRIPE' | 'INTERNAL_ESCROW';
+  paymentProvider: 'PESAPAL' | 'BANK_TRANSFER' | 'CATALYX_INTERNAL_BALANCE' | 'CORPORATE_INVOICE' | 'INTERNAL_ESCROW';
   paymentState: 'PENDING' | 'AUTHORIZED' | 'PAID' | 'SETTLED' | 'REFUNDED' | 'DISPUTED' | 'REVERSED' | 'FAILED';
   settlementStatus?: string;
   reconciliationState: 'UNRECONCILED' | 'MATCHED' | 'SETTLED' | 'FLAGGED';
@@ -4611,7 +4626,7 @@ export interface ExecutionSafetyGateRecordV17 {
 // 13. Financial Intelligence & Commerce Fabric
 export interface PaymentGatewayAdapterStatus {
   adapterId: string;
-  providerName: 'PESAPAL' | 'STRIPE' | 'GENERIC_ISO20022' | 'BANK_ACH';
+  providerName: 'PESAPAL' | 'BANK_TRANSFER' | 'GENERIC_ISO20022' | 'BANK_ACH';
   status: 'OPERATIONAL' | 'DEGRADED' | 'STANDBY';
   serverSideVerificationMandatory: boolean;
   idempotencyVerified: boolean;

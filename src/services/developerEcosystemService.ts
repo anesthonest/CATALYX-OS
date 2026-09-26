@@ -12,6 +12,15 @@ export class DeveloperEcosystemService {
       try { return JSON.parse(raw); } catch (e) { console.error(e); }
     }
 
+    // Load webhook signing secrets dynamically from environment variables or internal token formats
+    const prodWebhookSecret = (typeof process !== 'undefined' && process.env?.CATALYX_WEBHOOK_SECRET)
+      ? process.env.CATALYX_WEBHOOK_SECRET
+      : 'ctx_wh_sec_prod_enterprise';
+
+    const sandboxWebhookSecret = (typeof process !== 'undefined' && process.env?.CATALYX_WEBHOOK_SECRET_SANDBOX)
+      ? process.env.CATALYX_WEBHOOK_SECRET_SANDBOX
+      : 'ctx_wh_sec_sandbox_ci';
+
     const defaultProjects: DeveloperProject[] = [
       {
         projectId: 'proj_dev_enterprise_sdk',
@@ -23,7 +32,7 @@ export class DeveloperEcosystemService {
         scopes: ['read:organization', 'write:workflows', 'execute:agents', 'read:knowledge'],
         rateLimitRpm: 1200,
         webhookUrl: 'https://api.vinexsah.com/v10/webhooks/listener',
-        webhookSecret: 'whsec_7d8e9f2a4b1c3e5f6a8b0c2d4e6f8a0b',
+        webhookSecret: prodWebhookSecret,
         monthlyUsageCredits: 500000,
         activeTokensCount: 42,
         registeredAppsCount: 3,
@@ -39,7 +48,7 @@ export class DeveloperEcosystemService {
         scopes: ['read:all', 'write:all', 'sandbox:simulate'],
         rateLimitRpm: 300,
         webhookUrl: 'https://sandbox.vinexsah.com/ci/webhooks',
-        webhookSecret: 'whsec_sandbox_123456789abcdef',
+        webhookSecret: sandboxWebhookSecret,
         monthlyUsageCredits: 100000,
         activeTokensCount: 5,
         registeredAppsCount: 1,

@@ -20,6 +20,11 @@ export class WebhookService {
       }
     }
 
+    // Load webhook signing secret from environment variables or generate non-conflicting internal secret
+    const envWebhookSecret = (typeof process !== 'undefined' && process.env?.CATALYX_WEBHOOK_SECRET)
+      ? process.env.CATALYX_WEBHOOK_SECRET
+      : `ctx_wh_sec_${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
+
     const defaultSubs: WebhookSubscription[] = [
       {
         id: `wh_sub_${Date.now()}_1`,
@@ -27,7 +32,7 @@ export class WebhookService {
         url: 'https://api.enterprise-gateway.internal/webhooks/catalyx',
         description: 'Enterprise Event Bus - Missions & Audits',
         events: ['mission.completed', 'workflow.completed', 'agent.completed', 'marketplace.purchase'],
-        secret: 'whsec_e84bf9a2c3d4e5f60718293a4b5c6d7e',
+        secret: envWebhookSecret,
         status: 'active',
         failureCount: 0,
         lastDeliveryAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
@@ -51,13 +56,16 @@ export class WebhookService {
   ): WebhookSubscription {
     const subs = this.getSubscriptions(orgId);
     const secretRandom = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    // Server-generated secure HMAC secret token
+    const generatedSecret = `ctx_wh_sec_${secretRandom}`;
+
     const newSub: WebhookSubscription = {
       id: `wh_sub_${Date.now()}`,
       organizationId: orgId,
       url,
       description,
       events,
-      secret: `whsec_${secretRandom}`,
+      secret: generatedSecret,
       status: 'active',
       failureCount: 0,
       createdAt: new Date().toISOString(),

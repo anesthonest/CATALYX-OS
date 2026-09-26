@@ -406,11 +406,15 @@ Sellers may offer assets under:
 
 ---
 
-### 1. Creator IP Guarantee
-**You own your content.** Everything you create, write, generate, or store inside your CATALYX workspace remains your exclusive property. The VINEXSAH TECHNOLOGIES project claims zero proprietary interest in your code, models, or data.
+### 1. Creator IP Guarantee & Rights Retention
+**You own your content.** Everything you create, write, generate, train, or store inside your CATALYX workspace remains your exclusive intellectual property. Creators retain 100% full legal, title, and equitable ownership of all workflows, proprietary neural prompts, specialized agent definitions, and organizational data. The platform claims zero proprietary interest in creator assets.
 
-### 2. CATALYX Proprietary Architecture
-The CATALYX codebase, user interfaces, branding, and economic engine logic are proprietary software operated under the VINEXSAH TECHNOLOGIES project name.`
+### 2. CATALYX Proprietary Architecture & All Rights Reserved
+The CATALYX system, core runtime, autonomous orchestration engine, system prompts, neural blueprints, multi-agent society architectures, UX/UI assets, economic rails, and brand identity are proprietary works with all rights reserved by CATALYX and Vinexsah Technologies. 
+
+* **Protected Assets:** Core architecture, system prompts, deterministic state machines, and reconciliation ledgers.
+* **Prohibitions:** Unauthorized extraction, reverse-engineering, adversarial model distillation, and unauthorized scraping are strictly prohibited.
+* **Sole Monetization Channels:** Supported commercial settlement channels are authoritatively restricted to Pesapal v3.0 and Direct Bank Transfer rails. All other channels remain decommissioned.`
     };
   }
 
