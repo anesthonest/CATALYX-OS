@@ -410,7 +410,9 @@ Sellers may offer assets under:
 **You own your content.** Everything you create, write, generate, train, or store inside your CATALYX workspace remains your exclusive intellectual property. Creators retain 100% full legal, title, and equitable ownership of all workflows, proprietary neural prompts, specialized agent definitions, and organizational data. The platform claims zero proprietary interest in creator assets.
 
 ### 2. CATALYX Proprietary Architecture & All Rights Reserved
-The CATALYX system, core runtime, autonomous orchestration engine, system prompts, neural blueprints, multi-agent society architectures, UX/UI assets, economic rails, and brand identity are proprietary works with all rights reserved by CATALYX and Vinexsah Technologies. 
+CATALYX is developed and operated under the VINEXSAH TECHNOLOGIES project/business name. All rights reserved. © 2026 VINEXSAH TECHNOLOGIES. All rights reserved.
+
+The CATALYX system, core runtime, autonomous orchestration engine, system prompts, neural blueprints, multi-agent society architectures, UX/UI assets, economic rails, and brand identity are proprietary works. All rights reserved by CATALYX and Vinexsah Technologies. 
 
 * **Protected Assets:** Core architecture, system prompts, deterministic state machines, and reconciliation ledgers.
 * **Prohibitions:** Unauthorized extraction, reverse-engineering, adversarial model distillation, and unauthorized scraping are strictly prohibited.

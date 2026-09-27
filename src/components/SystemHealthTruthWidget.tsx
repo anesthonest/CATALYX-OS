@@ -22,7 +22,11 @@ export interface SubsystemHealth {
   latencyMs?: number;
 }
 
-export const SystemHealthTruthWidget: React.FC = () => {
+export interface SystemHealthTruthWidgetProps {
+  onNavigate?: (tabId: string) => void;
+}
+
+export const SystemHealthTruthWidget: React.FC<SystemHealthTruthWidgetProps> = ({ onNavigate }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastCheck, setLastCheck] = useState<Date>(new Date());
@@ -202,6 +206,19 @@ export const SystemHealthTruthWidget: React.FC = () => {
             <span>Checked: {lastCheck.toLocaleTimeString()}</span>
             <span className="text-brand-purple">NO FAKE GREEN</span>
           </div>
+
+          {onNavigate && (
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                onNavigate('mission-control');
+              }}
+              className="mt-2.5 w-full py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-bold text-center transition-colors border border-cyan-500/20 cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <span>Open Mission Control & Observability</span>
+              <span>&rarr;</span>
+            </button>
+          )}
         </div>
       )}
     </div>

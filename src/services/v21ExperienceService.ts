@@ -128,7 +128,8 @@ class V21ExperienceService {
       iconName: 'Shield',
       badge: 'Security',
       subItems: [
-        { id: 'admin-portal', label: 'Settings & Administration', description: 'Global organization parameters and system settings', iconName: 'Command', isPrimary: true },
+        { id: 'mission-control', label: 'Mission Control & System Health', description: 'Central operational command center, live subsystem diagnostics, alerts & runbooks', iconName: 'Activity', isPrimary: true, versionBadge: 'OPS' },
+        { id: 'admin-portal', label: 'Settings & Administration', description: 'Global organization parameters and system settings', iconName: 'Command' },
         { id: 'profile', label: 'Operator Profile', description: 'Security access token, credentials, and notification settings', iconName: 'User' },
         { id: 'governance', label: 'Governance & RBAC', description: 'Tenant isolation, role permissions, and compliance audit', iconName: 'Shield' },
         { id: 'ai-firewall', label: 'AI Safety Firewall (8-Stage)', description: 'Deep prompt inspection, blast radius, and quarantine logs', iconName: 'ShieldAlert' },
@@ -151,6 +152,7 @@ class V21ExperienceService {
     // Specific aliases or direct mappings
     if (['dashboard', 'focus-cabin', 'goal-center'].includes(tabId)) return 'work';
     if ([
+      'mission-control', 'system-health', 'operations-center', 'system-status',
       'legal-center', 'legal', 'terms', 'privacy', 'refunds', 'payments', 'payouts', 
       'acceptable-use', 'intellectual-property', 'copyright', 'community-guidelines', 'marketplace-policy'
     ].includes(tabId)) return 'system';

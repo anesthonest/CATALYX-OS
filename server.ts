@@ -30,6 +30,7 @@ import { revenuePolicyEngine } from './src/services/payment/revenuePolicyEngine'
 import { serverAuthStore } from './src/services/serverAuthStore';
 import { emailDeliveryService } from './src/services/emailDeliveryService';
 import { marketplaceRatingService } from './src/services/marketplaceRatingService';
+import { missionControlService } from './src/services/missionControlService';
 
 // Initialize environment variables ASAP
 dotenv.config();
@@ -231,6 +232,156 @@ app.get('/api/ready', (req, res) => {
       servicesActive: 32
     }
   });
+});
+
+// -------------------------------------------------------------
+// CATALYX MISSION CONTROL & OBSERVABILITY API (REAL TELEMETRY)
+// -------------------------------------------------------------
+
+// /api/mission-control/status (Comprehensive platform condition)
+app.get('/api/mission-control/status', async (req, res) => {
+  try {
+    const forceFresh = req.query.fresh === 'true';
+    const condition = await missionControlService.getSystemCondition(forceFresh);
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      ...condition
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to retrieve system condition'
+    });
+  }
+});
+
+// /api/mission-control/subsystems (Detailed subsystem diagnostics)
+app.get('/api/mission-control/subsystems', async (req, res) => {
+  try {
+    const forceFresh = req.query.fresh === 'true';
+    const diagnostics = await missionControlService.getSubsystemDiagnostics(forceFresh);
+    res.json({
+      success: true,
+      subsystems: diagnostics
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to probe subsystems'
+    });
+  }
+});
+
+// /api/mission-control/alerts (Active and historical operational alerts)
+app.get('/api/mission-control/alerts', (req, res) => {
+  try {
+    const alerts = missionControlService.getAlerts();
+    res.json({
+      success: true,
+      alerts
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// /api/mission-control/alerts/:id/ack (Acknowledge operational alert)
+app.post('/api/mission-control/alerts/:id/ack', (req, res) => {
+  try {
+    const alertId = req.params.id;
+    const actorEmail = req.body?.actorEmail || 'operator@catalyx.io';
+    const success = missionControlService.acknowledgeAlert(alertId, actorEmail);
+    if (!success) {
+      return res.status(404).json({ success: false, error: `Alert ${alertId} not found` });
+    }
+    res.json({ success: true, message: `Alert ${alertId} acknowledged.` });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// /api/mission-control/alerts/:id/resolve (Resolve operational alert)
+app.post('/api/mission-control/alerts/:id/resolve', (req, res) => {
+  try {
+    const alertId = req.params.id;
+    const actorEmail = req.body?.actorEmail || 'operator@catalyx.io';
+    const success = missionControlService.resolveAlert(alertId, actorEmail);
+    if (!success) {
+      return res.status(404).json({ success: false, error: `Alert ${alertId} not found` });
+    }
+    res.json({ success: true, message: `Alert ${alertId} resolved.` });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// /api/mission-control/runbooks (Available operations & remediation runbooks)
+app.get('/api/mission-control/runbooks', (req, res) => {
+  try {
+    const runbooks = missionControlService.getAvailableRunbooks();
+    res.json({ success: true, runbooks });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// /api/mission-control/runbooks/execute (Execute authorized operational runbook)
+app.post('/api/mission-control/runbooks/execute', async (req, res) => {
+  try {
+    const { runbookId, actorEmail = 'operator@catalyx.io' } = req.body;
+    if (!runbookId) {
+      return res.status(400).json({ success: false, error: 'runbookId is required' });
+    }
+    const result = await missionControlService.executeRunbook(runbookId, actorEmail);
+    res.json({
+      success: result.success,
+      output: result.output,
+      subsystemUpdated: result.subsystemUpdated
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// /api/mission-control/events (Operational event audit stream)
+app.get('/api/mission-control/events', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const events = missionControlService.getRecentEvents(limit);
+    res.json({ success: true, events });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// /api/mission-control/inquiry (Executive Condition Inquiries grounded in telemetry)
+app.post('/api/mission-control/inquiry', (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ success: false, error: 'Query string required' });
+    }
+    const answer = missionControlService.askSystemCondition(query);
+    res.json({ success: true, answer });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// /api/mission-control/scenarios/:scenarioId (Controlled Scenario Testing A through H)
+app.get('/api/mission-control/scenarios/:scenarioId', (req, res) => {
+  try {
+    const id = req.params.scenarioId.toUpperCase() as any;
+    const valid = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    if (!valid.includes(id)) {
+      return res.status(400).json({ success: false, error: `Invalid scenario. Choose from ${valid.join(', ')}` });
+    }
+    const outcome = missionControlService.evaluateScenario(id);
+    res.json({ success: true, scenario: id, ...outcome });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 /**
@@ -1288,7 +1439,7 @@ app.post(['/api/billing/pesapal/verify', '/api/payments/verify'], async (req, re
     subscription,
     order: result.order,
     ledgerRecord: result.ledgerRecord,
-    verifiedAt: now.toISOString(),
+    verifiedAt: new Date().toISOString(),
   });
 });
 

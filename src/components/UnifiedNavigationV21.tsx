@@ -322,7 +322,7 @@ export const UnifiedNavigationV21: React.FC<UnifiedNavigationV21Props> = ({
           </button>
 
           {/* Live System Health Truth Widget */}
-          <SystemHealthTruthWidget />
+          <SystemHealthTruthWidget onNavigate={onSelectTab} />
 
           {/* User Trust Center Trigger */}
           {onOpenTrustCenter && (

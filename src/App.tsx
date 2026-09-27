@@ -124,6 +124,7 @@ import { LegalDocumentView } from './components/legal/LegalDocumentView';
 import { LegalCenterTab } from './components/legal/LegalCenterTab';
 import { AppFooter } from './components/legal/AppFooter';
 import { LegalPolicyService } from './services/legal/legalPolicyService';
+import { MissionControlView } from './components/MissionControlView';
 
 // V2 Common Components
 import { CommandPalette } from './components/CommandPalette';
@@ -664,6 +665,17 @@ export default function App() {
             userEmail={user.email}
             onNavigateToDocument={(slug) => handleSelectTab(slug)}
             onClose={() => handleSelectTab('home')}
+          />
+        );
+      case 'mission-control':
+      case 'system-health':
+      case 'operations-center':
+      case 'system-status':
+        return (
+          <MissionControlView
+            user={user}
+            activeRole={activeRole}
+            onNavigate={handleSelectTab}
           />
         );
       case 'integrations':

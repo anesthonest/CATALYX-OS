@@ -86,6 +86,10 @@ export class BankAccountManager {
     }));
   }
 
+  public getActiveAccounts(): ReceivingBankAccount[] {
+    return this.getClientSafeReceivingAccounts();
+  }
+
   public getReceivingAccountById(id: string): ReceivingBankAccount | undefined {
     return this.receivingAccounts.get(id);
   }

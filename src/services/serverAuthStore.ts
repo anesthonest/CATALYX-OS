@@ -453,7 +453,7 @@ export class ServerAuthStore {
       this.hashPasswordWithSalt(password, fakeSalt);
       return {
         success: false,
-        error: 'Invalid credentials. Please verify your email and password or create an account.'
+        error: 'Incorrect email or password.'
       };
     }
 
@@ -484,7 +484,7 @@ export class ServerAuthStore {
       }
       return {
         success: false,
-        error: 'Invalid credentials. Please verify your email and password or use account recovery.'
+        error: 'Incorrect email or password.'
       };
     }
 

@@ -238,13 +238,15 @@ export function formatCurrencyAmount(minorUnits: number, currency: CurrencyCode)
 export class SubscriptionStateMachine {
   public static canTransition(current: SubscriptionStatus, next: SubscriptionStatus): boolean {
     const allowedTransitions: Record<SubscriptionStatus, SubscriptionStatus[]> = {
-      trial: ['active', 'expired', 'cancelled'],
-      active: ['payment_pending', 'past_due', 'cancelled', 'expired'],
-      payment_pending: ['active', 'past_due', 'failed' as any, 'cancelled'],
-      past_due: ['active', 'grace_period', 'expired', 'cancelled'],
-      grace_period: ['active', 'expired', 'cancelled'],
-      expired: ['payment_pending', 'active', 'trial'],
-      cancelled: ['payment_pending', 'active'],
+      trial: ['active', 'expired', 'cancelled', 'suspended'],
+      pending: ['active', 'payment_pending', 'past_due', 'expired', 'cancelled', 'suspended'],
+      active: ['payment_pending', 'past_due', 'cancelled', 'expired', 'suspended'],
+      payment_pending: ['active', 'past_due', 'cancelled', 'suspended'],
+      past_due: ['active', 'grace_period', 'expired', 'cancelled', 'suspended'],
+      grace_period: ['active', 'expired', 'cancelled', 'suspended'],
+      suspended: ['active', 'payment_pending', 'cancelled', 'expired'],
+      expired: ['payment_pending', 'active', 'trial', 'pending'],
+      cancelled: ['payment_pending', 'active', 'pending'],
     };
 
     return allowedTransitions[current]?.includes(next) ?? false;

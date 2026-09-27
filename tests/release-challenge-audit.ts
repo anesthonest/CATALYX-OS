@@ -42,6 +42,11 @@ import {
   AUTHORIZED_PAYMENT_PROVIDERS,
   PaymentProviderPolicyViolationError
 } from '../src/services/payment/paymentProviderPolicy';
+import { BillingService } from '../src/services/billingService';
+import { universalPricingEngine, UniversalPricingEngine } from '../src/services/payment/pricingEngine';
+import { SubscriptionStateMachine } from '../src/services/subscriptionStateMachine';
+import { EntitlementService } from '../src/services/entitlementService';
+import { missionControlService } from '../src/services/missionControlService';
 import crypto from 'crypto';
 import fs from 'fs';
 
@@ -854,16 +859,16 @@ async function runAuthenticationAndIdentitySecurityTests() {
     acceptTerms: true
   });
 
-  // Attempt 4 consecutive wrong passwords (should warn with remaining count)
+  // Attempt 4 consecutive wrong passwords (safe neutral feedback, zero countdown leaks)
   for (let i = 0; i < 4; i++) {
     const failed = await authService.login({
       email: bruteEmail,
       password: 'WrongPassword!'
     });
     assert(
-      !failed.success && failed.error?.includes('attempt'),
+      !failed.success && failed.error === 'Incorrect email or password.' && !failed.error?.includes('remaining'),
       suite,
-      `Failed attempt #${i + 1} tracks remaining attempts warning`
+      `Failed attempt #${i + 1} provides safe neutral feedback without countdown leak`
     );
   }
 
@@ -1493,6 +1498,287 @@ async function runAuthoritativePaymentProviderPolicyTests() {
   assert(bankSubmit.orderTrackingId !== undefined, suite, 'Bank transfer returns tracking identifier');
 }
 
+async function runMandatorySubscriptionAndSecurityTests() {
+  const suite = 'Mandatory Subscription Model & Account Security Verification';
+
+  // 1. Authoritative recurring monthly prices
+  const plans = BillingService.getPlans();
+  const individualPlan = plans.find(p => p.tier === 'individual');
+  const groupPlan = plans.find(p => p.tier === 'group');
+  const orgPlan = plans.find(p => p.tier === 'organization');
+
+  assert(individualPlan !== undefined, suite, 'Individual monthly subscription plan is configured');
+  assert(individualPlan?.pricesMinorUnits.USD === 1000, suite, 'Individual subscription price is exactly $10.00/month (1000 minor units)');
+
+  assert(groupPlan !== undefined, suite, 'Group / Team monthly subscription plan is configured');
+  assert(groupPlan?.pricesMinorUnits.USD === 1300, suite, 'Group / Team subscription price is exactly $13.00/month (1300 minor units)');
+
+  assert(orgPlan !== undefined, suite, 'Organization monthly subscription plan is configured');
+  assert(orgPlan?.pricesMinorUnits.USD === 2500, suite, 'Organization subscription price is exactly $25.00/month (2500 minor units)');
+
+  // 2. Pricing Engine canonical prices verification
+  const pricingEngine = universalPricingEngine;
+  const prInd = pricingEngine.getPriceById('pr_sub_individual_usd');
+  assert(prInd !== undefined && prInd.amountMinorUnits === 1000, suite, 'Pricing engine serves canonical Individual subscription at 1000 minor units ($10)');
+
+  const prGrp = pricingEngine.getPriceById('pr_sub_group_usd');
+  assert(prGrp !== undefined && prGrp.amountMinorUnits === 1300, suite, 'Pricing engine serves canonical Group subscription at 1300 minor units ($13)');
+
+  const prOrg = pricingEngine.getPriceById('pr_sub_organization_usd');
+  assert(prOrg !== undefined && prOrg.amountMinorUnits === 2500, suite, 'Pricing engine serves canonical Organization subscription at 2500 minor units ($25)');
+
+  // 3. Strict Server-side Subscription Lifecycle & State Machine
+  const testSub = BillingService.getSubscription('org_test_lifecycle_verification');
+  assert(testSub.billingInterval === 'monthly', suite, 'Default subscription billingInterval is monthly');
+  assert(testSub.monthlyPriceMinorUnits === 1000, suite, 'Default subscription price is locked to $10.00/month');
+
+  // Verify lifecycle valid transitions: trial -> active
+  const activateRes = SubscriptionStateMachine.transition(
+    testSub,
+    'active',
+    'Payment confirmed',
+    'system_test',
+    'Verification Suite'
+  );
+  assert(activateRes.success && activateRes.subscription.status === 'active', suite, 'Subscription transitions to ACTIVE upon confirmed payment');
+
+  // Verify transition active -> past_due
+  const pastDueRes = SubscriptionStateMachine.transition(
+    testSub,
+    'past_due',
+    'Payment renewal failed',
+    'system_test',
+    'Verification Suite'
+  );
+  assert(pastDueRes.success && pastDueRes.subscription.status === 'past_due', suite, 'Subscription transitions to PAST_DUE when payment fails');
+
+  // Verify transition past_due -> suspended
+  const suspendRes = SubscriptionStateMachine.transition(
+    testSub,
+    'suspended',
+    'Grace period elapsed',
+    'system_test',
+    'Verification Suite'
+  );
+  assert(suspendRes.success && suspendRes.subscription.status === 'suspended', suite, 'Subscription transitions to SUSPENDED');
+
+  // Verify transition suspended -> active
+  const reactivateRes = SubscriptionStateMachine.transition(
+    testSub,
+    'active',
+    'Reactivation payment settled',
+    'system_test',
+    'Verification Suite'
+  );
+  assert(reactivateRes.success && reactivateRes.subscription.status === 'active', suite, 'Subscription transitions from SUSPENDED back to ACTIVE upon settlement');
+
+  // Verify illegal transition is strictly rejected
+  const illegalTransitionRes = SubscriptionStateMachine.transition(
+    testSub,
+    'trial',
+    'Attempted backwards reset to trial',
+    'adversary',
+    'Malicious User'
+  );
+  assert(!illegalTransitionRes.success, suite, 'Illegal subscription state transition (ACTIVE -> TRIAL) is strictly blocked and audited');
+
+  // 4. Entitlement Gating by Tier
+  const indAiEval = EntitlementService.evaluate('org_test_lifecycle_verification', 'AI_AGENTS');
+  assert(indAiEval.granted === true && indAiEval.limit === 5, suite, 'Individual tier is strictly limited to 5 AI agents');
+
+  const indGovEval = EntitlementService.evaluate('org_test_lifecycle_verification', 'ENTERPRISE_GOVERNANCE');
+  assert(indGovEval.granted === false, suite, 'Individual tier does not have access to Enterprise Governance');
+
+  // 5. Anti-Enumeration & Login Security Validation
+  const nonExistentLogin = await serverAuthStore.authenticate({
+    email: 'nobody_exists_at_all_9999999@catalyx.io',
+    password: 'SomeRandomPassword123!'
+  });
+  assert(
+    !nonExistentLogin.success && nonExistentLogin.error === 'Incorrect email or password.',
+    suite,
+    'Non-existent account login returns neutral "Incorrect email or password." without leaking user existence'
+  );
+
+  const wrongPassLogin = await serverAuthStore.authenticate({
+    email: 'ines_test_audit@catalyx.io',
+    password: 'DefinitelyWrongPassword!'
+  });
+  assert(
+    !wrongPassLogin.success && 
+    wrongPassLogin.error === 'Incorrect email or password.' &&
+    !wrongPassLogin.error.includes('remaining'),
+    suite,
+    'Wrong password returns neutral error without exposing "attempts remaining" countdown'
+  );
+
+  // 6. Rights Reservation & Intellectual Property Policy Validation
+  const legalDocs = LegalPolicyService.getAllDocuments();
+  const ipDoc = legalDocs.find(d => d.slug === 'intellectual-property');
+  assert(ipDoc !== undefined, suite, 'Intellectual Property & Rights Notice document exists');
+  assert(ipDoc!.contentMarkdown.includes('Creator IP Guarantee'), suite, 'Affirms 100% creator IP retention guarantee');
+  assert(ipDoc!.contentMarkdown.includes('All rights reserved by CATALYX and Vinexsah Technologies'), suite, 'Affirms all rights reserved for CATALYX proprietary architecture');
+  assert(ipDoc!.contentMarkdown.includes('Pesapal v3.0 and Direct Bank Transfer rails'), suite, 'Explicitly codifies Pesapal and Bank Transfer as the sole monetization channels');
+}
+
+async function runMissionControlAndObservabilityTests() {
+  const suite = 'Mission Control & System Health Observability Intelligence';
+
+  // 1. Holistic System Condition Retrieval
+  const condition = await missionControlService.getSystemCondition(true);
+  assert(condition !== null && typeof condition === 'object', suite, 'System condition snapshot is retrieved');
+  assert(condition.score.compositeScore >= 0 && condition.score.compositeScore <= 100, suite, 'System condition composite score is bounded 0-100');
+  assert(['HEALTHY', 'DEGRADED', 'CONFIG_REQUIRED', 'CRITICAL', 'MAINTENANCE'].includes(condition.score.overallStatus), suite, 'System condition overall status is valid enum');
+  assert(condition.score.totalSubsystems >= 9, suite, 'All 9 core subsystems are accounted for in composite score');
+
+  // 2. Comprehensive Subsystem Telemetry Truth
+  const diagnostics = condition.diagnostics;
+  const expectedSubsystems = [
+    'api_gateway',
+    'database_persistence',
+    'auth_security',
+    'payment_monetization',
+    'ai_intelligence',
+    'deep_research',
+    'marketplace_commerce',
+    'background_webhooks',
+    'backup_recovery',
+    'monitoring_self_health',
+    'system_resources'
+  ];
+
+  for (const expectedId of expectedSubsystems) {
+    const diag = diagnostics.find(d => d.id === expectedId);
+    assert(diag !== undefined, suite, `Subsystem "${expectedId}" is actively monitored and diagnosed`);
+    assert(diag!.latencyMs >= 0, suite, `Subsystem "${expectedId}" reports truthful non-negative latency`);
+    assert(typeof diag!.statusMessage === 'string' && diag!.statusMessage.length > 0, suite, `Subsystem "${expectedId}" provides descriptive diagnostic message`);
+  }
+
+  // 3. Controlled Scenarios A through H Verification (Section 3)
+  const scA = missionControlService.evaluateScenario('A');
+  assert(scA.overallStatus === 'HEALTHY', suite, 'Scenario A: All monitored systems healthy -> HEALTHY');
+
+  const scB = missionControlService.evaluateScenario('B');
+  assert(scB.overallStatus === 'DEGRADED', suite, 'Scenario B: One non-critical subsystem degraded -> DEGRADED');
+
+  const scC = missionControlService.evaluateScenario('C');
+  assert(scC.overallStatus === 'CRITICAL', suite, 'Scenario C: Critical payment integrity failure -> CRITICAL');
+
+  const scD = missionControlService.evaluateScenario('D');
+  assert(scD.overallStatus === 'CRITICAL', suite, 'Scenario D: Database unavailable -> CRITICAL');
+
+  const scE = missionControlService.evaluateScenario('E');
+  assert(scE.overallStatus === 'TELEMETRY_UNAVAILABLE', suite, 'Scenario E: Monitoring telemetry stale -> TELEMETRY_UNAVAILABLE');
+
+  const scF = missionControlService.evaluateScenario('F');
+  assert(scF.overallStatus === 'UNKNOWN', suite, 'Scenario F: No data exists yet -> UNKNOWN / INSUFFICIENT DATA (NEVER HEALTHY)');
+
+  const scG = missionControlService.evaluateScenario('G');
+  assert(scG.overallStatus === 'DEGRADED', suite, 'Scenario G: AI provider unavailable while rest works -> DEGRADED');
+
+  const scH = missionControlService.evaluateScenario('H');
+  assert(scH.overallStatus === 'CRITICAL', suite, 'Scenario H: Security / isolation violation detected -> CRITICAL');
+
+  // 4. Payment & Financial Ledger Observability Verification
+  const paymentDiag = diagnostics.find(d => d.id === 'payment_monetization');
+  assert(paymentDiag !== undefined, suite, 'Payment & Monetization diagnostic probe exists');
+  assert(paymentDiag!.metrics.stripeDecommissioned === 'VERIFIED_PERMANENTLY_BLOCKED', suite, 'Mission Control certifies Stripe is VERIFIED_PERMANENTLY_BLOCKED');
+  assert(String(paymentDiag!.metrics.activePaymentProviders).includes('pesapal') && String(paymentDiag!.metrics.activePaymentProviders).includes('bank_transfer'), suite, 'Mission Control reports only Pesapal and Bank Transfer as active payment channels');
+  assert(String(paymentDiag!.metrics.ledgerIntegrity).includes('BALANCED'), suite, 'Double-entry financial ledger verified: debits === credits across all records');
+  assert(String(paymentDiag!.metrics.individualPlanPrice).includes('$10.00'), suite, 'Mission Control verifies Individual plan at $10.00/mo');
+  assert(String(paymentDiag!.metrics.groupPlanPrice).includes('$13.00'), suite, 'Mission Control verifies Group plan at $13.00/mo');
+  assert(String(paymentDiag!.metrics.organizationPlanPrice).includes('$25.00'), suite, 'Mission Control verifies Organization plan at $25.00/mo');
+
+  // 5. Backup & Disaster Recovery Monitoring (Section 12)
+  const backupDiag = diagnostics.find(d => d.id === 'backup_recovery');
+  assert(backupDiag !== undefined, suite, 'Backup & Disaster Recovery diagnostic probe exists');
+  assert(backupDiag!.metrics.backupExists === 'VERIFIED', suite, 'Backup monitoring verifies backup exists');
+  assert(backupDiag!.metrics.backupSucceeded === 'VERIFIED_SCHEDULED_6H', suite, 'Backup monitoring verifies scheduled snapshot success');
+  assert(backupDiag!.metrics.restoreVerification === 'NOT CONFIGURED', suite, 'Backup monitoring explicitly reports "RESTORE VERIFICATION: NOT CONFIGURED" without fake claims');
+
+  // 6. Monitoring Self-Health Probe (Section 17)
+  const selfHealthDiag = diagnostics.find(d => d.id === 'monitoring_self_health');
+  assert(selfHealthDiag !== undefined, suite, 'Monitoring engine self-health diagnostic probe exists');
+  assert(selfHealthDiag!.metrics.telemetryPipeline === 'LIVE', suite, 'Monitoring self-health verifies live telemetry pipeline');
+  assert(typeof selfHealthDiag!.metrics.freshnessWindowMs === 'number', suite, 'Monitoring self-health enforces freshness window parameter');
+
+  // 7. Auth & Security Subsystem Verification
+  const authDiag = diagnostics.find(d => d.id === 'auth_security');
+  assert(authDiag !== undefined, suite, 'Auth & Security diagnostic probe exists');
+  assert(String(authDiag!.metrics.antiEnumeration).includes('ENFORCED'), suite, 'Mission Control verifies Anti-Enumeration enforcement');
+
+  // 8. AI Intelligence & Safety Firewall Observability
+  const aiDiag = diagnostics.find(d => d.id === 'ai_intelligence');
+  assert(aiDiag !== undefined, suite, 'AI Intelligence diagnostic probe exists');
+  assert(String(aiDiag!.metrics.activeAgentWorkforce).includes('11'), suite, 'Mission Control verifies 11 active workforce agents');
+  assert(String(aiDiag!.metrics.providerQuota).includes('Provider quota telemetry unavailable.'), suite, 'AI monitoring truthfully outputs "Provider quota telemetry unavailable."');
+  assert(String(aiDiag!.metrics.aiSafetyFirewall).includes('ONLINE'), suite, 'Mission Control verifies AI Safety Firewall is online');
+
+  // 9. RBAC Access Control Verification (Section 8 & 21)
+  assert(missionControlService.isAuthorizedOperator('EXECUTIVE'), suite, 'EXECUTIVE role is authorized for Mission Control');
+  assert(missionControlService.isAuthorizedOperator('ADMIN'), suite, 'ADMIN role is authorized for Mission Control');
+  assert(missionControlService.isAuthorizedOperator('AUDITOR'), suite, 'AUDITOR role is authorized for Mission Control');
+  assert(missionControlService.isAuthorizedOperator('OPERATOR'), suite, 'OPERATOR role is authorized for Mission Control');
+  assert(!missionControlService.isAuthorizedOperator('GUEST'), suite, 'GUEST role is strictly denied Mission Control access');
+  assert(!missionControlService.isAuthorizedOperator('STANDARD_USER'), suite, 'STANDARD_USER role is strictly denied Mission Control access');
+
+  // 10. Owner-Friendly Inquiry Engine Grounding (Section 20)
+  const howIsResp = missionControlService.askSystemCondition('How is CATALYX right now?');
+  assert(howIsResp.includes('CATALYX is currently') && howIsResp.includes('Composite Score'), suite, 'Inquiry "How is CATALYX?" returns grounded composite condition');
+
+  const paymentsResp = missionControlService.askSystemCondition('Are payments working?');
+  assert(paymentsResp.includes('pesapal') && paymentsResp.includes('bank_transfer'), suite, 'Inquiry "Are payments working?" confirms authorized payment channels');
+
+  const backupsResp = missionControlService.askSystemCondition('Are backups working?');
+  assert(backupsResp.includes('RESTORE VERIFICATION: NOT CONFIGURED'), suite, 'Inquiry "Are backups working?" truthfully states restore verification not configured');
+
+  const criticalResp = missionControlService.askSystemCondition('Is there any critical problem?');
+  assert(criticalResp.length > 0, suite, 'Inquiry "Is there any critical problem?" returns definitive assessment');
+
+  // 11. Operational Alert Lifecycle & Audit Trail
+  const initialAlerts = missionControlService.getAlerts();
+  assert(initialAlerts.length > 0, suite, 'Initial operational alerts are populated');
+
+  const testAlert = initialAlerts[0];
+  const ackSuccess = missionControlService.acknowledgeAlert(testAlert.id, 'sre.operator@catalyx.io');
+  assert(ackSuccess, suite, 'Operational alert is acknowledged by SRE operator');
+
+  const updatedAlertsAfterAck = missionControlService.getAlerts();
+  const ackedAlert = updatedAlertsAfterAck.find(a => a.id === testAlert.id);
+  assert(ackedAlert?.status === 'ACKNOWLEDGED' && ackedAlert.acknowledgedBy === 'sre.operator@catalyx.io', suite, 'Alert state transitions to ACKNOWLEDGED with operator attribution');
+
+  const resolveSuccess = missionControlService.resolveAlert(testAlert.id, 'sre.operator@catalyx.io');
+  assert(resolveSuccess, suite, 'Operational alert is resolved by SRE operator');
+
+  const updatedAlertsAfterResolve = missionControlService.getAlerts();
+  const resolvedAlert = updatedAlertsAfterResolve.find(a => a.id === testAlert.id);
+  assert(resolvedAlert?.status === 'RESOLVED' && typeof resolvedAlert.resolvedAt === 'string', suite, 'Alert state transitions to RESOLVED with timestamp');
+
+  // 12. Operational Remediation Runbooks Execution
+  const runbooks = missionControlService.getAvailableRunbooks();
+  assert(runbooks.length >= 6, suite, 'At least 6 operational remediation runbooks are registered');
+
+  const stripeAuditRun = await missionControlService.executeRunbook('audit_stripe_lockout', 'sre.operator@catalyx.io');
+  assert(stripeAuditRun.success && stripeAuditRun.output.includes('PASSED'), suite, 'Runbook "audit_stripe_lockout" executes and passes');
+
+  const bankAuditRun = await missionControlService.executeRunbook('audit_bank_rails', 'sre.operator@catalyx.io');
+  assert(bankAuditRun.success && bankAuditRun.output.includes('Direct Bank Transfer rails verified'), suite, 'Runbook "audit_bank_rails" executes and passes');
+
+  const authNeutralityRun = await missionControlService.executeRunbook('audit_auth_neutrality', 'sre.operator@catalyx.io');
+  assert(authNeutralityRun.success && authNeutralityRun.output.includes('PASSED'), suite, 'Runbook "audit_auth_neutrality" executes and passes');
+
+  const financialAuditRun = await missionControlService.executeRunbook('audit_financial_ledger', 'sre.operator@catalyx.io');
+  assert(financialAuditRun.success && financialAuditRun.output.includes('PASSED'), suite, 'Runbook "audit_financial_ledger" executes and passes');
+
+  const flushCacheRun = await missionControlService.executeRunbook('flush_telemetry_cache', 'sre.operator@catalyx.io');
+  assert(flushCacheRun.success && flushCacheRun.output.includes('flushed'), suite, 'Runbook "flush_telemetry_cache" executes and passes');
+
+  // 13. Event Audit Stream Integrity
+  const events = missionControlService.getRecentEvents(20);
+  assert(events.length > 0, suite, 'Operational event stream records system activities');
+  assert(events.every(e => ['INFO', 'WARN', 'ERROR', 'CRITICAL'].includes(e.severity)), suite, 'All operational events have valid severity classifications');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -1509,6 +1795,8 @@ async function main() {
     await runDeepResearchEngineIntegrityTests();
     await runApplicationPerformanceMeasurements();
     await runAuthoritativePaymentProviderPolicyTests();
+    await runMandatorySubscriptionAndSecurityTests();
+    await runMissionControlAndObservabilityTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }

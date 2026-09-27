@@ -265,7 +265,7 @@ export class AuthService {
     if (credIndex === -1) {
       return {
         success: false,
-        error: 'Invalid credentials. Please verify your email and password or use account recovery.'
+        error: 'Incorrect email or password.'
       };
     }
 
@@ -300,7 +300,7 @@ export class AuthService {
       this.saveCredentials(credentials);
       return {
         success: false,
-        error: 'Invalid credentials. Please verify your email and password or use account recovery.'
+        error: 'Incorrect email or password.'
       };
     }
 
