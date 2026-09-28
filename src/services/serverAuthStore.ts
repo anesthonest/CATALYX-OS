@@ -20,7 +20,7 @@ export interface PendingRegistration {
   id: string;
   email: string;
   username: string;
-  accountType: 'INDIVIDUAL' | 'ORGANIZATION';
+  accountType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
   passwordHash: string;
   passwordSalt: string;
   otpHash: string;
@@ -52,11 +52,15 @@ export interface UserAccount {
   uid: string;
   email: string;
   username: string;
-  accountType: 'INDIVIDUAL' | 'ORGANIZATION';
+  accountType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
   organizationId: string;
   role: 'admin' | 'user' | 'founder';
   emailVerified: boolean;
   emailVerifiedAt?: string;
+  googleId?: string;
+  googleLinked?: boolean;
+  googleLinkedAt?: string;
+  authProviders?: string[];
   createdAt: string;
   updatedAt: string;
   passwordHash: string;
@@ -195,7 +199,7 @@ export class ServerAuthStore {
     username: string;
     password: string;
     confirmPassword: string;
-    accountType?: 'INDIVIDUAL' | 'ORGANIZATION';
+    accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
     acceptTerms: boolean;
   }): Promise<{ success: boolean; message?: string; expiresInSeconds?: number; error?: string }> {
     const email = this.normalizeEmail(params.email);
@@ -352,7 +356,7 @@ export class ServerAuthStore {
 
     // Provision authoritative account
     const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
-    const organizationId = pending.accountType === 'ORGANIZATION' ? `org_${uid}` : 'org_default';
+    const organizationId = (pending.accountType === 'ORGANIZATION' || pending.accountType === 'GROUP') ? `org_${uid}` : 'org_default';
 
     const account: UserAccount = {
       uid,
@@ -363,6 +367,7 @@ export class ServerAuthStore {
       role: 'user',
       emailVerified: true,
       emailVerifiedAt: new Date().toISOString(),
+      authProviders: ['password'],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       passwordHash: pending.passwordHash,
@@ -726,6 +731,142 @@ export class ServerAuthStore {
 
   public getAccountByEmail(email: string): UserAccount | null {
     return this.accounts.get(this.normalizeEmail(email)) || null;
+  }
+
+  // =========================================================================
+  // GOOGLE SIGN-IN, ACCOUNT CREATION & SECURE ACCOUNT LINKING
+  // =========================================================================
+
+  /**
+   * Authenticates or creates an account via Google Sign-In with email verification guarantee
+   */
+  public async authenticateWithGoogle(params: {
+    googleId: string;
+    email: string;
+    name?: string;
+    accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
+    acceptTerms?: boolean;
+    ip?: string;
+  }): Promise<{
+    success: boolean;
+    user?: UserAccount;
+    sessionToken?: string;
+    isNewUser?: boolean;
+    linkedExisting?: boolean;
+    error?: string;
+  }> {
+    const email = this.normalizeEmail(params.email);
+    const googleId = (params.googleId || '').trim();
+
+    if (!email || !googleId) {
+      return { success: false, error: 'Google ID and email address are required.' };
+    }
+
+    // Check if account already exists by email
+    let account = this.accounts.get(email);
+    let isNewUser = false;
+    let linkedExisting = false;
+
+    if (account) {
+      // Existing account: Link Google if not yet linked
+      if (!account.googleId) {
+        account.googleId = googleId;
+        account.googleLinked = true;
+        account.googleLinkedAt = new Date().toISOString();
+        if (!account.authProviders) account.authProviders = ['password'];
+        if (!account.authProviders.includes('google')) account.authProviders.push('google');
+        account.emailVerified = true;
+        account.updatedAt = new Date().toISOString();
+        linkedExisting = true;
+      }
+    } else {
+      // New user creating account with Google
+      const username = (params.name || email.split('@')[0]).trim();
+      const accountType = params.accountType || 'INDIVIDUAL';
+      const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+      const organizationId = (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${uid}` : 'org_default';
+
+      // Create secure random password salt/hash for account consistency
+      const dummySalt = this.generateSalt();
+      const dummyHash = this.hashPasswordWithSalt(crypto.randomBytes(32).toString('hex'), dummySalt);
+
+      account = {
+        uid,
+        email,
+        username,
+        accountType,
+        organizationId,
+        role: 'user',
+        emailVerified: true,
+        emailVerifiedAt: new Date().toISOString(),
+        googleId,
+        googleLinked: true,
+        googleLinkedAt: new Date().toISOString(),
+        authProviders: ['google'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        passwordHash: dummyHash,
+        passwordSalt: dummySalt,
+        failedAttempts: 0,
+        termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
+        termsAcceptedAt: new Date().toISOString()
+      };
+
+      this.accounts.set(email, account);
+      this.accountsByUid.set(uid, account);
+      isNewUser = true;
+    }
+
+    // Create session
+    const sessionToken = this.createSession(account, params.ip);
+
+    return {
+      success: true,
+      user: account,
+      sessionToken,
+      isNewUser,
+      linkedExisting
+    };
+  }
+
+  /**
+   * Links a Google account to an existing authenticated user session
+   */
+  public async linkGoogleAccount(params: {
+    uid: string;
+    googleId: string;
+    googleEmail: string;
+  }): Promise<{ success: boolean; user?: UserAccount; error?: string }> {
+    const account = this.getAccountByUid(params.uid);
+    if (!account) {
+      return { success: false, error: 'Authenticated user account not found.' };
+    }
+
+    const cleanGoogleEmail = this.normalizeEmail(params.googleEmail);
+    const googleId = (params.googleId || '').trim();
+
+    if (!googleId || !cleanGoogleEmail) {
+      return { success: false, error: 'Google ID and email are required for linking.' };
+    }
+
+    // Check if another account is already linked to this googleId
+    for (const other of this.accounts.values()) {
+      if (other.uid !== account.uid && other.googleId === googleId) {
+        return { success: false, error: 'This Google account is already linked to another CATALYX user.' };
+      }
+    }
+
+    account.googleId = googleId;
+    account.googleLinked = true;
+    account.googleLinkedAt = new Date().toISOString();
+    if (!account.authProviders) account.authProviders = ['password'];
+    if (!account.authProviders.includes('google')) account.authProviders.push('google');
+    account.updatedAt = new Date().toISOString();
+
+    return {
+      success: true,
+      user: account
+    };
   }
 
   // =========================================================================

@@ -227,12 +227,29 @@ export class PesapalPaymentProvider implements PaymentProvider {
     const amountMajor = Math.round(request.amountMinorUnits) / 100;
     const callback = request.callbackUrl || this.callbackUrl || `${this.appUrl}/billing?merchantRef=${request.merchantReference}`;
     
-    let notificationId = request.notificationId || this.defaultIpnId;
+    // Resolve notification_id: ensure it is a valid, active registered IPN
+    let notificationId = (request.notificationId || '').trim();
+    if (!notificationId && this.defaultIpnId) {
+      notificationId = this.defaultIpnId.trim();
+    }
+
+    // If still missing or empty, dynamically query registered IPNs from gateway
     if (!notificationId) {
-      // Dynamically query registered IPNs from gateway
       const ipnList = await this.getIpnList();
       if (ipnList.ipns && ipnList.ipns.length > 0) {
-        notificationId = ipnList.ipns[0].ipn_id;
+        // Find active matching IPN or active first IPN
+        const publicIpnUrl = this.getPublicIpnUrl();
+        const matchingIpn = ipnList.ipns.find((ipn: any) => 
+          (ipn.url === publicIpnUrl || ipn.url?.includes('/api/billing/pesapal/ipn')) &&
+          (ipn.ipn_status_decription === 'Active' || ipn.ipn_status === 1 || ipn.status === '1')
+        );
+        const activeIpn = matchingIpn || ipnList.ipns.find((ipn: any) => 
+          ipn.ipn_status_decription === 'Active' || ipn.ipn_status === 1 || ipn.status === '1'
+        ) || ipnList.ipns[0];
+        
+        if (activeIpn && activeIpn.ipn_id) {
+          notificationId = activeIpn.ipn_id;
+        }
       }
     }
 

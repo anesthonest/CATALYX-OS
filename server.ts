@@ -1055,7 +1055,7 @@ export interface AuthoritativeSubscriptionRecord {
   currentPeriodStart: string;
   currentPeriodEnd: string;
   paymentStatus: 'paid' | 'pending' | 'failed';
-  subscriptionStatus: 'active' | 'pending' | 'payment_pending' | 'past_due' | 'suspended' | 'cancelled' | 'expired';
+  subscriptionStatus: 'trial' | 'active' | 'pending' | 'payment_pending' | 'past_due' | 'suspended' | 'cancelled' | 'expired';
   renewalStatus: 'auto_renew' | 'manual' | 'cancelled';
   cancelAtPeriodEnd: boolean;
   paymentProvider: 'pesapal' | 'bank_transfer' | 'free';
@@ -1163,34 +1163,55 @@ export class ServerSubscriptionStore {
     if (existing) return existing;
 
     const now = new Date();
-    const periodEnd = new Date(now.getTime() + 30 * 86400 * 1000);
+    const periodEnd = new Date(now.getTime() + 30 * 86400 * 1000); // 30-day (1-month) free trial
+
+    // Check account type if available in auth store
+    let detectedType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION' = 'INDIVIDUAL';
+    let detectedTier: 'individual' | 'group' | 'organization' = 'individual';
+    let monthlyMinor = 1000;
+
+    for (const acc of (serverAuthStore as any).accounts.values()) {
+      if (acc.organizationId === orgId || acc.uid === orgId) {
+        if (acc.accountType === 'ORGANIZATION') {
+          detectedType = 'ORGANIZATION';
+          detectedTier = 'organization';
+          monthlyMinor = 2500;
+        } else if (acc.accountType === 'GROUP') {
+          detectedType = 'GROUP';
+          detectedTier = 'group';
+          monthlyMinor = 1300;
+        }
+        break;
+      }
+    }
+
     const newSub: AuthoritativeSubscriptionRecord = {
       id: `sub_${orgId}`,
       organizationId: orgId,
-      accountType: 'INDIVIDUAL',
-      planId: 'plan_individual',
-      tier: 'individual',
-      monthlyPriceMinorUnits: 1000,
-      amountMinorUnits: 1000,
+      accountType: detectedType,
+      planId: `plan_${detectedTier}`,
+      tier: detectedTier,
+      monthlyPriceMinorUnits: monthlyMinor,
+      amountMinorUnits: 0,
       currency: 'USD',
       billingInterval: 'monthly',
       currentPeriodStart: now.toISOString(),
       currentPeriodEnd: periodEnd.toISOString(),
       paymentStatus: 'paid',
-      subscriptionStatus: 'active',
+      subscriptionStatus: 'trial',
       renewalStatus: 'auto_renew',
       cancelAtPeriodEnd: false,
-      paymentProvider: 'pesapal',
-      paymentReferences: [`AUTH-REF-${orgId}`],
+      paymentProvider: 'free',
+      paymentReferences: [`TRIAL-INIT-${orgId}`],
       lastPaymentDate: now.toISOString(),
-      entitlements: getAuthoritativeEntitlements('individual'),
+      entitlements: getAuthoritativeEntitlements(detectedTier),
       auditHistory: [
         {
           timestamp: now.toISOString(),
           fromState: 'pending',
-          toState: 'active',
+          toState: 'trial',
           actor: 'Subscription Engine',
-          reason: 'Authoritative tenant subscription establishment'
+          reason: 'One-month free trial activated for new tenant'
         }
       ],
       createdAt: now.toISOString(),
@@ -1529,6 +1550,31 @@ app.get('/api/billing/pesapal/ipn/list', async (req, res) => {
 });
 
 /**
+ * Authoritative Subscription Status & Access Enforcement Query Endpoint
+ */
+app.get(['/api/billing/subscription', '/api/billing/subscription/status'], (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  const orgId = (req.query.organizationId as string) || (actor ? actor.organizationId || actor.uid : 'org_default');
+  const subscription = serverSubscriptionStore.get(orgId);
+
+  // Check if period has ended and status needs evaluation
+  const now = Date.now();
+  const periodEndMs = new Date(subscription.currentPeriodEnd).getTime();
+  const isPeriodActive = periodEndMs > now;
+  const hasAccess = subscription.subscriptionStatus === 'active' || 
+    (subscription.subscriptionStatus === 'trial' && isPeriodActive);
+
+  res.json({
+    success: true,
+    subscription,
+    hasAccess,
+    isTrial: subscription.subscriptionStatus === 'trial',
+    trialDaysRemaining: subscription.subscriptionStatus === 'trial' ? Math.max(0, Math.ceil((periodEndMs - now) / 86400000)) : 0,
+    entitlements: subscription.entitlements
+  });
+});
+
+/**
  * Entitlements Query Endpoint
  */
 app.get('/api/billing/pesapal/entitlements', (req, res) => {
@@ -1692,6 +1738,54 @@ app.post('/api/auth/login', async (req, res) => {
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Login failed' });
+  }
+});
+
+/**
+ * Google Sign-In / Account Creation
+ */
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { googleId, email, name, accountType, acceptTerms } = req.body;
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const result = await serverAuthStore.authenticateWithGoogle({
+      googleId,
+      email,
+      name,
+      accountType,
+      acceptTerms: Boolean(acceptTerms),
+      ip: clientIp
+    });
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Google authentication failed' });
+  }
+});
+
+/**
+ * Secure Google Account Linking
+ */
+app.post('/api/auth/google/link', async (req, res) => {
+  try {
+    const actor = getAuthenticatedActor(req);
+    if (!actor) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: active session required for account linking' });
+    }
+    const { googleId, googleEmail } = req.body;
+    const result = await serverAuthStore.linkGoogleAccount({
+      uid: actor.uid,
+      googleId,
+      googleEmail
+    });
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to link Google account' });
   }
 });
 

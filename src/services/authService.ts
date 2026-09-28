@@ -27,7 +27,7 @@ export interface RegisterParams {
   username: string;
   password: string;
   confirmPassword: string;
-  accountType?: 'INDIVIDUAL' | 'ORGANIZATION';
+  accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
   acceptTerms: boolean;
 }
 
@@ -745,6 +745,80 @@ export class AuthService {
     } catch {
       const res = await this.resetPassword(email, resetToken, newPassword, confirmPassword);
       return { success: res.success, message: res.warning, error: res.error };
+    }
+  }
+
+  /**
+   * Google Sign-In / Account Creation
+   */
+  public async loginWithGoogle(params: {
+    googleId: string;
+    email: string;
+    name?: string;
+    accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
+    acceptTerms?: boolean;
+  }): Promise<AuthResult> {
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.error || 'Google authentication failed' };
+      }
+
+      if (data.user) {
+        const profile = await dbService.getUserProfile(data.user.uid) || await dbService.registerUser(data.user.username, data.user.email);
+        const synced = await dbService.updateUserProfile(profile.uid, {
+          emailVerified: true,
+          emailVerifiedAt: data.user.emailVerifiedAt || new Date().toISOString(),
+          accountType: data.user.accountType
+        });
+        if (data.sessionToken) {
+          safeStorage.set('catalyx_session_token', data.sessionToken);
+        }
+        safeStorage.set('catalyx_active_session', synced.uid);
+        return { success: true, user: synced };
+      }
+
+      return { success: false, error: 'User data missing from response' };
+    } catch {
+      // Local simulated fallback
+      const cleanEmail = params.email.trim().toLowerCase();
+      let user = (getSimData<UserProfile>('users')).find(u => u.email.toLowerCase() === cleanEmail);
+      if (!user) {
+        user = await dbService.registerUser(params.name || cleanEmail.split('@')[0], cleanEmail);
+      }
+      const updated = await dbService.updateUserProfile(user.uid, {
+        emailVerified: true,
+        emailVerifiedAt: new Date().toISOString(),
+        accountType: params.accountType || 'INDIVIDUAL'
+      });
+      safeStorage.set('catalyx_active_session', updated.uid);
+      return { success: true, user: updated };
+    }
+  }
+
+  /**
+   * Link Google Account to Authenticated Session
+   */
+  public async linkGoogleAccount(googleId: string, googleEmail: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const sessionToken = safeStorage.get<string | null>('catalyx_session_token', null);
+      const res = await fetch('/api/auth/google/link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}`, 'x-session-token': sessionToken } : {})
+        },
+        body: JSON.stringify({ googleId, googleEmail })
+      });
+      const data = await res.json();
+      return data;
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to link Google account' };
     }
   }
 }

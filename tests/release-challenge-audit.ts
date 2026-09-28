@@ -1779,6 +1779,118 @@ async function runMissionControlAndObservabilityTests() {
   assert(events.every(e => ['INFO', 'WARN', 'ERROR', 'CRITICAL'].includes(e.severity)), suite, 'All operational events have valid severity classifications');
 }
 
+async function runPesapalApi3ProductionIpnRegistrationTests() {
+  const suite = 'Pesapal API 3 Production IPN Registration & Verification';
+
+  // 1. Authoritative Production Base URL
+  const prodProvider = new PesapalPaymentProvider({
+    consumerKey: process.env.PESAPAL_CONSUMER_KEY,
+    consumerSecret: process.env.PESAPAL_CONSUMER_SECRET,
+    environment: 'live'
+  });
+  assert(prodProvider.getBaseUrl() === 'https://pay.pesapal.com/v3', suite, 'Production Pesapal API 3 base URL is https://pay.pesapal.com/v3');
+
+  // 2. Production Authentication Capability
+  const isConfigured = prodProvider.isConfigured();
+  assert(isConfigured, suite, 'Production Pesapal Consumer Key and Secret are configured');
+
+  // 3. Public IPN URL Construction
+  const publicIpnUrl = prodProvider.getPublicIpnUrl();
+  assert(publicIpnUrl.startsWith('https://'), suite, 'Production IPN endpoint uses secure HTTPS protocol');
+  assert(publicIpnUrl.includes('/api/billing/pesapal/ipn'), suite, 'Production IPN endpoint path is /api/billing/pesapal/ipn');
+
+  // 4. IPN Notification Payload Parsing & Acknowledgement Format
+  const ipnSample = {
+    OrderNotificationType: 'IPNCHANGE',
+    OrderTrackingId: 'e72acd10-cb96-4b1f-8d5d-d9df8e36b68d',
+    OrderMerchantReference: 'CX-PROD-TEST-001'
+  };
+  const parseResult = await prodProvider.processNotification(ipnSample);
+  assert(parseResult.status === 'SUCCESS', suite, 'IPN parser accepts Pesapal API 3 fields');
+  assert(parseResult.ackPayload.orderNotificationType === 'IPNCHANGE', suite, 'IPN acknowledgement contains OrderNotificationType');
+  assert(parseResult.ackPayload.orderTrackingId === 'e72acd10-cb96-4b1f-8d5d-d9df8e36b68d', suite, 'IPN acknowledgement contains OrderTrackingId');
+  assert(parseResult.ackPayload.orderMerchantReference === 'CX-PROD-TEST-001', suite, 'IPN acknowledgement contains OrderMerchantReference');
+  assert(parseResult.ackPayload.status === 200, suite, 'IPN acknowledgement returns HTTP status 200 format');
+
+  // 5. Hardened Notification ID wiring in SubmitOrder
+  let capturedNotificationId: string | undefined;
+  const mockFetchIpn = async (url: any, opts: any) => {
+    const urlStr = url.toString();
+    if (urlStr.includes('/api/Auth/RequestToken')) {
+      return {
+        ok: true,
+        json: async () => ({ token: 'mock_bearer_token', expiryDate: new Date(Date.now() + 300000).toISOString() })
+      };
+    }
+    if (urlStr.includes('/api/Transactions/SubmitOrder')) {
+      const body = JSON.parse(opts.body);
+      capturedNotificationId = body.notification_id;
+      return {
+        ok: true,
+        json: async () => ({
+          status: '200',
+          order_tracking_id: 'mock_track_guid',
+          merchant_reference: body.id,
+          redirect_url: 'https://pay.pesapal.com/v3/redirect'
+        })
+      };
+    }
+    return { ok: false, text: async () => 'Not found' };
+  };
+
+  const wireTestProvider = new PesapalPaymentProvider({
+    consumerKey: 'audit_key',
+    consumerSecret: 'audit_secret',
+    environment: 'live',
+    defaultIpnId: 'e72acd10-cb96-4b1f-8d5d-d9df8e36b68d',
+    fetchOverride: mockFetchIpn as any
+  });
+
+  const submitRes = await wireTestProvider.submitOrder({
+    internalOrderId: 'ord_ipn_test_1',
+    merchantReference: 'CX-IPN-TEST-1',
+    amountMinorUnits: 1000,
+    currency: 'USD',
+    description: 'IPN Notification ID Test Order',
+    callbackUrl: 'https://ais-dev-fta6wcb3kopn277yojqzzu-945644866497.europe-west2.run.app/billing',
+    billingAddress: { emailAddress: 'operator@catalyx.io' },
+    idempotencyKey: 'idemp_ipn_wire_test'
+  });
+
+  assert(submitRes.status === 'SUCCESS', suite, 'SubmitOrder executes successfully with wired notification_id');
+  assert(capturedNotificationId === 'e72acd10-cb96-4b1f-8d5d-d9df8e36b68d', suite, 'SubmitOrder wires registered active IPN ID into notification_id parameter');
+  assert(Boolean(capturedNotificationId && capturedNotificationId.length > 10), suite, 'notification_id is never null, empty, or unconfigured');
+
+  // 6. Idempotency against duplicate IPN notifications
+  const dupEngine = new CatalyxEconomicEngine(prodProvider);
+  const dupOrder = dupEngine.createOrder({
+    organizationId: 'org_idemp_ipn',
+    customerId: 'cust_idemp_ipn',
+    customerName: 'Idempotency Tester',
+    customerEmail: 'idemp@catalyx.io',
+    billingAddress: { emailAddress: 'idemp@catalyx.io' },
+    items: [{
+      productId: 'plan_individual',
+      productTitle: 'CATALYX Individual Plan',
+      sku: 'SUB-INDIVIDUAL-MONTHLY',
+      quantity: 1,
+      unitPriceMinorUnits: 1000,
+      totalPriceMinorUnits: 1000
+    }],
+    currency: 'USD',
+    idempotencyKey: 'idemp_dup_order_1'
+  });
+
+  // Verify that an unknown or fake transaction cannot settle
+  const fakeSettle = await dupEngine.verifyAndSettlePayment({
+    orderTrackingId: 'fake-tracking-id-99999',
+    merchantReference: 'CX-FAKE-REF',
+    operatorOrTrigger: 'Adversarial IPN Test'
+  });
+  assert(fakeSettle.verified === false, suite, 'Unverified fake IPN transaction rejected without entitlement activation');
+  assert(dupEngine.getOrder(dupOrder.id)?.status === 'CREATED', suite, 'Order remains strictly un-paid when IPN is unverified');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -1797,6 +1909,7 @@ async function main() {
     await runAuthoritativePaymentProviderPolicyTests();
     await runMandatorySubscriptionAndSecurityTests();
     await runMissionControlAndObservabilityTests();
+    await runPesapalApi3ProductionIpnRegistrationTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }

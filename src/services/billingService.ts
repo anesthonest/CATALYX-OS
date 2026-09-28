@@ -283,9 +283,9 @@ export class BillingService {
       }
     }
 
-    // Default to free trial
+    // Default to one-month free trial
     const now = new Date();
-    const periodEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14-day trial
+    const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30-day (1-month) trial
     const defaultSub: Subscription = {
       id: `sub_${orgId}_default`,
       organizationId: orgId,
@@ -294,7 +294,7 @@ export class BillingService {
       accountType: 'INDIVIDUAL',
       status: 'trial',
       currency: 'USD',
-      amountMinorUnits: 1000,
+      amountMinorUnits: 0,
       monthlyPriceMinorUnits: 1000,
       billingInterval: 'monthly',
       currentPeriodStart: now.toISOString(),
