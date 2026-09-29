@@ -648,13 +648,24 @@ export const BillingPesapalTab: React.FC<Props> = ({ orgId, userEmail }) => {
               <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Active Tenant Tier</span>
               <div className="flex items-center gap-3">
                 <h3 className="text-2xl font-black text-white capitalize">{subscription.tier} Plan</h3>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
-                  {subscription.status}
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border uppercase ${
+                  subscription.status === 'trial'
+                    ? 'bg-brand-cyan/20 text-brand-cyan border-brand-cyan/30'
+                    : subscription.status === 'active'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}>
+                  {subscription.status === 'trial' ? `Active 1-Month Trial (${BillingService.getTrialDaysRemaining(subscription)} Days Left)` : subscription.status}
                 </span>
               </div>
               <p className="text-xs text-gray-400">
-                Payment Channel: <strong className="text-purple-300 font-mono">Pesapal v3 / Wire Clearing</strong> • Renewal:{' '}
+                Payment Channel: <strong className="text-purple-300 font-mono">Pesapal v3 / Wire Clearing</strong> • Renewal / Expiry:{' '}
                 <strong className="text-white">{new Date(subscription.currentPeriodEnd).toLocaleDateString()}</strong>
+                {subscription.status === 'trial' && (
+                  <span className="text-emerald-400 ml-2 font-mono">
+                    (Zero upfront charge • 1-month trial active)
+                  </span>
+                )}
               </p>
             </div>
 

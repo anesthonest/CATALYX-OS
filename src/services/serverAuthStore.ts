@@ -191,7 +191,128 @@ export class ServerAuthStore {
   }
 
   // =========================================================================
-  // STEP 1-5: REGISTRATION INITIATION
+  // NORMAL ACCOUNT CREATION (DIRECT REGISTRATION - NO MANDATORY OTP CODE)
+  // =========================================================================
+
+  public async register(params: {
+    email: string;
+    username: string;
+    password: string;
+    confirmPassword: string;
+    accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
+    acceptTerms: boolean;
+    ip?: string;
+  }): Promise<{
+    success: boolean;
+    user?: UserAccount;
+    sessionToken?: string;
+    error?: string;
+  }> {
+    const email = this.normalizeEmail(params.email);
+    const username = (params.username || email.split('@')[0]).trim();
+    const password = params.password;
+    const confirmPassword = params.confirmPassword;
+
+    if (!params.acceptTerms) {
+      return {
+        success: false,
+        error: 'Mandatory Agreement: You must review and agree to the Terms of Service, Privacy Policy, and platform revenue schedule before creating an account.'
+      };
+    }
+
+    if (!email || !password || !confirmPassword) {
+      return { success: false, error: 'Email, username, password, and confirmation password are required.' };
+    }
+
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+    if (!emailRegex.test(email)) {
+      return { success: false, error: 'Please enter a valid electronic mail address (e.g. name@domain.com).' };
+    }
+
+    if (username.length < 2 || username.length > 64) {
+      return { success: false, error: 'Display name must be between 2 and 64 characters.' };
+    }
+
+    if (password !== confirmPassword) {
+      return { success: false, error: 'Password confirmation does not match.' };
+    }
+
+    const strength = this.validatePasswordStrength(password);
+    if (!strength.valid) {
+      return { success: false, error: strength.error };
+    }
+
+    // Duplicate account check: Prevent multiple trials for same email
+    const existing = this.accounts.get(email);
+    if (existing) {
+      return {
+        success: false,
+        error: 'An account with this email address already exists. Please sign in or use password recovery.'
+      };
+    }
+
+    // Server-side authoritative account type enforcement
+    const allowedTypes: Array<'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION'> = ['INDIVIDUAL', 'GROUP', 'ORGANIZATION'];
+    const accountType = allowedTypes.includes(params.accountType as any) ? params.accountType! : 'INDIVIDUAL';
+
+    const salt = this.generateSalt();
+    const passwordHash = this.hashPasswordWithSalt(password, salt);
+
+    const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+    const organizationId = (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${uid}` : 'org_default';
+
+    const account: UserAccount = {
+      uid,
+      email,
+      username,
+      accountType,
+      organizationId,
+      role: 'user',
+      emailVerified: true,
+      emailVerifiedAt: new Date().toISOString(),
+      authProviders: ['password'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      passwordHash,
+      passwordSalt: salt,
+      failedAttempts: 0,
+      termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
+      termsAcceptedAt: new Date().toISOString()
+    };
+
+    this.accounts.set(email, account);
+    this.accountsByUid.set(uid, account);
+
+    // Issue authoritative session token immediately
+    const sessionToken = this.createSession(account, params.ip);
+
+    // Asynchronous non-blocking welcome email delivery
+    // Transactional email failure will NEVER block or invalidate account creation
+    try {
+      const welcomeMail = emailDeliveryService.createTrialWelcomeEmail(
+        email,
+        account.username,
+        account.accountType,
+        30
+      );
+      emailDeliveryService.sendEmail(welcomeMail).catch(err => {
+        console.warn('[AUTH] Background welcome email dispatch failed (non-blocking):', err);
+      });
+    } catch (err) {
+      console.warn('[AUTH] Could not construct welcome email (non-blocking):', err);
+    }
+
+    console.log(`[AUTH] Normal registration completed: uid=${uid} email=${emailDeliveryService.maskEmail(email)} tier=${accountType} (1-Month Free Trial Active)`);
+
+    return {
+      success: true,
+      user: account,
+      sessionToken
+    };
+  }
+
+  // =========================================================================
+  // STEP 1-5: OPTIONAL / LEGACY REGISTRATION INITIATION
   // =========================================================================
 
   public async initiateRegistration(params: {
@@ -383,6 +504,19 @@ export class ServerAuthStore {
     // Issue active session
     const sessionToken = this.createSession(account, params.ip);
 
+    // Dispatch welcome notification with 1-month trial confirmation
+    try {
+      const welcomeMail = emailDeliveryService.createTrialWelcomeEmail(
+        email,
+        account.username,
+        account.accountType,
+        30
+      );
+      await emailDeliveryService.sendEmail(welcomeMail);
+    } catch (err) {
+      console.warn('[AUTH] Could not send welcome trial email:', err);
+    }
+
     console.log(`[AUTH] Account successfully activated: uid=${uid} email=${emailDeliveryService.maskEmail(email)}`);
 
     return {
@@ -427,6 +561,49 @@ export class ServerAuthStore {
       success: true,
       message: 'A new verification code has been dispatched to your email.'
     };
+  }
+
+  public async resendRegistrationOtp(email: string): Promise<{ success: boolean; message?: string; error?: string }> {
+    return this.resendRegistrationCode(email);
+  }
+
+  public async createAccountDirect(params: {
+    email: string;
+    username: string;
+    password?: string;
+    role?: 'admin' | 'user' | 'founder';
+    accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
+  }): Promise<UserAccount> {
+    const email = this.normalizeEmail(params.email);
+    const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+    const accountType = params.accountType || 'INDIVIDUAL';
+    const organizationId = (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${uid}` : 'org_default';
+
+    const salt = this.generateSalt();
+    const hash = this.hashPasswordWithSalt(params.password || crypto.randomBytes(16).toString('hex'), salt);
+
+    const account: UserAccount = {
+      uid,
+      email,
+      username: params.username,
+      accountType,
+      organizationId,
+      role: params.role || 'user',
+      emailVerified: true,
+      emailVerifiedAt: new Date().toISOString(),
+      authProviders: ['password'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      passwordHash: hash,
+      passwordSalt: salt,
+      failedAttempts: 0,
+      termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
+      termsAcceptedAt: new Date().toISOString()
+    };
+
+    this.accounts.set(email, account);
+    this.accountsByUid.set(uid, account);
+    return account;
   }
 
   // =========================================================================
@@ -819,6 +996,20 @@ export class ServerAuthStore {
 
     // Create session
     const sessionToken = this.createSession(account, params.ip);
+
+    if (isNewUser) {
+      try {
+        const welcomeMail = emailDeliveryService.createTrialWelcomeEmail(
+          email,
+          account.username,
+          account.accountType,
+          30
+        );
+        await emailDeliveryService.sendEmail(welcomeMail);
+      } catch (err) {
+        console.warn('[AUTH] Could not send Google welcome trial email:', err);
+      }
+    }
 
     return {
       success: true,

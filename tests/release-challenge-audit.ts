@@ -47,6 +47,7 @@ import { universalPricingEngine, UniversalPricingEngine } from '../src/services/
 import { SubscriptionStateMachine } from '../src/services/subscriptionStateMachine';
 import { EntitlementService } from '../src/services/entitlementService';
 import { missionControlService } from '../src/services/missionControlService';
+import { emailDeliveryService } from '../src/services/emailDeliveryService';
 import crypto from 'crypto';
 import fs from 'fs';
 
@@ -819,9 +820,9 @@ async function runAuthenticationAndIdentitySecurityTests() {
     'Registered user automatically binds current terms version'
   );
   assert(
-    regResult.user?.emailVerified === false,
+    regResult.user?.emailVerified === true,
     suite,
-    'New registered user is initialized with unverified email state'
+    'New registered user is active without mandatory email verification gate'
   );
 
   // 7. Duplicate Account Prevention
@@ -1891,6 +1892,236 @@ async function runPesapalApi3ProductionIpnRegistrationTests() {
   assert(dupEngine.getOrder(dupOrder.id)?.status === 'CREATED', suite, 'Order remains strictly un-paid when IPN is unverified');
 }
 
+async function runCatalyxIdentityAndSubscriptionLifecycleTests() {
+  const suite = 'CATALYX Identity & Subscription Lifecycle Verification';
+  const { authService } = await import('../src/services/authService');
+
+  // 1. Email Verification Codes During Account Creation
+  const uniqueRegEmail = `test_signup_${Date.now()}@catalyx.io`;
+  const initRes = await serverAuthStore.initiateRegistration({
+    email: uniqueRegEmail,
+    username: 'Verification Tester',
+    password: 'Password123!',
+    confirmPassword: 'Password123!',
+    accountType: 'GROUP',
+    acceptTerms: true
+  });
+  assert(initRes.success === true, suite, 'Initiating registration generates verification OTP');
+  assert(initRes.expiresInSeconds === 900, suite, 'Verification code has authoritative 15-minute expiration');
+
+  const dispatchedOtp = emailDeliveryService.getLastOtpForTesting(uniqueRegEmail);
+  assert(dispatchedOtp !== undefined && /^\d{6}$/.test(dispatchedOtp), suite, 'Dispatched verification code is a 6-digit numeric OTP');
+
+  // Resend cooldown rate-limiting
+  const prematureResend = await serverAuthStore.resendRegistrationOtp(uniqueRegEmail);
+  assert(!prematureResend.success && prematureResend.error?.includes('Please wait'), suite, 'Premature OTP resend is strictly rate-limited by cooldown');
+
+  // Invalid OTP rejected
+  const invalidOtpRes = await serverAuthStore.verifyRegistration({
+    email: uniqueRegEmail,
+    code: '000000',
+    ip: '127.0.0.1'
+  });
+  assert(!invalidOtpRes.success && (invalidOtpRes.error?.includes('verification code') || invalidOtpRes.error?.includes('Incorrect')), suite, 'Invalid OTP code is rejected');
+
+  // Valid OTP verification succeeds
+  const validOtpRes = await serverAuthStore.verifyRegistration({
+    email: uniqueRegEmail,
+    code: dispatchedOtp!,
+    ip: '127.0.0.1'
+  });
+  assert(validOtpRes.success === true && validOtpRes.user !== undefined, suite, 'Valid OTP completes registration and activates user account');
+  assert(validOtpRes.user?.emailVerified === true && Boolean(validOtpRes.user?.emailVerifiedAt), suite, 'User account is marked emailVerified with timestamp');
+  assert(Boolean(validOtpRes.sessionToken), suite, 'Active session token issued upon email verification');
+
+  // Single-use guarantee: Replaying the same OTP is rejected
+  const replayOtpRes = await serverAuthStore.verifyRegistration({
+    email: uniqueRegEmail,
+    code: dispatchedOtp!,
+    ip: '127.0.0.1'
+  });
+  assert(!replayOtpRes.success, suite, 'Single-use OTP cannot be replayed after successful activation');
+
+  // 2. Real Transactional Email Delivery Architecture
+  const providerStatus = emailDeliveryService.getProviderStatus();
+  assert(providerStatus !== null && typeof providerStatus === 'object', suite, 'Email delivery provider status is accessible');
+  assert(['PRODUCTION_SMTP', 'DEVELOPMENT_PREVIEW_DISPATCH'].includes(providerStatus.mode), suite, 'Email delivery operates in production SMTP or secure preview mode');
+
+  const masked = emailDeliveryService.maskEmail('confidential.engineer@catalyx.io');
+  assert(masked.startsWith('c***') && masked.endsWith('@catalyx.io'), suite, 'Email address is masked for security logs without leaking PII');
+
+  const welcomeMail = emailDeliveryService.createTrialWelcomeEmail('subscriber@catalyx.io', 'Subscriber User', 'ORGANIZATION', 30);
+  assert(welcomeMail.subject.includes('Welcome to CATALYX') && welcomeMail.category === 'NOTIFICATION', suite, 'Trial welcome email template is correctly configured');
+  assert(welcomeMail.text.includes('free trial') && welcomeMail.text.includes('$25/mo'), suite, 'Trial welcome email contains 1-month trial details and tier rate');
+
+  const subActivatedMail = emailDeliveryService.createSubscriptionActivatedEmail(
+    'subscriber@catalyx.io',
+    'Organization Plan',
+    '$25.00',
+    'Pesapal API v3',
+    'ORD_TEST_99'
+  );
+  assert(subActivatedMail.subject.includes('Subscription') && subActivatedMail.text.includes('ORD_TEST_99'), suite, 'Subscription activated email contains order reference and tier');
+
+  const pwChangedMail = emailDeliveryService.createPasswordChangedNotification('subscriber@catalyx.io');
+  assert(pwChangedMail.subject.includes('Security Alert') && pwChangedMail.category === 'SECURITY_ALERT', suite, 'Security alert email template generated for password changes');
+
+  // 3. Workspace Tier Selection (Individual / Group / Organization)
+  const indPlan = BillingService.getPlan('plan_individual');
+  assert(indPlan !== undefined && indPlan.pricesMinorUnits.USD === 1000 && indPlan.tier === 'individual', suite, 'Individual tier is $10.00/mo ($1000 minor units)');
+
+  const grpPlan = BillingService.getPlan('plan_group');
+  assert(grpPlan !== undefined && grpPlan.pricesMinorUnits.USD === 1300 && grpPlan.tier === 'group', suite, 'Group/Team tier is $13.00/mo ($1300 minor units)');
+
+  const orgPlan = BillingService.getPlan('plan_organization');
+  assert(orgPlan !== undefined && orgPlan.pricesMinorUnits.USD === 2500 && orgPlan.tier === 'organization', suite, 'Organization tier is $25.00/mo ($2500 minor units)');
+
+  // Verify quotas by tier
+  const indAiLimits = EntitlementService.evaluate('org_ind_sub_test', 'AI_AGENTS');
+  assert(indAiLimits.limit === 5, suite, 'Individual tier has 5 AI agents quota limit');
+
+  BillingService.initializeTrialSubscription('org_grp_sub_test', 'GROUP');
+  const grpAiLimits = EntitlementService.evaluate('org_grp_sub_test', 'AI_AGENTS');
+  assert(grpAiLimits.limit === 20, suite, 'Group tier has 20 AI agents quota limit');
+
+  BillingService.initializeTrialSubscription('org_corp_sub_test', 'ORGANIZATION');
+  const orgAiLimits = EntitlementService.evaluate('org_corp_sub_test', 'AI_AGENTS');
+  assert(orgAiLimits.limit === 100, suite, 'Organization tier has 100 AI agents quota limit');
+
+  // 4. One-Month Free Trial Activation & Remaining Calculation
+  const trialOrgId = `org_trial_verify_${Date.now()}`;
+  const trialSub = BillingService.initializeTrialSubscription(trialOrgId, 'INDIVIDUAL');
+  assert(trialSub.status === 'trial', suite, 'New subscription is initialized in trial state');
+  assert(trialSub.amountMinorUnits === 0, suite, 'Trial subscription costs $0.00 upfront');
+  assert(trialSub.monthlyPriceMinorUnits === 1000, suite, 'Monthly price after trial is recorded ($10.00)');
+
+  const trialDays = BillingService.getTrialDaysRemaining(trialSub);
+  assert(trialDays >= 29 && trialDays <= 30, suite, '1-month free trial initially provides 29-30 days remaining');
+
+  // 5. Trial-to-Paid Subscription Lifecycle & Expiration Enforcement
+  const activeTrialEval = EntitlementService.evaluate(trialOrgId, 'AI_AGENTS');
+  assert(activeTrialEval.granted === true, suite, 'Active trial grants entitlement access');
+
+  // Simulate expired trial by backdating currentPeriodEnd
+  const expiredTrialSub = {
+    ...trialSub,
+    currentPeriodEnd: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  };
+  BillingService.saveSubscription(expiredTrialSub);
+
+  const expiredEval = EntitlementService.evaluate(trialOrgId, 'AI_AGENTS');
+  assert(expiredEval.granted === false, suite, 'Expired trial strictly denies entitlement access');
+  assert(Boolean(expiredEval.reason?.toLowerCase().includes('expired')), suite, 'Expired trial provides clear reason prompting upgrade');
+
+  // State machine transition: TRIAL -> ACTIVE on payment confirmed
+  const toActiveRes = SubscriptionStateMachine.transition(
+    trialSub,
+    'active',
+    'Pesapal v3 Payment Verified',
+    'system_pesapal_ipn',
+    'System Automated Settler'
+  );
+  assert(toActiveRes.success === true && toActiveRes.subscription.status === 'active', suite, 'Trial transitions to ACTIVE on confirmed Pesapal payment');
+
+  // Update subscription to active
+  const paidSub = {
+    ...trialSub,
+    status: 'active' as const,
+    currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  };
+  BillingService.saveSubscription(paidSub);
+
+  const restoredEval = EntitlementService.evaluate(trialOrgId, 'AI_AGENTS');
+  assert(restoredEval.granted === true, suite, 'Paid active subscription restores full entitlement access');
+
+  // Guard against illegal reverse transition: ACTIVE -> TRIAL
+  const illegalTransition = SubscriptionStateMachine.transition(
+    toActiveRes.subscription,
+    'trial',
+    'Attempt reverse transition',
+    'adversary',
+    'Malicious Operator'
+  );
+  assert(!illegalTransition.success, suite, 'Illegal state transition from ACTIVE to TRIAL is strictly prevented');
+
+  // 6. Google Sign-In & Instant Account Creation
+  const googleUserEmail = `googler_${Date.now()}@gmail.com`;
+  const googleAuthRes = await serverAuthStore.authenticateWithGoogle({
+    googleId: `gid_${Date.now()}`,
+    email: googleUserEmail,
+    name: 'Google Identity User',
+    accountType: 'GROUP',
+    ip: '127.0.0.1'
+  });
+  assert(googleAuthRes.success === true && googleAuthRes.isNewUser === true, suite, 'New user creates account via Google authentication');
+  assert(googleAuthRes.user?.emailVerified === true, suite, 'Google user account is automatically pre-verified without OTP');
+  assert(googleAuthRes.user?.authProviders.includes('google'), suite, 'Google user record registers "google" in authProviders');
+  assert(Boolean(googleAuthRes.sessionToken), suite, 'Google authentication issues active session token');
+
+  // 7. Secure Account Linking
+  const linkTargetEmail = `link_target_${Date.now()}@catalyx.io`;
+  const linkUser = await serverAuthStore.createAccountDirect({
+    email: linkTargetEmail,
+    username: 'Link Target User',
+    password: 'Password123!',
+    role: 'user',
+    accountType: 'INDIVIDUAL'
+  });
+  assert(linkUser !== null, suite, 'Standard user account created for linking test');
+
+  const testGid = `gid_link_${Date.now()}`;
+  const linkRes = await serverAuthStore.linkGoogleAccount({
+    uid: linkUser.uid,
+    googleId: testGid,
+    googleEmail: linkTargetEmail
+  });
+  assert(linkRes.success === true && linkRes.user?.googleLinked === true, suite, 'Google account is successfully linked to existing user');
+  assert(linkRes.user?.authProviders.includes('google') && linkRes.user?.authProviders.includes('password'), suite, 'Linked user has both "password" and "google" auth providers');
+
+  // Adversarial: Attempting to link the same Google ID to a different user must be rejected
+  const competitorEmail = `competitor_${Date.now()}@catalyx.io`;
+  const competitorUser = await serverAuthStore.createAccountDirect({
+    email: competitorEmail,
+    username: 'Competitor User',
+    password: 'Password123!',
+    role: 'user',
+    accountType: 'INDIVIDUAL'
+  });
+
+  const duplicateLinkRes = await serverAuthStore.linkGoogleAccount({
+    uid: competitorUser.uid,
+    googleId: testGid,
+    googleEmail: competitorEmail
+  });
+  assert(!duplicateLinkRes.success && duplicateLinkRes.error?.includes('already linked'), suite, 'Duplicate Google account linking across accounts is strictly prevented');
+
+  // 8. Subscription Access Enforcement
+  const cancelledOrgId = `org_cancelled_${Date.now()}`;
+  BillingService.saveSubscription({
+    ...trialSub,
+    organizationId: cancelledOrgId,
+    status: 'cancelled'
+  });
+  const cancelledEval = EntitlementService.evaluate(cancelledOrgId, 'AI_AGENTS');
+  assert(cancelledEval.granted === false, suite, 'Cancelled subscription strictly denies access');
+
+  const indEnterpriseEval = EntitlementService.evaluate(trialOrgId, 'ENTERPRISE_GOVERNANCE');
+  assert(indEnterpriseEval.granted === false, suite, 'Individual tier strictly denied Enterprise Governance entitlement');
+
+  // 9. Registration & Login UX Improvements
+  const bogusLogin = await serverAuthStore.authenticate({
+    email: 'absolutely_nonexistent_user_99999@catalyx.io',
+    password: 'SomePassword123!'
+  });
+  assert(!bogusLogin.success && bogusLogin.error === 'Incorrect email or password.', suite, 'Non-existent account login returns neutral error message');
+
+  const shortPassVal = authService.validatePasswordStrength('short1!');
+  assert(!shortPassVal.valid && shortPassVal.error?.includes('8 characters'), suite, 'Registration password requires minimum 8 characters');
+
+  const noSymVal = authService.validatePasswordStrength('purelyalphabeticallong');
+  assert(!noSymVal.valid && noSymVal.error?.includes('number or symbol'), suite, 'Registration password requires at least one symbol or number');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -1910,6 +2141,7 @@ async function main() {
     await runMandatorySubscriptionAndSecurityTests();
     await runMissionControlAndObservabilityTests();
     await runPesapalApi3ProductionIpnRegistrationTests();
+    await runCatalyxIdentityAndSubscriptionLifecycleTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }

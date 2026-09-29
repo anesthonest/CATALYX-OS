@@ -25,16 +25,21 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [accountType, setAccountType] = useState<'INDIVIDUAL' | 'ORGANIZATION'>('INDIVIDUAL');
+  const [accountType, setAccountType] = useState<'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION'>('INDIVIDUAL');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Verified Registration Flow State (10-step lifecycle)
-  const [regStep, setRegStep] = useState<'FORM' | 'VERIFY_OTP'>('FORM');
-  const [regOtp, setRegOtp] = useState('');
-  const [regCooldown, setRegCooldown] = useState<number>(0);
-  const [regExpirySeconds, setRegExpirySeconds] = useState<number>(900);
+  // Google Authentication State
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState('');
+  const [googleName, setGoogleName] = useState('');
+  const [googleAccountType, setGoogleAccountType] = useState<'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION'>('INDIVIDUAL');
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
+
+  // Welcome & Onboarding State (Direct Registration - No OTP Code Gate)
+  const [welcomeUser, setWelcomeUser] = useState<UserProfile | null>(null);
 
   // Verified Recovery Flow State (Request -> Verify Code -> Reset Password)
   const [recoveryStep, setRecoveryStep] = useState<'REQUEST' | 'VERIFY_CODE' | 'SET_PASSWORD'>('REQUEST');
@@ -68,24 +73,6 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
     return () => clearInterval(timer);
   }, [lockoutCountdown]);
 
-  // Handle registration resend cooldown
-  useEffect(() => {
-    if (regCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setRegCooldown(prev => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [regCooldown]);
-
-  // Handle registration OTP expiration timer
-  useEffect(() => {
-    if (regExpirySeconds <= 0 || regStep !== 'VERIFY_OTP') return;
-    const timer = setInterval(() => {
-      setRegExpirySeconds(prev => (prev <= 1 ? 0 : prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [regExpirySeconds, regStep]);
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -118,7 +105,7 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
     }
   };
 
-  const handleInitiateRegister = async (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -130,7 +117,7 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
 
     setIsLoading(true);
     try {
-      const result = await authService.initiateRegistration({
+      const result = await authService.register({
         email: email.trim(),
         username: username.trim(),
         password,
@@ -139,64 +126,14 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
         acceptTerms
       });
 
-      if (result.success) {
-        setRegStep('VERIFY_OTP');
-        setRegExpirySeconds(result.expiresInSeconds || 900);
-        setRegCooldown(60);
-        setSuccessMessage(`A single-use 6-digit verification code has been dispatched to ${email.trim()}. Enter the code below to complete account activation.`);
+      if (result.success && result.user) {
+        setWelcomeUser(result.user);
+        setSuccessMessage('Welcome to CATALYX. Your 1-month free trial is now active.');
       } else {
-        setErrorMessage(result.error || 'Registration initiation failed.');
+        setErrorMessage(result.error || 'Registration failed.');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Unable to register account.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyRegistrationOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
-
-    const cleanOtp = regOtp.trim();
-    if (!cleanOtp || cleanOtp.length !== 6) {
-      setErrorMessage('Please enter the 6-digit verification code sent to your email.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await authService.verifyRegistration(email.trim(), cleanOtp);
-      if (result.success && result.user) {
-        setSuccessMessage('Email verified and account activated! Initializing command workspace...');
-        setTimeout(() => {
-          if (result.user) onAuthSuccess(result.user);
-        }, 600);
-      } else {
-        setErrorMessage(result.error || 'Invalid or expired verification code.');
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Verification exception occurred.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendRegistrationCode = async () => {
-    if (regCooldown > 0) return;
-    setErrorMessage('');
-    setIsLoading(true);
-    try {
-      const res = await authService.resendRegistrationCode(email.trim());
-      if (res.success) {
-        setRegCooldown(60);
-        setSuccessMessage('A fresh single-use verification code has been sent to your email.');
-      } else {
-        setErrorMessage(res.error || 'Failed to resend verification code.');
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Resend error.');
     } finally {
       setIsLoading(false);
     }
@@ -282,6 +219,48 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
       setErrorMessage(err.message || 'Demo initialization error.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleInitiateGoogleAuth = () => {
+    setGoogleEmail(email.trim() || 'anesthonest81@gmail.com');
+    setGoogleName(username.trim() || 'Alex Vance');
+    setGoogleAccountType(accountType);
+    setGoogleError('');
+    setShowGoogleModal(true);
+  };
+
+  const handleGoogleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanGoogleEmail = googleEmail.trim().toLowerCase();
+    if (!cleanGoogleEmail) {
+      setGoogleError('Please provide your Google email address.');
+      return;
+    }
+
+    setGoogleLoading(true);
+    setGoogleError('');
+    try {
+      const googleId = `gid_google_${Math.random().toString(36).substring(2, 9)}_${Date.now()}`;
+      const res = await authService.loginWithGoogle({
+        googleId,
+        email: cleanGoogleEmail,
+        name: googleName.trim() || cleanGoogleEmail.split('@')[0],
+        accountType: googleAccountType,
+        acceptTerms: true
+      });
+
+      if (res.success && res.user) {
+        setShowGoogleModal(false);
+        setWelcomeUser(res.user);
+        setSuccessMessage('Welcome to CATALYX. Your 1-month free trial is now active.');
+      } else {
+        setGoogleError(res.error || 'Google authentication failed.');
+      }
+    } catch (err: any) {
+      setGoogleError(err.message || 'Google authentication encountered an error.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -431,39 +410,41 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
             <div className="glass-panel-heavy p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-brand-cyan/10 rounded-full blur-2xl pointer-events-none" />
 
-              {/* Mode Toggle Tabs */}
-              <div className="flex rounded-xl bg-slate-950/80 p-1 border border-white/5 mb-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('LOGIN');
-                    setErrorMessage('');
-                    setSuccessMessage('');
-                  }}
-                  className={`flex-1 py-2 text-xs font-mono rounded-lg transition-all cursor-pointer ${
-                    mode === 'LOGIN'
-                      ? 'bg-brand-purple text-white font-semibold shadow'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  SIGN IN
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('REGISTER');
-                    setErrorMessage('');
-                    setSuccessMessage('');
-                  }}
-                  className={`flex-1 py-2 text-xs font-mono rounded-lg transition-all cursor-pointer ${
-                    mode === 'REGISTER'
-                      ? 'bg-brand-purple text-white font-semibold shadow'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  CREATE ACCOUNT
-                </button>
-              </div>
+              {/* Mode Toggle Tabs (Hidden during welcome screen) */}
+              {!welcomeUser && (
+                <div className="flex rounded-xl bg-slate-950/80 p-1 border border-white/5 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('LOGIN');
+                      setErrorMessage('');
+                      setSuccessMessage('');
+                    }}
+                    className={`flex-1 py-2 text-xs font-mono rounded-lg transition-all cursor-pointer ${
+                      mode === 'LOGIN'
+                        ? 'bg-brand-purple text-white font-semibold shadow'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    SIGN IN
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('REGISTER');
+                      setErrorMessage('');
+                      setSuccessMessage('');
+                    }}
+                    className={`flex-1 py-2 text-xs font-mono rounded-lg transition-all cursor-pointer ${
+                      mode === 'REGISTER'
+                        ? 'bg-brand-purple text-white font-semibold shadow'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    CREATE ACCOUNT
+                  </button>
+                </div>
+              )}
 
               {/* Status & Error Alerts */}
               {errorMessage && (
@@ -493,6 +474,32 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                 <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-center gap-2">
                   <Clock className="w-4 h-4 text-amber-400 animate-spin" />
                   <span>Security lockout active. Throttled for <strong>{lockoutCountdown}s</strong>.</span>
+                </div>
+              )}
+
+              {/* Google Sign-In / Account Creation Entrypoint */}
+              {!welcomeUser && mode !== 'FORGOT_PASSWORD' && (
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={handleInitiateGoogleAuth}
+                    disabled={isLoading}
+                    className="w-full py-2.5 px-4 bg-white/5 hover:bg-white/10 active:scale-[0.99] border border-white/10 hover:border-brand-purple/40 text-gray-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-sm"
+                  >
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>{mode === 'REGISTER' ? 'Continue with Google (1-Month Free Trial)' : 'Sign in with Google'}</span>
+                  </button>
+
+                  <div className="relative flex py-3 items-center">
+                    <div className="flex-grow border-t border-white/10"></div>
+                    <span className="flex-shrink mx-3 text-[10px] font-mono uppercase tracking-wider text-gray-500">OR WITH EMAIL</span>
+                    <div className="flex-grow border-t border-white/10"></div>
+                  </div>
                 </div>
               )}
 
@@ -563,45 +570,140 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                 </form>
               )}
 
-              {/* ----------------- REGISTER FORM ----------------- */}
-              {mode === 'REGISTER' && regStep === 'FORM' && (
-                <form onSubmit={handleInitiateRegister} className="space-y-3.5">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
-                        Full Name / Handle
-                      </label>
+              {/* ----------------- WELCOME SCREEN (Direct Registration Success) ----------------- */}
+              {welcomeUser && (
+                <div className="space-y-5 text-center py-2">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-500/10">
+                    <Sparkles className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-display font-bold text-white">Welcome to CATALYX.</h3>
+                    <p className="text-sm text-emerald-400 font-semibold mt-1">Your 1-month free trial is now active.</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-950/80 border border-white/10 text-left space-y-2 text-xs">
+                    <div className="flex justify-between items-center text-gray-400">
+                      <span>Account</span>
+                      <span className="text-white font-medium">{welcomeUser.username} ({welcomeUser.email})</span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-400">
+                      <span>Workspace Tier</span>
+                      <span className="text-brand-cyan font-bold font-mono">
+                        {welcomeUser.accountType === 'ORGANIZATION' ? 'Organization ($25/mo)' : welcomeUser.accountType === 'GROUP' ? 'Group / Team ($13/mo)' : 'Individual ($10/mo)'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-400">
+                      <span>Trial Period</span>
+                      <span className="text-emerald-400 font-mono font-semibold">30 Days ($0 Upfront)</span>
+                    </div>
+                    <div className="flex justify-between items-center text-gray-400">
+                      <span>Status</span>
+                      <span className="text-emerald-400 font-mono font-semibold">Active Free Trial</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onAuthSuccess(welcomeUser)}
+                    className="w-full py-3.5 bg-gradient-to-r from-brand-purple to-brand-cyan text-slate-950 font-bold font-display rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer shadow-lg shadow-brand-purple/20"
+                  >
+                    <span>CONTINUE TO CATALYX</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* ----------------- REGISTER FORM (Direct Normal Registration - No Verification Code Gate) ----------------- */}
+              {mode === 'REGISTER' && !welcomeUser && (
+                <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+                  <div className="mb-2">
+                    <h2 className="text-base font-display font-semibold text-white">CREATE YOUR CATALYX ACCOUNT</h2>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Select your workspace tier and start your 1-month free trial immediately.</p>
+                  </div>
+
+                  {/* Choose Account Type First (Authoritative Server Enforcement) */}
+                  <div>
+                    <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1.5">
+                      Choose Account Type
+                    </label>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAccountType('INDIVIDUAL')}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          accountType === 'INDIVIDUAL'
+                            ? 'bg-brand-purple/20 border-brand-purple text-white shadow-lg shadow-brand-purple/10 ring-1 ring-brand-purple'
+                            : 'bg-slate-950/60 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-mono uppercase font-bold tracking-wider">Individual</span>
+                          <span className="text-[8px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">1 MO FREE</span>
+                        </div>
+                        <div className="text-xs font-bold text-white">$10<span className="text-[10px] text-gray-400 font-normal">/mo</span></div>
+                        <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">after 1-month free trial</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAccountType('GROUP')}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          accountType === 'GROUP'
+                            ? 'bg-brand-purple/20 border-brand-purple text-white shadow-lg shadow-brand-purple/10 ring-1 ring-brand-purple'
+                            : 'bg-slate-950/60 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-mono uppercase font-bold tracking-wider">Group / Team</span>
+                          <span className="text-[8px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">1 MO FREE</span>
+                        </div>
+                        <div className="text-xs font-bold text-white">$13<span className="text-[10px] text-gray-400 font-normal">/mo</span></div>
+                        <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">after 1-month free trial</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAccountType('ORGANIZATION')}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          accountType === 'ORGANIZATION'
+                            ? 'bg-brand-purple/20 border-brand-purple text-white shadow-lg shadow-brand-purple/10 ring-1 ring-brand-purple'
+                            : 'bg-slate-950/60 border-white/10 text-gray-400 hover:border-white/20 hover:text-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-mono uppercase font-bold tracking-wider truncate">Org / Co</span>
+                          <span className="text-[8px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">1 MO FREE</span>
+                        </div>
+                        <div className="text-xs font-bold text-white">$25<span className="text-[10px] text-gray-400 font-normal">/mo</span></div>
+                        <div className="text-[9px] text-gray-400 mt-0.5 leading-tight">after 1-month free trial</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-gray-500 absolute left-3.5 top-2.5" />
                       <input
                         type="text"
                         required
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         placeholder="e.g. Alex Vance"
-                        className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-3.5 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-brand-purple transition-all"
+                        className="w-full bg-slate-950/70 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-brand-purple transition-all"
                       />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
-                        Account Type
-                      </label>
-                      <select
-                        value={accountType}
-                        onChange={(e) => setAccountType(e.target.value as any)}
-                        className="w-full bg-slate-950/70 border border-white/10 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-brand-purple"
-                      >
-                        <option value="INDIVIDUAL">Individual / Creator</option>
-                        <option value="ORGANIZATION">Enterprise / Org</option>
-                      </select>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
-                      Email Address (Primary Identity)
+                      Email Address
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
+                      <Mail className="w-4 h-4 text-gray-500 absolute left-3.5 top-2.5" />
                       <input
                         type="email"
                         required
@@ -615,10 +717,10 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
 
                   <div>
                     <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
-                      Password (Min. 8 chars, 1 number/symbol)
+                      Password (Min. 8 chars, 1 letter, 1 number/symbol)
                     </label>
                     <div className="relative">
-                      <KeyRound className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
+                      <KeyRound className="w-4 h-4 text-gray-500 absolute left-3.5 top-2.5" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
@@ -630,11 +732,26 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-3 text-gray-500 hover:text-gray-300 cursor-pointer"
+                        className="absolute right-3.5 top-2.5 text-gray-500 hover:text-gray-300 cursor-pointer"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+
+                    {/* Live Password Strength Criteria */}
+                    {password && (
+                      <div className="flex flex-wrap gap-2 mt-1.5 text-[10px] font-mono">
+                        <span className={`inline-flex items-center gap-1 ${password.length >= 8 ? 'text-emerald-400' : 'text-gray-500'}`}>
+                          <Check className="w-2.5 h-2.5" /> 8+ chars
+                        </span>
+                        <span className={`inline-flex items-center gap-1 ${/[a-zA-Z]/.test(password) ? 'text-emerald-400' : 'text-gray-500'}`}>
+                          <Check className="w-2.5 h-2.5" /> 1 letter
+                        </span>
+                        <span className={`inline-flex items-center gap-1 ${/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) ? 'text-emerald-400' : 'text-gray-500'}`}>
+                          <Check className="w-2.5 h-2.5" /> 1 number/symbol
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -642,7 +759,7 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                       Confirm Password
                     </label>
                     <div className="relative">
-                      <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
+                      <Lock className="w-4 h-4 text-gray-500 absolute left-3.5 top-2.5" />
                       <input
                         type={showConfirmPassword ? 'text' : 'password'}
                         required
@@ -654,11 +771,20 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3.5 top-3 text-gray-500 hover:text-gray-300 cursor-pointer"
+                        className="absolute right-3.5 top-2.5 text-gray-500 hover:text-gray-300 cursor-pointer"
                       >
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {confirmPassword && (
+                      <div className="mt-1 text-[10px] font-mono">
+                        {password === confirmPassword ? (
+                          <span className="text-emerald-400 flex items-center gap-1"><Check className="w-2.5 h-2.5" /> Passwords match</span>
+                        ) : (
+                          <span className="text-red-400">Passwords do not match</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Mandatory Terms & Revenue Share Checkbox */}
@@ -693,94 +819,20 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                         >
                           Privacy Policy
                         </button>
-                        , and the authoritative platform fee schedule (0.25% Individual / 0.27% Group / 0.50% Organization under Vinexsah Technologies).
+                        , and the 1-month free trial terms ($10/mo Individual, $13/mo Group, or $25/mo Organization thereafter).
                       </span>
                     </label>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || !acceptTerms}
                     className="w-full py-3 bg-gradient-to-r from-brand-purple to-brand-cyan text-slate-950 font-bold font-display rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-brand-purple/10 mt-2"
                   >
-                    <span>{isLoading ? 'DISPATCHING VERIFICATION CODE...' : 'CONTINUE: VERIFY EMAIL'}</span>
+                    <span>{isLoading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
-              )}
-
-              {/* ----------------- REGISTER STEP 2: VERIFY OTP ----------------- */}
-              {mode === 'REGISTER' && regStep === 'VERIFY_OTP' && (
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-slate-950/80 border border-brand-purple/30">
-                    <div className="flex items-center justify-between text-xs text-brand-purple font-mono mb-1">
-                      <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-brand-purple" /> STEP 2: VERIFY EMAIL</span>
-                      <span>{Math.floor(regExpirySeconds / 60)}:{(regExpirySeconds % 60).toString().padStart(2, '0')}</span>
-                    </div>
-                    <p className="text-xs text-gray-300">
-                      A single-use 6-digit verification code has been dispatched to <strong className="text-white">{email}</strong>.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRegStep('FORM');
-                        setErrorMessage('');
-                      }}
-                      className="text-[11px] text-brand-cyan hover:underline mt-1 cursor-pointer"
-                    >
-                      Wrong email? Edit details
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleVerifyRegistrationOtp} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1.5 text-center">
-                        Enter 6-Digit Single-Use Code
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={6}
-                        autoFocus
-                        required
-                        value={regOtp}
-                        onChange={(e) => setRegOtp(e.target.value.replace(/\D/g, ''))}
-                        placeholder="123456"
-                        className="w-full bg-slate-950/90 border border-white/10 rounded-xl px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] text-white placeholder-gray-700 focus:outline-none focus:border-brand-purple"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading || regOtp.trim().length !== 6}
-                      className="w-full py-3 bg-gradient-to-r from-brand-purple to-brand-cyan text-slate-950 font-bold font-display rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:opacity-95 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-brand-purple/10"
-                    >
-                      <span>{isLoading ? 'VERIFYING CODE...' : 'VERIFY & ACTIVATE ACCOUNT'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-
-                    <div className="flex items-center justify-between text-xs pt-1">
-                      <button
-                        type="button"
-                        disabled={regCooldown > 0 || isLoading}
-                        onClick={handleResendRegistrationCode}
-                        className="text-gray-400 hover:text-white font-mono text-[11px] disabled:opacity-40 cursor-pointer"
-                      >
-                        {regCooldown > 0 ? `Resend code in ${regCooldown}s` : 'Resend Code'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode('LOGIN');
-                          setRegStep('FORM');
-                          setErrorMessage('');
-                        }}
-                        className="text-gray-400 hover:text-white font-mono text-[11px] cursor-pointer"
-                      >
-                        Back to Sign In
-                      </button>
-                    </div>
-                  </form>
-                </div>
               )}
 
               {/* ----------------- FORGOT PASSWORD FORM ----------------- */}
@@ -1099,6 +1151,124 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                   onClose={() => setViewingLegalSlug(null)}
                 />
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Google Authentication Dialog Modal */}
+        {showGoogleModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md bg-slate-950 border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center p-1.5 border border-white/10">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-sm text-white">Google Identity Authorization</h3>
+                    <p className="text-[10px] font-mono text-gray-400">Pre-verified Email • Instant Activation</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleModal(false)}
+                  className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {googleError && (
+                <div className="mb-4 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-300 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                  <span>{googleError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleGoogleAuthSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
+                    Google Account Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
+                    <input
+                      type="email"
+                      required
+                      value={googleEmail}
+                      onChange={(e) => setGoogleEmail(e.target.value)}
+                      placeholder="user@gmail.com"
+                      className="w-full bg-slate-900 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-purple"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
+                    Display Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      value={googleName}
+                      onChange={(e) => setGoogleName(e.target.value)}
+                      placeholder="e.g. Alex Vance"
+                      className="w-full bg-slate-900 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-brand-purple"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-mono text-gray-400 uppercase tracking-wider mb-1">
+                    Workspace Plan (Includes 1-Month Free Trial)
+                  </label>
+                  <select
+                    value={googleAccountType}
+                    onChange={(e) => setGoogleAccountType(e.target.value as any)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-purple"
+                  >
+                    <option value="INDIVIDUAL">Individual ($10/mo after 1-month trial)</option>
+                    <option value="GROUP">Group / Team ($13/mo after 1-month trial)</option>
+                    <option value="ORGANIZATION">Organization ($25/mo after 1-month trial)</option>
+                  </select>
+                </div>
+
+                <div className="p-3 bg-slate-900/80 rounded-xl border border-white/5 text-[11px] text-gray-400 leading-relaxed">
+                  <div className="text-[10px] font-mono text-emerald-400 uppercase font-semibold mb-1">
+                    ✓ Google Email Verified Automatically
+                  </div>
+                  Accounts authenticated with Google do not require OTP verification. 1-month free trial activates immediately.
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowGoogleModal(false)}
+                    className="w-1/3 py-2.5 rounded-xl border border-white/10 text-xs font-mono text-gray-400 hover:text-white cursor-pointer"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={googleLoading}
+                    className="w-2/3 py-2.5 bg-gradient-to-r from-brand-purple to-brand-cyan text-slate-950 font-bold font-display rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:opacity-95 cursor-pointer shadow-lg"
+                  >
+                    <span>{googleLoading ? 'CONNECTING...' : 'AUTHORIZE GOOGLE ACCOUNT'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

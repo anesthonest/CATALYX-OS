@@ -1661,6 +1661,41 @@ function getAuthenticatedActor(req: express.Request): { uid: string; email: stri
 // =============================================================================
 
 /**
+ * Normal Direct Account Creation (No mandatory email verification code)
+ * Instantly provisions account, assigns account type, and activates 1-month free trial
+ */
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, username, password, confirmPassword, accountType, acceptTerms } = req.body;
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const result = await serverAuthStore.register({
+      email,
+      username,
+      password,
+      confirmPassword,
+      accountType,
+      acceptTerms: Boolean(acceptTerms),
+      ip: clientIp
+    });
+    if (!result.success || !result.user) {
+      return res.status(400).json(result);
+    }
+
+    // Authoritative trial subscription initialization on the server
+    const subRecord = serverSubscriptionStore.get(result.user.organizationId || result.user.uid);
+
+    res.json({
+      success: true,
+      user: result.user,
+      sessionToken: result.sessionToken,
+      subscription: subRecord
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Registration failed' });
+  }
+});
+
+/**
  * STEP 1-5: Initiate Account Registration with Email Verification OTP
  */
 app.post('/api/auth/register/initiate', async (req, res) => {

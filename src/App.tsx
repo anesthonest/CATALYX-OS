@@ -47,6 +47,7 @@ import { ApprovalsQueueTab } from './components/ApprovalsQueueTab';
 import { BusinessTwinTab } from './components/BusinessTwinTab';
 import { KnowledgeUniverseTab } from './components/KnowledgeUniverseTab';
 import { BillingPesapalTab } from './components/BillingPesapalTab';
+import { BillingService } from './services/billingService';
 import { GovernanceAuditTab } from './components/GovernanceAuditTab';
 import { IntegrationsTab } from './components/IntegrationsTab';
 
@@ -1047,6 +1048,49 @@ export default function App() {
         tasks={tasks}
       >
         <main className="flex-1 min-w-0 flex flex-col h-[calc(100vh-53px)] overflow-y-auto pb-16 md:pb-6">
+          {/* Active 1-Month Free Trial Banner */}
+          {user && (() => {
+            const sub = BillingService.getSubscription(user.organizationId || user.uid);
+            const daysLeft = BillingService.getTrialDaysRemaining(sub);
+            if (sub.status === 'trial') {
+              return (
+                <div className="bg-brand-cyan/10 border-b border-brand-cyan/20 px-4 py-2 text-xs text-brand-cyan flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      <strong>1-Month Free Trial Active:</strong> {daysLeft} day{daysLeft === 1 ? '' : 's'} remaining on your {sub.tier.toUpperCase()} tier ({sub.tier === 'organization' ? '$25.00/mo' : (sub.tier === 'group' ? '$13.00/mo' : '$10.00/mo')} after trial).
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleSelectTab('billing')}
+                    className="font-bold underline hover:opacity-80 cursor-pointer ml-3 shrink-0"
+                  >
+                    Manage Billing →
+                  </button>
+                </div>
+              );
+            }
+            if (sub.status === 'expired') {
+              return (
+                <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2.5 text-xs text-amber-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>
+                      <strong>Free Trial Ended:</strong> Your 1-month trial has concluded. Activate your subscription via Pesapal v3 or Bank Wire to restore full workforce execution.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleSelectTab('billing')}
+                    className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg cursor-pointer ml-3 shrink-0 transition-colors"
+                  >
+                    Activate Subscription Now →
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           <section className="flex-1 p-4 sm:p-6 relative max-w-7xl w-full mx-auto">
             {renderActiveView()}
           </section>

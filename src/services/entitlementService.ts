@@ -176,13 +176,18 @@ export class EntitlementService {
     // 2. Fetch active verified subscription
     const subscription: Subscription = BillingService.getSubscription(orgId);
 
-    // 3. Verify subscription payment status
-    if (subscription.status === 'expired' || subscription.status === 'cancelled') {
+    // 3. Verify subscription payment status and trial validity
+    const now = Date.now();
+    const isTrialExpired = subscription.status === 'trial' && new Date(subscription.currentPeriodEnd).getTime() <= now;
+
+    if (subscription.status === 'expired' || subscription.status === 'cancelled' || isTrialExpired) {
       return {
         entitlement,
         granted: false,
         source: 'plan',
-        reason: `Subscription is in ${subscription.status.toUpperCase()} state. Please renew via Pesapal to activate.`,
+        reason: isTrialExpired
+          ? `One-month free trial has expired. Please activate subscription via Pesapal to restore access.`
+          : `Subscription is in ${subscription.status.toUpperCase()} state. Please renew via Pesapal to activate.`,
       };
     }
 

@@ -351,6 +351,104 @@ export class EmailDeliveryService {
 
     return { to, subject, text, html, category: 'SECURITY_ALERT' };
   }
+
+  public createTrialWelcomeEmail(
+    to: string,
+    username: string,
+    accountType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION' = 'INDIVIDUAL',
+    trialDays: number = 30
+  ): EmailDispatchOptions {
+    const tierDisplay = accountType === 'ORGANIZATION' ? 'Organization ($25/mo)' : (accountType === 'GROUP' ? 'Group / Team ($13/mo)' : 'Individual ($10/mo)');
+    const subject = `Welcome to CATALYX — Your ${trialDays}-Day Free Trial is Active`;
+    const text = `Welcome to CATALYX, ${username}!\n\nYour account has been activated with a ${trialDays}-day free trial on the ${tierDisplay} tier.\n\nDuring your trial, you have full access to autonomous AI agents, enterprise workflows, knowledge universe, and marketplace tools.\n\nAfter your ${trialDays}-day trial concludes, your subscription transitions seamlessly via Pesapal v3 or Direct Bank Transfer.\n\n— The CATALYX Operations Team`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #090d16; color: #f3f4f6; margin: 0; padding: 40px 20px; }
+    .container { max-width: 540px; margin: 0 auto; background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 36px; }
+    .logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #38bdf8; margin-bottom: 24px; }
+    .heading { font-size: 22px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 12px; font-weight: 600; margin-bottom: 16px; }
+    .text { font-size: 15px; line-height: 1.6; color: #9ca3af; margin-bottom: 20px; }
+    .plan-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px; margin-bottom: 24px; }
+    .plan-title { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px; }
+    .plan-detail { font-size: 13px; color: #94a3b8; }
+    .footer { font-size: 12px; color: #64748b; border-top: 1px solid #1f2937; padding-top: 16px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">CATALYX</div>
+    <div class="badge">${trialDays}-DAY FREE TRIAL ACTIVATED</div>
+    <div class="heading">Welcome to the Future of Work, ${username}</div>
+    <p class="text">Your CATALYX workspace is now live and fully initialized. Enjoy comprehensive access across autonomous agents, workflows, and collaboration tools.</p>
+    <div class="plan-box">
+      <div class="plan-title">Plan Tier: ${tierDisplay}</div>
+      <div class="plan-detail">Trial Period: 30 Days (Zero upfront payment required)</div>
+      <div class="plan-detail">Subsequent Billing: Powered by Pesapal v3 Gateway & Direct Bank Wire</div>
+    </div>
+    <p class="text">You can upgrade, renew, or manage your billing settings at any time in the Billing & Subscriptions portal.</p>
+    <div class="footer">
+      CATALYX Substrate • Operated under Vinexsah Technologies
+    </div>
+  </div>
+</body>
+</html>`;
+
+    return { to, subject, text, html, category: 'NOTIFICATION' };
+  }
+
+  public createSubscriptionActivatedEmail(
+    to: string,
+    planName: string,
+    amountFormatted: string,
+    paymentMethod: string,
+    merchantReference: string
+  ): EmailDispatchOptions {
+    const subject = `CATALYX Subscription Confirmed: ${planName}`;
+    const text = `Your CATALYX subscription for ${planName} (${amountFormatted}) has been confirmed and authoritatively settled via ${paymentMethod}.\n\nReference: ${merchantReference}\n\nYour organization entitlements have been updated.\n\n— The CATALYX Billing Team`;
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #090d16; color: #f3f4f6; margin: 0; padding: 40px 20px; }
+    .container { max-width: 540px; margin: 0 auto; background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 36px; }
+    .logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #10b981; margin-bottom: 24px; }
+    .heading { font-size: 22px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+    .text { font-size: 15px; line-height: 1.6; color: #9ca3af; margin-bottom: 20px; }
+    .receipt-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px; margin-bottom: 24px; font-mono; font-size: 13px; }
+    .line { display: flex; justify-content: space-between; margin-bottom: 8px; color: #cbd5e1; }
+    .line.total { border-top: 1px solid #334155; padding-top: 8px; font-weight: 700; color: #38bdf8; font-size: 14px; }
+    .footer { font-size: 12px; color: #64748b; border-top: 1px solid #1f2937; padding-top: 16px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">CATALYX BILLING</div>
+    <div class="heading">Payment Confirmed & Entitlements Active</div>
+    <p class="text">Your subscription payment has cleared on the authoritative double-entry financial ledger.</p>
+    <div class="receipt-box">
+      <div class="line"><span>Plan:</span><span>${planName}</span></div>
+      <div class="line"><span>Channel:</span><span>${paymentMethod}</span></div>
+      <div class="line"><span>Reference:</span><span>${merchantReference}</span></div>
+      <div class="line total"><span>Amount Settled:</span><span>${amountFormatted}</span></div>
+    </div>
+    <div class="footer">
+      Official Pesapal API v3 / Bank Wire Settlement Receipt • Vinexsah Technologies
+    </div>
+  </div>
+</body>
+</html>`;
+
+    return { to, subject, text, html, category: 'NOTIFICATION' };
+  }
 }
 
 export const emailDeliveryService = EmailDeliveryService.getInstance();

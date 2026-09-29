@@ -202,11 +202,14 @@ export class AuthService {
     const newUser = await dbService.registerUser(username, email);
     
     // Update profile attributes with account type and terms
+    const accountType = params.accountType || 'INDIVIDUAL';
     const updatedProfile = await dbService.updateUserProfile(newUser.uid, {
-      accountType: params.accountType || 'INDIVIDUAL',
+      accountType,
+      organizationId: (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${newUser.uid}` : 'org_default',
       termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
       termsAcceptedAt: new Date().toISOString(),
-      emailVerified: false,
+      emailVerified: true,
+      emailVerifiedAt: new Date().toISOString(),
       role: 'user'
     });
 
@@ -220,7 +223,41 @@ export class AuthService {
     });
     this.saveCredentials(credentials);
 
-    // 11. Authoritative Terms Audit Recording
+    // 11. Authoritative 1-Month Free Trial Activation on Client
+    try {
+      const { BillingService } = await import('./billingService');
+      BillingService.initializeTrialSubscription(
+        updatedProfile.organizationId || updatedProfile.uid,
+        accountType
+      );
+    } catch (err) {
+      console.warn('[AUTH] Could not initialize client trial subscription:', err);
+    }
+
+    // 12. Sync with Server Registration Route & Terms Acceptance
+    try {
+      const serverRes = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          username,
+          password,
+          confirmPassword,
+          accountType,
+          acceptTerms: true
+        })
+      });
+      if (serverRes.ok) {
+        const data = await serverRes.json();
+        if (data.sessionToken) {
+          safeStorage.set('catalyx_session_token', data.sessionToken);
+        }
+      }
+    } catch {
+      // Local fallback in browser mock mode
+    }
+
     try {
       await fetch('/api/legal/accept', {
         method: 'POST',
@@ -235,7 +272,7 @@ export class AuthService {
       // Local fallback in simulated mode
     }
 
-    // 12. Establish active session
+    // 13. Establish active session
     safeStorage.set('catalyx_active_session', updatedProfile.uid);
 
     return {

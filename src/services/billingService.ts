@@ -273,29 +273,51 @@ export class BillingService {
     return DEFAULT_BILLING_PLANS.find(p => p.id === planId);
   }
 
-  public static getSubscription(orgId: string): Subscription {
-    const raw = localStorage.getItem(`${STORAGE_KEYS.SUBSCRIPTION}_${orgId}`);
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.error('Failed to parse subscription from storage:', e);
+  public static initializeTrialSubscription(
+    orgId: string,
+    accountType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION' = 'INDIVIDUAL',
+    forceNew: boolean = false
+  ): Subscription {
+    // Prevent duplicate trial provisioning for existing organizations / users
+    if (!forceNew) {
+      const existingRaw = localStorage.getItem(`${STORAGE_KEYS.SUBSCRIPTION}_${orgId}`);
+      if (existingRaw) {
+        try {
+          const existing: Subscription = JSON.parse(existingRaw);
+          if (existing && existing.id) {
+            return existing;
+          }
+        } catch {}
       }
     }
 
-    // Default to one-month free trial
     const now = new Date();
     const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30-day (1-month) trial
-    const defaultSub: Subscription = {
+
+    let tier: BillingTier = 'individual';
+    let planId = 'plan_individual';
+    let monthlyPrice = 1000;
+
+    if (accountType === 'ORGANIZATION') {
+      tier = 'organization';
+      planId = 'plan_organization';
+      monthlyPrice = 2500;
+    } else if (accountType === 'GROUP') {
+      tier = 'group';
+      planId = 'plan_group';
+      monthlyPrice = 1300;
+    }
+
+    const sub: Subscription = {
       id: `sub_${orgId}_default`,
       organizationId: orgId,
-      planId: 'plan_individual',
-      tier: 'individual',
-      accountType: 'INDIVIDUAL',
+      planId,
+      tier,
+      accountType,
       status: 'trial',
       currency: 'USD',
       amountMinorUnits: 0,
-      monthlyPriceMinorUnits: 1000,
+      monthlyPriceMinorUnits: monthlyPrice,
       billingInterval: 'monthly',
       currentPeriodStart: now.toISOString(),
       currentPeriodEnd: periodEnd.toISOString(),
@@ -306,8 +328,77 @@ export class BillingService {
       updatedAt: now.toISOString(),
     };
 
-    this.saveSubscription(defaultSub);
-    return defaultSub;
+    this.saveSubscription(sub);
+    return sub;
+  }
+
+  public static getTrialDaysRemaining(sub: Subscription): number {
+    if (sub.status !== 'trial') return 0;
+    const now = Date.now();
+    const periodEndMs = new Date(sub.currentPeriodEnd).getTime();
+    return Math.max(0, Math.ceil((periodEndMs - now) / (24 * 60 * 60 * 1000)));
+  }
+
+  public static getSubscription(orgId: string): Subscription {
+    const raw = localStorage.getItem(`${STORAGE_KEYS.SUBSCRIPTION}_${orgId}`);
+    if (raw) {
+      try {
+        const sub: Subscription = JSON.parse(raw);
+        // Authoritative trial expiration enforcement
+        if (sub.status === 'trial') {
+          const now = Date.now();
+          const periodEndMs = new Date(sub.currentPeriodEnd).getTime();
+          if (periodEndMs <= now) {
+            sub.status = 'expired';
+            sub.updatedAt = new Date().toISOString();
+            this.saveSubscription(sub);
+          }
+        }
+        return sub;
+      } catch (e) {
+        console.error('Failed to parse subscription from storage:', e);
+      }
+    }
+
+    // Default to one-month free trial
+    return this.initializeTrialSubscription(orgId, 'INDIVIDUAL');
+  }
+
+  public static async syncAuthoritativeSubscription(orgId: string): Promise<Subscription> {
+    try {
+      const res = await fetch(`/api/billing/subscription?organizationId=${encodeURIComponent(orgId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.subscription) {
+          const mapped: Subscription = {
+            id: data.subscription.id,
+            organizationId: data.subscription.organizationId,
+            planId: data.subscription.planId,
+            tier: data.subscription.tier,
+            accountType: data.subscription.accountType || 'INDIVIDUAL',
+            status: data.subscription.subscriptionStatus,
+            currency: data.subscription.currency || 'USD',
+            amountMinorUnits: data.subscription.amountMinorUnits,
+            monthlyPriceMinorUnits: data.subscription.monthlyPriceMinorUnits,
+            billingInterval: 'monthly',
+            currentPeriodStart: data.subscription.currentPeriodStart,
+            currentPeriodEnd: data.subscription.currentPeriodEnd,
+            renewalStatus: 'auto_renew',
+            cancelAtPeriodEnd: false,
+            paymentProvider: data.subscription.paymentProvider,
+            pesapalMerchantReference: data.subscription.pesapalMerchantReference,
+            pesapalOrderTrackingId: data.subscription.pesapalOrderTrackingId,
+            createdAt: data.subscription.createdAt,
+            updatedAt: data.subscription.updatedAt,
+          };
+          this.saveSubscription(mapped);
+          return mapped;
+        }
+      }
+    } catch {
+      // Local fallback
+    }
+    return this.getSubscription(orgId);
   }
 
   public static saveSubscription(sub: Subscription): void {

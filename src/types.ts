@@ -15,6 +15,7 @@ export interface UserProfile {
   termsAcceptedVersion?: string;
   termsAcceptedAt?: string;
   accountType?: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
+  organizationId?: string;
   role?: 'user' | 'creator' | 'admin' | 'superadmin';
   emailVerified?: boolean;
   emailVerifiedAt?: string;
