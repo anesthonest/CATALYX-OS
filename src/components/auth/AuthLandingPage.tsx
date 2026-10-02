@@ -6,6 +6,7 @@ import {
   AlertCircle, Eye, EyeOff, FileText, Check, ChevronRight, X, Clock
 } from 'lucide-react';
 import { authService, AuthResult } from '../../services/authService';
+import { safeStorage } from '../../utils/safeStorage';
 import { UserProfile } from '../../types';
 import { LegalPolicyService } from '../../services/legal/legalPolicyService';
 import { LegalDocumentView } from '../legal/LegalDocumentView';
@@ -94,12 +95,14 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
       if (result.success && result.user) {
         onAuthSuccess(result.user);
       } else {
+        safeStorage.clearActiveSession();
         setErrorMessage(result.error || 'Authentication sequence failed.');
         if (result.retryAfterSeconds) {
           setLockoutCountdown(result.retryAfterSeconds);
         }
       }
     } catch (err: any) {
+      safeStorage.clearActiveSession();
       setErrorMessage(err.message || 'Network or authentication exception.');
     } finally {
       setIsLoading(false);
@@ -198,26 +201,6 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Password recovery sequence failed.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    setErrorMessage('');
-    try {
-      const result = await authService.login({
-        email: 'anesthonest81@gmail.com',
-        password: 'Catalyx2026!'
-      });
-      if (result.success && result.user) {
-        onAuthSuccess(result.user);
-      } else {
-        setErrorMessage(result.error || 'Demo login failed.');
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Demo initialization error.');
     } finally {
       setIsLoading(false);
     }
@@ -928,22 +911,6 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
                   </div>
                 </form>
               )}
-
-              {/* Demo Evaluation Shortcut */}
-              <div className="mt-6 pt-5 border-t border-white/5 text-center">
-                <div className="text-[10px] font-mono text-gray-500 uppercase tracking-wider mb-2">
-                  Evaluation & Verification Access
-                </div>
-                <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  disabled={isLoading}
-                  className="w-full py-2 bg-slate-900 hover:bg-slate-850 text-gray-300 hover:text-white rounded-xl border border-white/10 text-xs font-mono flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-brand-cyan" />
-                  <span>Explore as Verified Executive (Demo Persona)</span>
-                </button>
-              </div>
             </div>
           </div>
 

@@ -6,9 +6,11 @@ import {
 } from '../types';
 import { dbService } from '../firebase';
 import { workforceManagementService } from '../services/workforceManagementService';
+import { UniversalStudioView } from './studios/UniversalStudioView';
+import { MicrosoftIntegrationModal } from './integrations/MicrosoftIntegrationModal';
 import { 
   Users, Plus, Check, Send, Sparkles, MessageSquare, 
-  Milestone, ShieldAlert, BadgeCheck, AlertCircle, RefreshCw, Zap, BookOpen, Key
+  Milestone, ShieldAlert, BadgeCheck, AlertCircle, RefreshCw, Zap, BookOpen, Key, Layers, ExternalLink
 } from 'lucide-react';
 
 interface WorkspaceTabProps {
@@ -69,6 +71,10 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
   const [joinCode, setJoinCode] = useState('');
   const [joinStatusMsg, setJoinStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isJoining, setIsJoining] = useState(false);
+
+  // V31 Universal Studio Architecture and Microsoft Ecosystem State
+  const [workspaceSubView, setWorkspaceSubView] = useState<'overview' | 'studios'>('overview');
+  const [isMicrosoftModalOpen, setIsMicrosoftModalOpen] = useState(false);
 
   const handleJoinByCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,6 +395,45 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                 )}
               </div>
 
+              {/* Sub-Navigation: Overview & Tasks vs 12 Creation Studios vs Microsoft 365 */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-white/10">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setWorkspaceSubView('overview')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-medium transition-all cursor-pointer ${
+                      workspaceSubView === 'overview'
+                        ? 'bg-brand-purple/20 text-brand-purple border border-brand-purple/30 font-semibold'
+                        : 'text-gray-400 hover:text-white bg-slate-950/40'
+                    }`}
+                  >
+                    Overview & Collaboration
+                  </button>
+                  <button
+                    onClick={() => setWorkspaceSubView('studios')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                      workspaceSubView === 'studios'
+                        ? 'bg-brand-purple/20 text-brand-purple border border-brand-purple/30 font-semibold'
+                        : 'text-gray-400 hover:text-white bg-slate-950/40'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-brand-cyan" />
+                    <span>12 Creation Studios</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setIsMicrosoftModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-mono font-medium text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Microsoft 365 & OneDrive</span>
+                </button>
+              </div>
+
+              {workspaceSubView === 'studios' ? (
+                <UniversalStudioView user={user} workspaceId={activeWorkspace.id} />
+              ) : (
+                <>
               {/* Grid: Tasks checklist vs Members and Chat split */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
@@ -707,6 +752,8 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                   )}
                 </div>
               </div>
+              </>
+              )}
 
             </div>
           ) : (
@@ -722,6 +769,10 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
 
       </div>
 
+      <MicrosoftIntegrationModal
+        isOpen={isMicrosoftModalOpen}
+        onClose={() => setIsMicrosoftModalOpen(false)}
+      />
     </div>
   );
 };

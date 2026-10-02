@@ -9,6 +9,7 @@ import {
 import { dbService, registerNotifications } from './firebase';
 import { v21ExperienceService } from './services/v21ExperienceService';
 import { authService } from './services/authService';
+import { safeStorage } from './utils/safeStorage';
 import { AuthLandingPage } from './components/auth/AuthLandingPage';
 import { CatalyxLogo } from './components/common/CatalyxLogo';
 import { NetworkStatusBanner } from './components/pwa/NetworkStatusBanner';
@@ -247,7 +248,7 @@ export default function App() {
     // Auto load current session or verify via authoritative auth endpoint
     const initSession = async () => {
       try {
-        const sessionToken = localStorage.getItem('catalyx_session_token');
+        const sessionToken = safeStorage.getSessionToken();
         if (sessionToken) {
           const res = await fetch('/api/auth/me', {
             headers: {
@@ -264,14 +265,30 @@ export default function App() {
               return;
             }
           }
+          // Server explicitly returned non-ok (401 Unauthorized / Token Expired or Revoked)
+          // Strictly revoke local session! NEVER fall back to unverified local state!
+          safeStorage.clearActiveSession();
+          localStorage.removeItem('catalyx_session_token');
+          setUser(null);
+          return;
+        } else {
+          // No session token -> strictly unauthenticated
+          safeStorage.clearActiveSession();
+          setUser(null);
+          return;
         }
       } catch {
-        // Fallback to local session if server offline
-      }
-
-      const currentId = dbService.getCurrentUserId();
-      if (currentId) {
-        loadUserData(currentId);
+        // Network connection error (e.g. server completely unreachable/offline preview)
+        const currentId = safeStorage.getActiveSession();
+        if (currentId) {
+          const prof = await dbService.getUserProfile(currentId);
+          if (prof) {
+            setUser(prof);
+            loadUserData(prof.uid);
+            return;
+          }
+        }
+        setUser(null);
       }
     };
 

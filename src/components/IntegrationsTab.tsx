@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
-  Plug, CheckCircle2, RefreshCw, Lock 
+  Plug, CheckCircle2, RefreshCw, Lock, ExternalLink 
 } from 'lucide-react';
 import { IntegrationConnection } from '../types';
 import { IntegrationService } from '../services/integrationService';
+import { MicrosoftIntegrationModal } from './integrations/MicrosoftIntegrationModal';
 
 interface Props {
   orgId: string;
@@ -15,6 +16,7 @@ export const IntegrationsTab: React.FC<Props> = ({ orgId }) => {
   );
   const [testingId, setTestingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ id: string; latencyMs: number; message: string } | null>(null);
+  const [isMicrosoftModalOpen, setIsMicrosoftModalOpen] = useState(false);
 
   const handleTestConnection = async (integrationId: string) => {
     setTestingId(integrationId);
@@ -62,6 +64,14 @@ export const IntegrationsTab: React.FC<Props> = ({ orgId }) => {
             Securely bridge CATALYX autonomous workforce with corporate tools, repositories, and transactional databases.
           </p>
         </div>
+
+        <button
+          onClick={() => setIsMicrosoftModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-500/20"
+        >
+          <ExternalLink className="w-4 h-4" />
+          <span>Launch Microsoft 365 & OneDrive Bridge</span>
+        </button>
       </div>
 
       {/* Integration Cards Grid */}
@@ -153,6 +163,11 @@ export const IntegrationsTab: React.FC<Props> = ({ orgId }) => {
           );
         })}
       </div>
+
+      <MicrosoftIntegrationModal
+        isOpen={isMicrosoftModalOpen}
+        onClose={() => setIsMicrosoftModalOpen(false)}
+      />
     </div>
   );
 };

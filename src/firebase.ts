@@ -469,15 +469,8 @@ export const dbService = {
     return newUser;
   },
 
-  async loginUser(email: string): Promise<UserProfile> {
-    const users = getSimData<UserProfile>('users');
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (found) {
-      safeStorage.setActiveSession(found.uid);
-      return found;
-    }
-    // Auto-create for seamless UX
-    return this.registerUser(email.split('@')[0], email);
+  async loginUser(): Promise<UserProfile> {
+    throw new Error('Direct unauthenticated loginUser is disabled. Use authoritative authService.login({ email, password }).');
   },
 
   async logout(): Promise<void> {

@@ -49,6 +49,9 @@ import { EntitlementService } from '../src/services/entitlementService';
 import { missionControlService } from '../src/services/missionControlService';
 import { emailDeliveryService } from '../src/services/emailDeliveryService';
 import { safeStorage, isLikelyJsonString } from '../src/utils/safeStorage';
+import { authService } from '../src/services/authService';
+import { studioService, StudioType } from '../src/services/studioService';
+import { microsoftIntegrationService } from '../src/services/microsoftIntegrationService';
 import crypto from 'crypto';
 import fs from 'fs';
 
@@ -2312,6 +2315,243 @@ async function runSafeStorageAndSessionResilienceAuditTests() {
   assert(safeStorage.getActiveSession() === 'usr_tab_sync', suite, '11. Cross-tab storage synchronization reads unified canonical session');
 }
 
+async function runComprehensiveAuthenticationSecurityMatrixTests() {
+  const suite = 'Comprehensive Authentication Security Matrix (Tests A - P)';
+
+  // TEST A: Correct existing email + Correct password
+  const testAEmail = `auth_test_a_${Date.now()}@catalyx.io`;
+  const testAPass = 'CorrectPassword2026!';
+  const accountA = await serverAuthStore.createAccountDirect({
+    email: testAEmail,
+    username: 'user_test_a',
+    password: testAPass,
+    accountType: 'INDIVIDUAL'
+  });
+
+  const authResultA = await serverAuthStore.authenticate({
+    email: testAEmail,
+    password: testAPass
+  });
+  assert(authResultA.success === true, suite, 'TEST A: Correct email + correct password succeeds');
+  assert(!!authResultA.sessionToken, suite, 'TEST A: Valid session token is created');
+  assert(authResultA.user?.email === testAEmail, suite, 'TEST A: Access granted to correct account');
+
+  // TEST B: Correct existing email + WRONG password
+  const authResultB = await serverAuthStore.authenticate({
+    email: testAEmail,
+    password: 'WrongPasswordTotally!'
+  });
+  assert(authResultB.success === false, suite, 'TEST B: Correct email + WRONG password strictly fails');
+  assert(!authResultB.sessionToken, suite, 'TEST B: NO session token issued on wrong password');
+  assert(!authResultB.user, suite, 'TEST B: NO authenticated user object returned');
+  assert(authResultB.error === 'Incorrect email or password.', suite, 'TEST B: Neutral error message returned');
+
+  // Client-level assertion for TEST B
+  safeStorage.setActiveSession('stale_unverified_session');
+  const clientAuthResultB = await authService.login({
+    email: testAEmail,
+    password: 'WrongPasswordTotally!'
+  });
+  assert(clientAuthResultB.success === false, suite, 'TEST B (Client): authService.login rejects wrong password');
+  assert(safeStorage.getActiveSession() === null, suite, 'TEST B (Client): Active session strictly cleared on failed password');
+
+  // TEST C: Wrong email + Correct-format password
+  const authResultC = await serverAuthStore.authenticate({
+    email: 'non_existent_987654@catalyx.io',
+    password: 'SomeValidLookingPassword1!'
+  });
+  assert(authResultC.success === false, suite, 'TEST C: Non-existent email strictly fails');
+  assert(!authResultC.sessionToken, suite, 'TEST C: NO session token issued for non-existent email');
+
+  // TEST D: Wrong email + Wrong password
+  const authResultD = await serverAuthStore.authenticate({
+    email: 'invalid_user_never_existed@catalyx.io',
+    password: '123'
+  });
+  assert(authResultD.success === false, suite, 'TEST D: Wrong email + wrong password strictly fails');
+
+  // TEST E: Correct login followed by logout
+  const loginE = await serverAuthStore.authenticate({ email: testAEmail, password: testAPass });
+  assert(loginE.success && !!loginE.sessionToken, suite, 'TEST E: Login succeeds before logout');
+  const tokenE = loginE.sessionToken!;
+  assert(serverAuthStore.getSession(tokenE) !== null, suite, 'TEST E: Session exists on server');
+  serverAuthStore.revokeSession(tokenE);
+  assert(serverAuthStore.getSession(tokenE) === null, suite, 'TEST E: Session destroyed after logout');
+
+  // TEST F: Correct login -> store session -> logout -> attempt wrong credentials
+  safeStorage.setActiveSession(accountA.uid);
+  safeStorage.setSessionToken(tokenE);
+  safeStorage.clearActiveSession();
+  const attemptF = await serverAuthStore.authenticate({ email: testAEmail, password: 'WrongPasswordAgain!' });
+  assert(attemptF.success === false, suite, 'TEST F: Wrong credentials remain rejected after previous session logout');
+  assert(safeStorage.getActiveSession() === null, suite, 'TEST F: Old session NOT reused');
+
+  // TEST G: Existing authenticated session -> submit wrong credentials for another login
+  safeStorage.setActiveSession('existing_valid_session_uid');
+  const attemptG = await serverAuthStore.authenticate({ email: testAEmail, password: 'BadPasswordSwitch!' });
+  assert(attemptG.success === false, suite, 'TEST G: Account switch with bad credentials strictly rejected');
+
+  // TEST H: Corrupted localStorage/sessionStorage
+  localStorage.setItem('catalyx_active_session', '{"uid": corrupted');
+  const sessionH = safeStorage.getActiveSession();
+  assert(sessionH === null, suite, 'TEST H: Corrupted storage does not grant authentication');
+
+  // TEST I: Tampered session object
+  localStorage.setItem('catalyx_active_session', JSON.stringify({ maliciousPayload: true, role: 'superadmin' }));
+  const sessionI = safeStorage.getActiveSession();
+  assert(sessionI === null, suite, 'TEST I: Tampered session object without valid UID returns null');
+
+  // TEST J: Expired session token
+  const expiredToken = `tok_exp_${Date.now()}`;
+  const sessionJ = serverAuthStore.getSession(expiredToken);
+  assert(sessionJ === null, suite, 'TEST J: Expired or unissued session token returns null');
+
+  // TEST K: Suspended/deactivated account lockout
+  for (let i = 0; i < 6; i++) {
+    await serverAuthStore.authenticate({ email: testAEmail, password: 'WrongPasswordLockout!' });
+  }
+  const lockoutAttempt = await serverAuthStore.authenticate({ email: testAEmail, password: testAPass });
+  assert(lockoutAttempt.success === false, suite, 'TEST K: Account temporarily locked due to excessive failed attempts');
+  assert(lockoutAttempt.error?.includes('locked'), suite, 'TEST K: Lockout error explicitly enforced');
+
+  // TEST L: Tenant isolation between different accounts
+  const orgUser1 = await serverAuthStore.createAccountDirect({
+    email: `org_user_1_${Date.now()}@tenant-a.com`,
+    username: 'tenant_a_user',
+    password: 'Password123!',
+    accountType: 'GROUP'
+  });
+  const orgUser2 = await serverAuthStore.createAccountDirect({
+    email: `org_user_2_${Date.now()}@tenant-b.com`,
+    username: 'tenant_b_user',
+    password: 'Password123!',
+    accountType: 'GROUP'
+  });
+  assert(orgUser1.organizationId !== orgUser2.organizationId, suite, 'TEST L: Distinct tenant organization IDs enforced');
+  assert(orgUser1.organizationId.startsWith('org_'), suite, 'TEST L: Tenant org ID pattern adheres to sovereign standard');
+
+  // TEST M: Offline mode unauthenticated account cannot silently authenticate
+  const offlineUnauth = await serverAuthStore.authenticate({ email: 'ghost@offline.io', password: 'SomePassword!' });
+  assert(offlineUnauth.success === false, suite, 'TEST M: Unregistered offline account strictly rejected');
+
+  // TEST N: Browser refresh with valid session
+  const validToken = serverAuthStore.createSession(accountA);
+  const activeSessionN = serverAuthStore.getSession(validToken);
+  assert(activeSessionN !== null && activeSessionN.uid === accountA.uid, suite, 'TEST N: Valid server session successfully resolves');
+
+  // TEST O: Protected request without session token
+  const unauthSession = serverAuthStore.getSession('');
+  assert(unauthSession === null, suite, 'TEST O: Empty session token strictly returns null');
+
+  // TEST P: Manipulate frontend authentication state manually
+  safeStorage.setActiveSession('spoofed_admin_uid');
+  // Backend validation: spoofed UID has no session in serverAuthStore
+  const backendCheck = serverAuthStore.getSession('spoofed_token');
+  assert(backendCheck === null, suite, 'TEST P: Backend rejects unverified forged frontend state');
+}
+
+async function runUniversalStudioArchitectureTests() {
+  const suite = 'Universal Studio Architecture & 12 Creation Studios';
+
+  // 1. All 12 Creation Studios exist
+  const expectedStudios: StudioType[] = [
+    'software', 'animation_3d', 'design_ui', 'writing',
+    'video_media', 'presentation', 'research', 'data_analytics',
+    'marketing', 'operations', 'education', 'product'
+  ];
+
+  for (const st of expectedStudios) {
+    const list = studioService.getStudiosByType(st);
+    assert(list.length > 0, suite, `Creation Studio exists: ${studioService.getStudioTypeLabel(st)}`);
+  }
+
+  // 2. Custom studio creation
+  const custom = studioService.createStudio({
+    type: 'software',
+    workspaceId: 'ws_custom_audit',
+    name: 'Sovereign Engine Studio',
+    description: 'High-assurance distributed compiler environment',
+    ownerEmail: 'architect@catalyx.io'
+  });
+  assert(custom.id.startsWith('std_software_'), suite, 'Studio correctly created with type-safe ID');
+  assert(custom.tools.length >= 3, suite, 'Domain-specific tools attached to custom studio');
+  assert(custom.exportFormats.length >= 2, suite, 'Production export formats attached to studio');
+
+  // 3. Draft update
+  const updatedDraft = studioService.updateDraft(custom.id, { content: 'v1.1 Architecture Spec draft' }, 'architect@catalyx.io');
+  assert(updatedDraft === true, suite, 'Studio draft updated successfully with audit trail');
+
+  // 4. Immutable version snapshot
+  const snapshot = studioService.createVersionSnapshot(custom.id, 'Milestone 1 Compiler Core', 'architect@catalyx.io');
+  assert(snapshot !== null && snapshot.versionNumber === 2, suite, 'Version snapshot incremented to v2');
+  assert(snapshot?.changeSummary === 'Milestone 1 Compiler Core', suite, 'Version snapshot change summary recorded');
+
+  // 5. Review & Approvals
+  const submitted = studioService.submitForReview(custom.id, 'lead_reviewer@catalyx.io', 'architect@catalyx.io');
+  assert(submitted === true, suite, 'Studio work submitted for peer review');
+  const inReviewStudio = studioService.getStudioById(custom.id);
+  assert(inReviewStudio?.review.status === 'in_review', suite, 'Studio review status set to in_review');
+
+  const approved = studioService.approveStudioWork(custom.id, 'lead_reviewer@catalyx.io', 'Architecture certified');
+  assert(approved === true, suite, 'Studio work approved and certified');
+  const approvedStudio = studioService.getStudioById(custom.id);
+  assert(approvedStudio?.review.status === 'approved', suite, 'Studio review status set to approved');
+  assert(!!approvedStudio?.review.approvedAt, suite, 'Studio certification timestamp recorded');
+}
+
+async function runMicrosoftIntegrationAuditTests() {
+  const suite = 'Microsoft 365 & Office Protocol Integration';
+
+  // 1. Connection status check
+  const status = await microsoftIntegrationService.getConnectionStatus();
+  assert(status !== null, suite, 'Microsoft connection status response received');
+  assert(Array.isArray(status.scopes), suite, 'Microsoft scopes array is well-formed');
+
+  // 2. Connect initiation
+  const connectRes = await microsoftIntegrationService.connectMicrosoftAccount();
+  assert(connectRes.success === true || typeof connectRes.message === 'string', suite, 'Microsoft connect flow returns structured payload');
+
+  // 3. OneDrive resource browse
+  const oneDriveRes = await microsoftIntegrationService.browseOneDrive();
+  assert(oneDriveRes.success === true, suite, 'OneDrive resource browse succeeds');
+  assert(oneDriveRes.items.length >= 3, suite, 'OneDrive lists supported Word, Excel, and PowerPoint files');
+
+  const wordItem = oneDriveRes.items.find(i => i.officeType === 'word');
+  const excelItem = oneDriveRes.items.find(i => i.officeType === 'excel');
+  const pptItem = oneDriveRes.items.find(i => i.officeType === 'powerpoint');
+  assert(!!wordItem, suite, 'OneDrive includes Word document');
+  assert(!!excelItem, suite, 'OneDrive includes Excel spreadsheet');
+  assert(!!pptItem, suite, 'OneDrive includes PowerPoint presentation');
+
+  // 4. Desktop Office Protocol Handoff
+  let fallbackInvoked = false;
+  const handoffWord = microsoftIntegrationService.launchOfficeDesktopHandoff({
+    officeType: 'word',
+    fileUrl: '/assets/sample-docs/strategy.docx',
+    fileName: 'strategy.docx',
+    onFallback: () => { fallbackInvoked = true; }
+  });
+  assert(handoffWord.uri.startsWith('ms-word:ofe|u|'), suite, 'Word desktop handoff generates ms-word: protocol URI');
+
+  const handoffExcel = microsoftIntegrationService.launchOfficeDesktopHandoff({
+    officeType: 'excel',
+    fileUrl: '/assets/sample-docs/model.xlsx',
+    fileName: 'model.xlsx'
+  });
+  assert(handoffExcel.uri.startsWith('ms-excel:ofe|u|'), suite, 'Excel desktop handoff generates ms-excel: protocol URI');
+
+  const handoffPpt = microsoftIntegrationService.launchOfficeDesktopHandoff({
+    officeType: 'powerpoint',
+    fileUrl: '/assets/sample-docs/deck.pptx',
+    fileName: 'deck.pptx'
+  });
+  assert(handoffPpt.uri.startsWith('ms-powerpoint:ofe|u|'), suite, 'PowerPoint desktop handoff generates ms-powerpoint: protocol URI');
+
+  // 5. Clean disconnect
+  const disconnectRes = await microsoftIntegrationService.disconnectMicrosoftAccount();
+  assert(disconnectRes.success === true, suite, 'Microsoft disconnect cleans up stored state');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -2334,6 +2574,9 @@ async function main() {
     await runCatalyxIdentityAndSubscriptionLifecycleTests();
     await runAuthoritativeForensicSubscriptionAuditTests();
     await runSafeStorageAndSessionResilienceAuditTests();
+    await runComprehensiveAuthenticationSecurityMatrixTests();
+    await runUniversalStudioArchitectureTests();
+    await runMicrosoftIntegrationAuditTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }

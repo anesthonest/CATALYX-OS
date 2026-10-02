@@ -283,23 +283,71 @@ export class AuthService {
 
   /**
    * Authenticates an existing user with rate limiting and brute-force protection
+   * Strictly server-authoritative: calls backend /api/auth/login first.
+   * If credentials fail, any existing session is strictly invalidated.
    */
   public async login(params: LoginParams): Promise<AuthResult> {
     const email = params.email.trim().toLowerCase();
     const password = params.password;
 
     if (!email || !password) {
+      safeStorage.clearActiveSession();
       return { success: false, error: 'Email and password are required.' };
     }
 
     if (!EMAIL_REGEX.test(email)) {
+      safeStorage.clearActiveSession();
       return { success: false, error: 'Please enter a valid email address.' };
     }
 
+    // Attempt authoritative backend server authentication first
+    try {
+      const serverRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const serverData = await serverRes.json();
+
+      if (!serverRes.ok || !serverData.success) {
+        // SERVER EXPLICITLY REJECTED CREDENTIALS (e.g. 401 Unauthorized, locked account, invalid password)
+        // CRITICAL SECURITY INVARIANT: Invalidate any active session immediately!
+        safeStorage.clearActiveSession();
+        return {
+          success: false,
+          error: serverData.error || 'Incorrect email or password.',
+          retryAfterSeconds: serverData.retryAfterSeconds
+        };
+      }
+
+      // Successful server-side authentication
+      if (serverData.sessionToken) {
+        safeStorage.setSessionToken(serverData.sessionToken);
+      }
+      if (serverData.user) {
+        safeStorage.setActiveSession(serverData.user.uid);
+        let profile = await dbService.getUserProfile(serverData.user.uid);
+        if (!profile) {
+          profile = await dbService.registerUser(serverData.user.username, serverData.user.email);
+        }
+        return {
+          success: true,
+          user: profile
+        };
+      }
+      safeStorage.clearActiveSession();
+      return { success: false, error: 'Server authentication payload incomplete.' };
+    } catch {
+      // Offline fallback: Network connection failure to backend server
+    }
+
+    // In offline-only sandbox or test environments without backend HTTP listener:
     const credentials = this.getCredentials();
     const credIndex = credentials.findIndex(c => c.email.toLowerCase() === email);
 
     if (credIndex === -1) {
+      safeStorage.clearActiveSession();
       return {
         success: false,
         error: 'Incorrect email or password.'
@@ -311,6 +359,7 @@ export class AuthService {
     // Check for active lockout
     const now = Date.now();
     if (cred.lockedUntil && cred.lockedUntil > now) {
+      safeStorage.clearActiveSession();
       const remainingSeconds = Math.ceil((cred.lockedUntil - now) / 1000);
       return {
         success: false,
@@ -322,6 +371,7 @@ export class AuthService {
     // Verify Password Hash
     const computedHash = await this.hashPassword(password, cred.salt);
     if (computedHash !== cred.passwordHash) {
+      safeStorage.clearActiveSession();
       cred.failedAttempts = (cred.failedAttempts || 0) + 1;
 
       if (cred.failedAttempts >= MAX_FAILED_ATTEMPTS) {
@@ -341,7 +391,7 @@ export class AuthService {
       };
     }
 
-    // Successful login: reset failed attempts counter
+    // Successful offline login: reset failed attempts counter
     cred.failedAttempts = 0;
     delete cred.lockedUntil;
     this.saveCredentials(credentials);

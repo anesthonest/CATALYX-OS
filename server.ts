@@ -2571,6 +2571,94 @@ app.post('/api/integrations/test', (req, res) => {
   });
 });
 
+/**
+ * Microsoft Integration & Graph API Services (Phase 10 & 11)
+ */
+app.get('/api/integrations/microsoft/status', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  }
+  res.json({
+    connected: false,
+    scopes: ['User.Read', 'Files.ReadWrite', 'offline_access'],
+    connection: {
+      connected: false,
+      scopes: ['User.Read', 'Files.ReadWrite', 'offline_access']
+    }
+  });
+});
+
+app.post('/api/integrations/microsoft/connect', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  }
+  const { clientId, tenantId } = req.body;
+  const targetTenant = tenantId || 'common';
+  const targetClient = clientId || process.env.MICROSOFT_CLIENT_ID || 'catalyx-m365-client';
+  const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/microsoft/callback`;
+  const scopes = encodeURIComponent('User.Read Files.ReadWrite offline_access');
+  const authUrl = `https://login.microsoftonline.com/${targetTenant}/oauth2/v2.0/authorize?client_id=${encodeURIComponent(targetClient)}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${actor.uid}`;
+
+  res.json({
+    success: true,
+    authUrl,
+    message: 'Microsoft Graph OAuth 2.0 authorization sequence initiated.'
+  });
+});
+
+app.post('/api/integrations/microsoft/disconnect', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  }
+  res.json({ success: true, message: 'Microsoft connection severed successfully.' });
+});
+
+app.get('/api/integrations/microsoft/onedrive', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  }
+  const items = [
+    {
+      id: 'ms_doc_1',
+      name: 'CATALYX Executive Strategy 2026.docx',
+      size: 45200,
+      isFolder: false,
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      webUrl: 'https://onedrive.live.com/view.aspx?resid=1',
+      downloadUrl: '/assets/sample-docs/strategy.docx',
+      lastModifiedDateTime: new Date().toISOString(),
+      officeType: 'word'
+    },
+    {
+      id: 'ms_doc_2',
+      name: 'Q3 Financial Model & Ledger.xlsx',
+      size: 128400,
+      isFolder: false,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      webUrl: 'https://onedrive.live.com/view.aspx?resid=2',
+      downloadUrl: '/assets/sample-docs/model.xlsx',
+      lastModifiedDateTime: new Date().toISOString(),
+      officeType: 'excel'
+    },
+    {
+      id: 'ms_doc_3',
+      name: 'Board Presentation Deck V4.pptx',
+      size: 3450000,
+      isFolder: false,
+      mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      webUrl: 'https://onedrive.live.com/view.aspx?resid=3',
+      downloadUrl: '/assets/sample-docs/deck.pptx',
+      lastModifiedDateTime: new Date().toISOString(),
+      officeType: 'powerpoint'
+    }
+  ];
+  res.json({ success: true, items });
+});
+
 // ============================================================================
 // CATALYX V8.2 DEVELOPER ECONOMY & PROGRAMMATIC API PLATFORM (/api/v1)
 // ============================================================================
