@@ -205,7 +205,7 @@ export class AuthService {
     const accountType = params.accountType || 'INDIVIDUAL';
     const updatedProfile = await dbService.updateUserProfile(newUser.uid, {
       accountType,
-      organizationId: (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${newUser.uid}` : 'org_default',
+      organizationId: `org_${newUser.uid}`,
       termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
       termsAcceptedAt: new Date().toISOString(),
       emailVerified: true,
@@ -251,7 +251,7 @@ export class AuthService {
       if (serverRes.ok) {
         const data = await serverRes.json();
         if (data.sessionToken) {
-          safeStorage.set('catalyx_session_token', data.sessionToken);
+          safeStorage.setSessionToken(data.sessionToken);
         }
       }
     } catch {
@@ -273,7 +273,7 @@ export class AuthService {
     }
 
     // 13. Establish active session
-    safeStorage.set('catalyx_active_session', updatedProfile.uid);
+    safeStorage.setActiveSession(updatedProfile.uid);
 
     return {
       success: true,
@@ -354,7 +354,7 @@ export class AuthService {
     }
 
     // Establish active session
-    safeStorage.set('catalyx_active_session', profile.uid);
+    safeStorage.setActiveSession(profile.uid);
 
     return {
       success: true,
@@ -367,14 +367,14 @@ export class AuthService {
    */
   public async logout(): Promise<void> {
     await dbService.logout();
-    safeStorage.remove('catalyx_active_session');
+    safeStorage.clearActiveSession();
   }
 
   /**
    * Returns the current authenticated user profile, or null if unauthenticated
    */
   public async getCurrentUser(): Promise<UserProfile | null> {
-    const activeUid = safeStorage.get<string | null>('catalyx_active_session', null);
+    const activeUid = safeStorage.getActiveSession();
     if (!activeUid) {
       return null;
     }
@@ -673,9 +673,9 @@ export class AuthService {
           accountType: data.user.accountType
         });
         if (data.sessionToken) {
-          safeStorage.set('catalyx_session_token', data.sessionToken);
+          safeStorage.setSessionToken(data.sessionToken);
         }
-        safeStorage.set('catalyx_active_session', synced.uid);
+        safeStorage.setActiveSession(synced.uid);
         return { success: true, user: synced };
       }
 
@@ -814,9 +814,9 @@ export class AuthService {
           accountType: data.user.accountType
         });
         if (data.sessionToken) {
-          safeStorage.set('catalyx_session_token', data.sessionToken);
+          safeStorage.setSessionToken(data.sessionToken);
         }
-        safeStorage.set('catalyx_active_session', synced.uid);
+        safeStorage.setActiveSession(synced.uid);
         return { success: true, user: synced };
       }
 
@@ -833,7 +833,7 @@ export class AuthService {
         emailVerifiedAt: new Date().toISOString(),
         accountType: params.accountType || 'INDIVIDUAL'
       });
-      safeStorage.set('catalyx_active_session', updated.uid);
+      safeStorage.setActiveSession(updated.uid);
       return { success: true, user: updated };
     }
   }
@@ -843,7 +843,7 @@ export class AuthService {
    */
   public async linkGoogleAccount(googleId: string, googleEmail: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const sessionToken = safeStorage.get<string | null>('catalyx_session_token', null);
+      const sessionToken = safeStorage.getSessionToken();
       const res = await fetch('/api/auth/google/link', {
         method: 'POST',
         headers: {

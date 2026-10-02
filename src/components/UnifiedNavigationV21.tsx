@@ -53,7 +53,8 @@ import {
   MessageSquare,
   Building,
   DollarSign,
-  Network
+  Network,
+  Download
 } from 'lucide-react';
 import { 
   PrimaryDomainId, 
@@ -68,6 +69,8 @@ import { SystemHealthTruthWidget } from './SystemHealthTruthWidget';
 import { QuickCreateModal } from './design-system/QuickCreateModal';
 import { UniversalSearchModal } from './design-system/UniversalSearchModal';
 import { OnboardingModal } from './design-system/OnboardingModal';
+import { CatalyxLogo } from './common/CatalyxLogo';
+import { usePWA } from '../hooks/usePWA';
 
 interface UnifiedNavigationV21Props {
   user: UserProfile;
@@ -108,6 +111,7 @@ export const UnifiedNavigationV21: React.FC<UnifiedNavigationV21Props> = ({
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const { isInstalled, promptInstall } = usePWA();
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>({
     [activeDomain]: true
   });
@@ -243,11 +247,8 @@ export const UnifiedNavigationV21: React.FC<UnifiedNavigationV21Props> = ({
               onClick={() => onSelectDomain('home')}
               className="text-gray-400 hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 group"
             >
-              <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-black text-xs shadow-sm group-hover:scale-105 transition-transform">
-                C
-              </span>
-              <span className="font-display font-bold text-white tracking-wider text-sm">CATALYX</span>
-              <span className="text-[9px] px-1 py-0.2 rounded catalyx-badge-gold">V26</span>
+              <CatalyxLogo size="xs" showWordmark={true} />
+              <span className="text-[9px] px-1 py-0.2 rounded catalyx-badge-gold">V30</span>
             </button>
 
             <ChevronRight className="w-3.5 h-3.5 text-gray-600 shrink-0" />
@@ -678,6 +679,19 @@ export const UnifiedNavigationV21: React.FC<UnifiedNavigationV21Props> = ({
             </div>
 
             <div className="pt-3 border-t border-white/10 space-y-2">
+              {!isInstalled && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    promptInstall();
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                >
+                  <Download className="w-4 h-4 text-amber-400" />
+                  <span>Install CATALYX App</span>
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
@@ -705,7 +719,7 @@ export const UnifiedNavigationV21: React.FC<UnifiedNavigationV21Props> = ({
       {/* ============================================================== */}
       {/* 4. MOBILE BOTTOM NAVIGATION DOCK (Instant 1-Thumb Navigation) */}
       {/* ============================================================== */}
-      <nav aria-label="Mobile Navigation Dock" className="md:hidden fixed bottom-0 left-0 right-0 z-40 catalyx-surface-elevated border-t border-white/10 px-3 py-1.5 flex justify-around items-center">
+      <nav aria-label="Mobile Navigation Dock" className="md:hidden fixed bottom-0 left-0 right-0 z-40 catalyx-surface-elevated border-t border-white/10 px-3 py-1.5 pwa-safe-bottom flex justify-around items-center">
         <button
           onClick={() => onSelectDomain('home')}
           className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl text-[10px] font-mono transition-all cursor-pointer ${

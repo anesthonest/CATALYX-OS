@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </radialGradient>
+    
+    <!-- Gold Foil Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="25%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#b45309"/>
+      <stop offset="75%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <!-- Chrome Silver Gradient -->
+    <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#cbd5e1"/>
+      <stop offset="60%" stop-color="#64748b"/>
+      <stop offset="85%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#f59e0b" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Deep Black Backing -->
+  <rect width="512" height="512" rx="108" fill="url(#bgGrad)"/>
+  <rect width="510" height="510" x="1" y="1" rx="107" fill="none" stroke="#f59e0b" stroke-opacity="0.2" stroke-width="2"/>
+
+  <!-- Centered Emblem Group -->
+  <g transform="translate(256, 256)" filter="url(#goldGlow)">
+    <!-- Crescent C in 3D Gold -->
+    <!-- Arc from ~60 deg to ~300 deg with crescent thickness -->
+    <path d="M 38 -125
+             C -95 -125 -155 -70 -155 0
+             C -155 70 -95 125 38 125
+             C 10 -15 10 -90 38 -125 Z"
+          fill="url(#goldGrad)"
+          stroke="#78350f"
+          stroke-width="3"/>
+
+    <!-- Inner Crescent Bevel Highlight -->
+    <path d="M 28 -110
+             C -80 -110 -135 -60 -135 0
+             C -135 60 -80 110 28 110
+             C 15 10 15 -70 28 -110 Z"
+          fill="none"
+          stroke="#fef08a"
+          stroke-width="2"
+          opacity="0.6"/>
+
+    <!-- Center X: Left Stroke in Chrome Silver -->
+    <!-- Top-left to Center, Bottom-left to Center -->
+    <polygon points="-15,-65 20,-15 5,0 -35,-50" fill="url(#silverGrad)"/>
+    <polygon points="-35,50 5,0 20,15 -15,65" fill="url(#silverGrad)"/>
+
+    <!-- Center X: Right Stroke in Rich Gold -->
+    <!-- Top-right to Center, Bottom-right to Center -->
+    <polygon points="65,-65 15,-15 30,0 75,-45" fill="url(#goldGrad)"/>
+    <polygon points="75,45 30,0 15,15 65,65" fill="url(#goldGrad)"/>
+    
+    <!-- Central Facet Diamond -->
+    <polygon points="17,-12 25,0 17,12 9,0" fill="#fef08a" opacity="0.9"/>
+  </g>
+</svg>

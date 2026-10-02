@@ -2,11 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>CATALYX - Universal Enterprise AI Operating System</title>
     <meta name="description" content="CATALYX V30: Universal Enterprise AI Operating System. Full-system functionality, governance, intelligence, payments, and multi-domain autonomous orchestration." />
+    
+    <!-- PWA Web App Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#030712" />
+    <meta name="background-color" content="#030712" />
+    
+    <!-- Mobile App Capabilities (Android & iOS) -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CATALYX" />
+    <meta name="application-name" content="CATALYX" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- Real PWA Icons -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png" />
+    <link rel="icon" type="image/jpeg" href="/catalyx_logo.jpg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    
+    <!-- OpenGraph Social Metadata -->
     <meta property="og:title" content="CATALYX - Universal Enterprise AI Operating System" />
     <meta property="og:description" content="CATALYX V30: Universal Enterprise AI Operating System. Full-system functionality, governance, intelligence, payments, and multi-domain autonomous orchestration." />
+    <meta property="og:image" content="/catalyx_logo.jpg" />
+    <meta property="og:type" content="website" />
   </head>
   <body>
     <div id="root"></div>

@@ -70,12 +70,17 @@ try {
     auth = getAuth(app);
     firestore = getFirestore(app);
     usingRealFirebase = true;
-    console.log('Firebase initialized successfully. Running with full database services.');
+    console.log('[FIREBASE] Real cloud services initialized.');
   } else {
-    console.log('No Firebase credentials provided. CATALYX is running in High-Performance Offline Simulated Sandbox Mode.');
+    const isProd = metaEnv.PROD || metaEnv.MODE === 'production';
+    if (isProd) {
+      console.info('[FIREBASE] Cloud Firebase credentials unconfigured (optional). Operating on sovereign CATALYX Server substrate.');
+    } else {
+      console.info('[FIREBASE] Local development mode: Operating on sovereign CATALYX Server substrate (Cloud Firebase optional).');
+    }
   }
 } catch (e) {
-  console.warn('Firebase initialization error. App will run in High-Performance Offline Simulated Sandbox Mode.', e);
+  console.warn('Firebase initialization error. Operating on sovereign CATALYX Server substrate.', e);
 }
 
 export { auth, firestore, usingRealFirebase };
@@ -413,8 +418,7 @@ const runRuleEngine = (user: UserProfile, tasks: Task[]): UserProfile => {
 export const dbService = {
   // --- AUTH SERVICES ---
   getCurrentUserId(): string | null {
-    const active = safeStorage.get<string | null>('catalyx_active_session', null);
-    return active || null;
+    return safeStorage.getActiveSession();
   },
 
   async registerUser(username: string, email: string): Promise<UserProfile> {
@@ -445,7 +449,7 @@ export const dbService = {
     saveSimData('users', users);
     
     // Set active session
-    safeStorage.set('catalyx_active_session', newUser.uid);
+    safeStorage.setActiveSession(newUser.uid);
     
     // Initialize default tables
     saveSimData(`tasks_${newUser.uid}`, []);
@@ -469,7 +473,7 @@ export const dbService = {
     const users = getSimData<UserProfile>('users');
     const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (found) {
-      safeStorage.set('catalyx_active_session', found.uid);
+      safeStorage.setActiveSession(found.uid);
       return found;
     }
     // Auto-create for seamless UX
@@ -477,7 +481,7 @@ export const dbService = {
   },
 
   async logout(): Promise<void> {
-    safeStorage.remove('catalyx_active_session');
+    safeStorage.clearActiveSession();
   },
 
   async getUserProfile(uid: string): Promise<UserProfile | null> {

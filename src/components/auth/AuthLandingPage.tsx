@@ -9,6 +9,7 @@ import { authService, AuthResult } from '../../services/authService';
 import { UserProfile } from '../../types';
 import { LegalPolicyService } from '../../services/legal/legalPolicyService';
 import { LegalDocumentView } from '../legal/LegalDocumentView';
+import { CatalyxLogo } from '../common/CatalyxLogo';
 
 interface AuthLandingPageProps {
   onAuthSuccess: (user: UserProfile) => void;
@@ -275,19 +276,7 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#030712]/80 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-cyan p-[1px] shadow-lg shadow-brand-purple/20">
-              <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-brand-cyan" />
-              </div>
-            </div>
-            <div>
-              <div className="font-display font-bold text-lg text-white tracking-widest leading-none">
-                CATA<span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-cyan">LYX</span>
-              </div>
-              <div className="text-[9px] font-mono text-gray-500 uppercase tracking-wider mt-0.5">
-                VINEXSAH TECHNOLOGIES OS
-              </div>
-            </div>
+            <CatalyxLogo size="md" showSubtitle />
           </div>
 
           <div className="hidden md:flex items-center gap-6 text-xs text-gray-400 font-mono">
@@ -330,7 +319,6 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
             <button
               onClick={() => {
                 setMode('REGISTER');
-                setRegStep('FORM');
                 setErrorMessage('');
                 setSuccessMessage('');
               }}
@@ -409,6 +397,11 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
           <div className="lg:col-span-5">
             <div className="glass-panel-heavy p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-brand-cyan/10 rounded-full blur-2xl pointer-events-none" />
+
+              {/* Official Brand Logo Badge */}
+              <div className="flex justify-center mb-5">
+                <CatalyxLogo size="lg" showSubtitle variant="hybrid" />
+              </div>
 
               {/* Mode Toggle Tabs (Hidden during welcome screen) */}
               {!welcomeUser && (

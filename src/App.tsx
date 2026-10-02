@@ -10,6 +10,10 @@ import { dbService, registerNotifications } from './firebase';
 import { v21ExperienceService } from './services/v21ExperienceService';
 import { authService } from './services/authService';
 import { AuthLandingPage } from './components/auth/AuthLandingPage';
+import { CatalyxLogo } from './components/common/CatalyxLogo';
+import { NetworkStatusBanner } from './components/pwa/NetworkStatusBanner';
+import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
+import { PWAUpdateModal } from './components/pwa/PWAUpdateModal';
 
 // V21 Unified Intelligence Experience Components
 import { UnifiedHomeV21 } from './components/UnifiedHomeV21';
@@ -957,21 +961,17 @@ export default function App() {
       };
       return (
         <div className="min-h-screen bg-[#020617] text-gray-200 flex flex-col font-sans">
+          <NetworkStatusBanner />
+          <PWAInstallBanner />
+          <PWAUpdateModal />
           {/* Guest Marketplace Navigation Bar */}
           <header className="sticky top-0 z-40 backdrop-blur-xl bg-[#030712]/90 border-b border-white/10 px-4 py-3">
             <div className="max-w-7xl mx-auto flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-cyan p-[1px]">
-                  <div className="w-full h-full bg-[#030712] rounded-[11px] flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-brand-cyan" />
-                  </div>
-                </div>
-                <div>
-                  <div className="font-display font-bold text-base text-white tracking-widest leading-none">
-                    CATA<span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-cyan">LYX</span>
-                  </div>
-                  <div className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
-                    PUBLIC INTELLIGENCE MARKETPLACE
+                <CatalyxLogo size="sm" showSubtitle={false} />
+                <div className="border-l border-white/10 pl-3">
+                  <div className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-semibold">
+                    PUBLIC MARKETPLACE
                   </div>
                 </div>
               </div>
@@ -1015,18 +1015,26 @@ export default function App() {
     }
 
     return (
-      <AuthLandingPage
-        onAuthSuccess={(authenticatedUser) => {
-          setUser(authenticatedUser);
-          loadUserData(authenticatedUser.uid);
-        }}
-        onExploreMarketplace={() => setIsGuestBrowsingMarketplace(true)}
-      />
+      <>
+        <NetworkStatusBanner />
+        <PWAInstallBanner />
+        <PWAUpdateModal />
+        <AuthLandingPage
+          onAuthSuccess={(authenticatedUser) => {
+            setUser(authenticatedUser);
+            loadUserData(authenticatedUser.uid);
+          }}
+          onExploreMarketplace={() => setIsGuestBrowsingMarketplace(true)}
+        />
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#020617] text-gray-200 flex flex-col font-sans">
+      <NetworkStatusBanner />
+      <PWAInstallBanner />
+      <PWAUpdateModal />
       {/* 1. V21/V22 UNIFIED NAVIGATION (TOP HEADER & DESKTOP SIDEBAR & MOBILE DOCK) */}
       <UnifiedNavigationV21
         user={user}

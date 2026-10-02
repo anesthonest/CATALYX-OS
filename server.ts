@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
@@ -44,8 +45,32 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()');
+  res.setHeader('Permissions-Policy', 'accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(self), payment=(self), usb=(), clipboard-read=(self), clipboard-write=(self)');
   next();
+});
+
+// PWA Manifest and Service Worker Delivery with Authoritative MIME Types & Headers
+app.get(['/manifest.webmanifest', '/manifest.json'], (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  const manifestPath = path.join(process.cwd(), 'public', 'manifest.webmanifest');
+  if (fs.existsSync(manifestPath)) {
+    res.sendFile(manifestPath);
+  } else {
+    res.status(404).json({ error: 'Manifest not found' });
+  }
+});
+
+app.get(['/service-worker.js', '/sw.js'], (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  const swPath = path.join(process.cwd(), 'public', 'service-worker.js');
+  if (fs.existsSync(swPath)) {
+    res.sendFile(swPath);
+  } else {
+    res.status(404).send('// Service worker not found');
+  }
 });
 
 // Production In-Memory Rate Limiting (Flood and DoS Protection)
@@ -4410,8 +4435,13 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Serve compiled static Vite middleware in dev / production
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: isHmrDisabled ? false : undefined,
+        watch: isHmrDisabled ? null : {},
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);

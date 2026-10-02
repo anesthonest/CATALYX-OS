@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AIMessage, UserProfile } from '../types';
 import { 
   Bot, Send, Sparkles, Trash2, Zap, Brain, ShieldAlert,
-  Compass, BookOpen, Sliders, LineChart, Database, Lightbulb, Users, Coins, HelpCircle, Network, CheckCircle
+  Compass, BookOpen, Sliders, LineChart, Database, Lightbulb, Users, Coins, HelpCircle, Network, CheckCircle,
+  Mic, MicOff, AlertCircle, Info, ChevronDown
 } from 'lucide-react';
+import { hardwareService } from '../services/hardware/hardwareCompatibilityService';
 
 interface AICoachTabProps {
   user: UserProfile;

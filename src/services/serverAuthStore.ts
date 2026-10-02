@@ -259,7 +259,7 @@ export class ServerAuthStore {
     const passwordHash = this.hashPasswordWithSalt(password, salt);
 
     const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
-    const organizationId = (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${uid}` : 'org_default';
+    const organizationId = `org_${uid}`;
 
     const account: UserAccount = {
       uid,
@@ -477,7 +477,7 @@ export class ServerAuthStore {
 
     // Provision authoritative account
     const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
-    const organizationId = (pending.accountType === 'ORGANIZATION' || pending.accountType === 'GROUP') ? `org_${uid}` : 'org_default';
+    const organizationId = `org_${uid}`;
 
     const account: UserAccount = {
       uid,
@@ -577,7 +577,7 @@ export class ServerAuthStore {
     const email = this.normalizeEmail(params.email);
     const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
     const accountType = params.accountType || 'INDIVIDUAL';
-    const organizationId = (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${uid}` : 'org_default';
+    const organizationId = `org_${uid}`;
 
     const salt = this.generateSalt();
     const hash = this.hashPasswordWithSalt(params.password || crypto.randomBytes(16).toString('hex'), salt);
@@ -961,7 +961,7 @@ export class ServerAuthStore {
       const username = (params.name || email.split('@')[0]).trim();
       const accountType = params.accountType || 'INDIVIDUAL';
       const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
-      const organizationId = (accountType === 'ORGANIZATION' || accountType === 'GROUP') ? `org_${uid}` : 'org_default';
+      const organizationId = `org_${uid}`;
 
       // Create secure random password salt/hash for account consistency
       const dummySalt = this.generateSalt();

@@ -1,0 +1,70 @@
+{
+  "id": "/",
+  "name": "CATALYX",
+  "short_name": "CATALYX",
+  "description": "CATALYX - Universal Enterprise AI Operating System. Full-system functionality, governance, intelligence, payments, and multi-domain autonomous orchestration.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "orientation": "any",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard & Home",
+      "short_name": "Home",
+      "description": "Access your executive command center and active momentum scores",
+      "url": "/",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Work & Tasks",
+      "short_name": "Tasks",
+      "description": "Sprint planning, deep focus cabins, and universal task tracker",
+      "url": "/?domain=work",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "AI Coach & Intelligence",
+      "short_name": "AI OS",
+      "description": "Coordinate multi-agent spectrum and executive intelligence",
+      "url": "/?domain=intelligence",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Marketplace",
+      "short_name": "Market",
+      "description": "Explore creator tools, autonomous workflows, and models",
+      "url": "/?domain=marketplace",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

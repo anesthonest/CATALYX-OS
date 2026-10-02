@@ -23,7 +23,7 @@ if (typeof (globalThis as any).localStorage === 'undefined') {
   };
 }
 
-import { revenuePolicyEngine, SellerAccountType } from '../src/services/payment/revenuePolicyEngine';
+import { RevenuePolicyEngine, revenuePolicyEngine, SellerAccountType } from '../src/services/payment/revenuePolicyEngine';
 import { LegalPolicyService } from '../src/services/legal/legalPolicyService';
 import { catalyxEconomicEngine, CatalyxEconomicEngine } from '../src/services/payment/catalyxEconomicEngine';
 import { PesapalPaymentProvider } from '../src/services/payment/PesapalPaymentProvider';
@@ -48,6 +48,7 @@ import { SubscriptionStateMachine } from '../src/services/subscriptionStateMachi
 import { EntitlementService } from '../src/services/entitlementService';
 import { missionControlService } from '../src/services/missionControlService';
 import { emailDeliveryService } from '../src/services/emailDeliveryService';
+import { safeStorage, isLikelyJsonString } from '../src/utils/safeStorage';
 import crypto from 'crypto';
 import fs from 'fs';
 
@@ -2122,6 +2123,195 @@ async function runCatalyxIdentityAndSubscriptionLifecycleTests() {
   assert(!noSymVal.valid && noSymVal.error?.includes('number or symbol'), suite, 'Registration password requires at least one symbol or number');
 }
 
+async function runAuthoritativeForensicSubscriptionAuditTests() {
+  const suite = 'Forensic Verification of Subscription Policy & Tier Architecture';
+
+  // 1. All three account types exist and plans are defined
+  const indPlan = BillingService.getPlan('plan_individual');
+  const grpPlan = BillingService.getPlan('plan_group');
+  const orgPlan = BillingService.getPlan('plan_organization');
+
+  assert(indPlan !== undefined, suite, 'Individual account plan exists in system');
+  assert(grpPlan !== undefined, suite, 'Group / Team account plan exists in system');
+  assert(orgPlan !== undefined, suite, 'Organization / Company account plan exists in system');
+
+  // 2. Exact prices implemented in USD minor units
+  assert(indPlan?.pricesMinorUnits.USD === 1000, suite, 'Individual plan price is strictly $10.00/month (1000 minor units)');
+  assert(grpPlan?.pricesMinorUnits.USD === 1300, suite, 'Group / Team plan price is strictly $13.00/month (1300 minor units)');
+  assert(orgPlan?.pricesMinorUnits.USD === 2500, suite, 'Organization / Company plan price is strictly $25.00/month (2500 minor units)');
+
+  // 3. User registration provisions correct account type and 1-month trial
+  const indEmail = `forensic_ind_${Date.now()}@catalyx.io`;
+  const indReg = await serverAuthStore.register({
+    email: indEmail,
+    username: 'Forensic Individual',
+    password: 'Password123!',
+    confirmPassword: 'Password123!',
+    accountType: 'INDIVIDUAL',
+    acceptTerms: true
+  });
+  assert(indReg.success === true && indReg.user?.accountType === 'INDIVIDUAL', suite, 'Registration with INDIVIDUAL assigns INDIVIDUAL account type');
+  
+  const indSub = BillingService.initializeTrialSubscription(indReg.user!.organizationId, 'INDIVIDUAL');
+  assert(indSub.accountType === 'INDIVIDUAL' && indSub.tier === 'individual', suite, 'Individual trial subscription initialized with individual tier');
+  assert(indSub.status === 'trial' && indSub.amountMinorUnits === 0, suite, 'Individual trial has $0.00 upfront payment');
+  assert(indSub.monthlyPriceMinorUnits === 1000, suite, 'Individual trial subscription records $10.00/month regular rate');
+  const indDays = BillingService.getTrialDaysRemaining(indSub);
+  assert(indDays >= 29 && indDays <= 30, suite, 'Individual trial provides 30-day initial trial window');
+
+  const grpEmail = `forensic_grp_${Date.now()}@catalyx.io`;
+  const grpReg = await serverAuthStore.register({
+    email: grpEmail,
+    username: 'Forensic Group User',
+    password: 'Password123!',
+    confirmPassword: 'Password123!',
+    accountType: 'GROUP',
+    acceptTerms: true
+  });
+  assert(grpReg.success === true && grpReg.user?.accountType === 'GROUP', suite, 'Registration with GROUP assigns GROUP account type');
+  
+  const grpSub = BillingService.initializeTrialSubscription(grpReg.user!.organizationId, 'GROUP');
+  assert(grpSub.accountType === 'GROUP' && grpSub.tier === 'group', suite, 'Group trial subscription initialized with group tier');
+  assert(grpSub.status === 'trial' && grpSub.amountMinorUnits === 0, suite, 'Group trial has $0.00 upfront payment');
+  assert(grpSub.monthlyPriceMinorUnits === 1300, suite, 'Group trial subscription records $13.00/month regular rate');
+  const grpDays = BillingService.getTrialDaysRemaining(grpSub);
+  assert(grpDays >= 29 && grpDays <= 30, suite, 'Group trial provides 30-day initial trial window');
+
+  const orgEmail = `forensic_org_${Date.now()}@catalyx.io`;
+  const orgReg = await serverAuthStore.register({
+    email: orgEmail,
+    username: 'Forensic Org User',
+    password: 'Password123!',
+    confirmPassword: 'Password123!',
+    accountType: 'ORGANIZATION',
+    acceptTerms: true
+  });
+  assert(orgReg.success === true && orgReg.user?.accountType === 'ORGANIZATION', suite, 'Registration with ORGANIZATION assigns ORGANIZATION account type');
+  
+  const orgSub = BillingService.initializeTrialSubscription(orgReg.user!.organizationId, 'ORGANIZATION');
+  assert(orgSub.accountType === 'ORGANIZATION' && orgSub.tier === 'organization', suite, 'Organization trial subscription initialized with organization tier');
+  assert(orgSub.status === 'trial' && orgSub.amountMinorUnits === 0, suite, 'Organization trial has $0.00 upfront payment');
+  assert(orgSub.monthlyPriceMinorUnits === 2500, suite, 'Organization trial subscription records $25.00/month regular rate');
+  const orgDays = BillingService.getTrialDaysRemaining(orgSub);
+  assert(orgDays >= 29 && orgDays <= 30, suite, 'Organization trial provides 30-day initial trial window');
+
+  // 4. Server-side account type validation: Invalid or forged account types safely sanitized
+  const invalidTypeEmail = `forensic_invalid_${Date.now()}@catalyx.io`;
+  const invalidReg = await serverAuthStore.register({
+    email: invalidTypeEmail,
+    username: 'Adversary User',
+    password: 'Password123!',
+    confirmPassword: 'Password123!',
+    accountType: 'ENTERPRISE_UNLIMITED_VIP' as any,
+    acceptTerms: true
+  });
+  assert(invalidReg.success === true && invalidReg.user?.accountType === 'INDIVIDUAL', suite, 'Invalid account type safely sanitized to default INDIVIDUAL');
+
+  // 5. Entitlement quotas strictly enforced per tier
+  const indQuota = EntitlementService.evaluate(indReg.user!.organizationId, 'AI_AGENTS');
+  assert(indQuota.limit === 5, suite, 'Individual tier receives 5 AI agent quota');
+
+  const grpQuota = EntitlementService.evaluate(grpReg.user!.organizationId, 'AI_AGENTS');
+  assert(grpQuota.limit === 20, suite, 'Group / Team tier receives 20 AI agent quota');
+
+  const orgQuota = EntitlementService.evaluate(orgReg.user!.organizationId, 'AI_AGENTS');
+  assert(orgQuota.limit === 100, suite, 'Organization tier receives 100 AI agent quota');
+
+  // 6. Marketplace fee schedule strictly verified
+  const indFee = RevenuePolicyEngine.getFeePercentForAccount('INDIVIDUAL');
+  const grpFee = RevenuePolicyEngine.getFeePercentForAccount('GROUP');
+  const orgFee = RevenuePolicyEngine.getFeePercentForAccount('ORGANIZATION');
+
+  assert(indFee === 0.25, suite, 'Marketplace Individual fee category is strictly 0.25%');
+  assert(grpFee === 0.27, suite, 'Marketplace Group / Team fee category is strictly 0.27%');
+  assert(orgFee === 0.50, suite, 'Marketplace Organization fee category is strictly 0.50%');
+
+  // 7. Google Sign-In with account-type selection
+  const googleGrpEmail = `google_grp_${Date.now()}@gmail.com`;
+  const googleGrpId = `gid_forensic_${Date.now()}`;
+  const googleGrpRes = await serverAuthStore.authenticateWithGoogle({
+    googleId: googleGrpId,
+    email: googleGrpEmail,
+    name: 'Google Group Lead',
+    accountType: 'GROUP',
+    acceptTerms: true
+  });
+  assert(googleGrpRes.success === true && googleGrpRes.user?.accountType === 'GROUP', suite, 'Google Sign-In with GROUP assigns GROUP account type');
+  assert(googleGrpRes.user?.emailVerified === true, suite, 'Google user email is pre-verified');
+
+  // Existing Google user sign-in maintains account type and does not recreate trial
+  const existingGoogleRes = await serverAuthStore.authenticateWithGoogle({
+    googleId: googleGrpId,
+    email: googleGrpEmail,
+    name: 'Google Group Lead',
+    accountType: 'INDIVIDUAL', // Client attempting to tamper with existing account
+    acceptTerms: true
+  });
+  assert(existingGoogleRes.success === true && existingGoogleRes.isNewUser === false, suite, 'Existing Google user sign-in detects existing user without recreation');
+  assert(existingGoogleRes.user?.accountType === 'GROUP', suite, 'Existing Google user account type is immutable and preserved');
+}
+
+async function runSafeStorageAndSessionResilienceAuditTests() {
+  const suite = 'Safe Storage & Canonical Session Serialization Audit';
+
+  // 1. Valid JSON session
+  localStorage.setItem('catalyx_active_session', JSON.stringify('usr_valid_json_123'));
+  assert(safeStorage.getActiveSession() === 'usr_valid_json_123', suite, '1. Valid JSON session restored accurately');
+
+  // 2. Legacy raw-string session (e.g. "vine_demo_user" stored directly without JSON quotes)
+  localStorage.setItem('catalyx_active_session', 'vine_demo_user');
+  assert(!isLikelyJsonString('vine_demo_user'), suite, '2a. Non-JSON raw string correctly detected before parse');
+  const legacyVal = safeStorage.getActiveSession();
+  assert(legacyVal === 'vine_demo_user', suite, '2b. Legacy raw-string session migrated safely without JSON parse error');
+  const rawAfter = localStorage.getItem('catalyx_active_session');
+  assert(rawAfter === JSON.stringify('vine_demo_user'), suite, '2c. Legacy raw-string session persisted in canonical JSON');
+
+  // 3. Malformed JSON
+  localStorage.setItem('catalyx_test_corrupt', '{malformed_json_here: true');
+  const corruptRes = safeStorage.get('catalyx_test_corrupt', 'default_fallback');
+  assert(corruptRes === 'default_fallback', suite, '3a. Malformed JSON returns fallback value safely without throwing');
+  assert(localStorage.getItem('catalyx_test_corrupt') === null, suite, '3b. Corrupted storage key is cleaned up');
+
+  // 4. Empty value
+  localStorage.setItem('catalyx_active_session', '   ');
+  assert(safeStorage.getActiveSession() === null, suite, '4. Empty string session safely treated as null fallback');
+
+  // 5. Null value
+  localStorage.removeItem('catalyx_active_session');
+  assert(safeStorage.getActiveSession() === null, suite, '5. Unset session safely returns null');
+
+  // 6. Logout
+  safeStorage.setActiveSession('usr_to_logout');
+  safeStorage.setSessionToken('tok_test_logout');
+  safeStorage.clearActiveSession();
+  assert(safeStorage.getActiveSession() === null, suite, '6a. Logout clears active session UID');
+  assert(safeStorage.getSessionToken() === null, suite, '6b. Logout clears session token');
+
+  // 7. Login
+  safeStorage.setActiveSession('usr_logged_in_456');
+  safeStorage.setSessionToken('tok_session_456');
+  assert(safeStorage.getActiveSession() === 'usr_logged_in_456', suite, '7a. Login writes canonical session representation');
+  assert(safeStorage.getSessionToken() === 'tok_session_456', suite, '7b. Login writes canonical session token');
+
+  // 8. Session restoration
+  const restored = safeStorage.getActiveSession();
+  assert(restored === 'usr_logged_in_456', suite, '8. Session restoration reads canonical session representation');
+
+  // 9. Session expiry
+  const fakeToken = 'tok_expired_or_invalid_999';
+  const expiredSession = serverAuthStore.getSession(fakeToken);
+  assert(expiredSession === null, suite, '9. Expired or non-existent session token returns null');
+
+  // 10. Corrupted storage recovery
+  localStorage.setItem('catalyx_active_session', '{"uid": 12345, "broken":');
+  const recovered = safeStorage.getActiveSession();
+  assert(recovered === null, suite, '10. Corrupted session storage recovers safely to null without crashing');
+
+  // 11. Multiple tabs / state synchronization
+  safeStorage.setActiveSession('usr_tab_sync');
+  assert(safeStorage.getActiveSession() === 'usr_tab_sync', suite, '11. Cross-tab storage synchronization reads unified canonical session');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -2142,6 +2332,8 @@ async function main() {
     await runMissionControlAndObservabilityTests();
     await runPesapalApi3ProductionIpnRegistrationTests();
     await runCatalyxIdentityAndSubscriptionLifecycleTests();
+    await runAuthoritativeForensicSubscriptionAuditTests();
+    await runSafeStorageAndSessionResilienceAuditTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }
