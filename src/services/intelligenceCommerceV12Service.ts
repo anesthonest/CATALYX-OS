@@ -790,6 +790,12 @@ export class IntelligenceCommerceV12Service {
     this.agentTransactions.unshift(tx);
 
     if (!overBudget) {
+      const split = RevenuePolicyEngine.calculateRevenueSplit({
+        grossAmountMinorUnits: params.priceMinor,
+        currency: (params.currency || 'USD') as any,
+        sellerAccountType: 'INDIVIDUAL'
+      });
+
       this.recordFinancialEvent({
         idempotencyKey: `idem_a2a_${tx.transactionId}`,
         tenantId: 'agent_network_org',
@@ -797,8 +803,8 @@ export class IntelligenceCommerceV12Service {
         amountMinor: params.priceMinor,
         currency: params.currency,
         customerValueMinor: params.priceMinor,
-        platformShareMinor: Math.floor(params.priceMinor * 0.15),
-        creatorShareMinor: Math.floor(params.priceMinor * 0.85),
+        platformShareMinor: split.catalyxFeeMinorUnits,
+        creatorShareMinor: split.sellerGrossPlatformEarningsMinorUnits,
         partnerShareMinor: 0,
         aiCostMinor: Math.floor(params.priceMinor * 0.05),
         infraCostMinor: Math.floor(params.priceMinor * 0.01),
@@ -945,7 +951,7 @@ export class IntelligenceCommerceV12Service {
           pillar: '2. Multi-Sided Marketplace 2.0 (Buyers, Sellers, Devs, Creators, Partners)',
           status: 'PASS',
           score: '100%',
-          evidence: 'Full support for applications, agents, workflows, connectors, solutions; automated 80/20 creator split and dispute handling.',
+          evidence: 'Full support for applications, agents, workflows, connectors, solutions; authoritative 0.25%/0.27%/0.50% creator fee tiers and dispute handling.',
         },
         {
           pillar: '3. Specialized Intelligence-as-a-Service (IaaS)',

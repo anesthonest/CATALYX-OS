@@ -1,0 +1,11 @@
+[
+  {
+    "token": "sess_a4a0f85dd123ba6426ec9f5ca73882f3de5fa208915f9359e12f6635e96621da",
+    "uid": "usr_1791126023291_16729040544e",
+    "email": "durable_test@catalyx.io",
+    "organizationId": "org_usr_1791126023291_16729040544e",
+    "role": "user",
+    "createdAt": 1791126023291,
+    "expiresAt": 1791730823291
+  }
+]

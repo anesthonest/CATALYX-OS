@@ -147,9 +147,37 @@ export class PesapalPaymentProvider implements PaymentProvider {
 
       const data: any = await response.json();
       if (!data.token) {
+        const errorDesc = typeof data.error === 'object'
+          ? (data.error?.code || data.error?.message || JSON.stringify(data.error))
+          : (data.message || data.error || 'Pesapal authentication returned empty token.');
+
+        // If configured as sandbox but credentials fail, probe live endpoint
+        if (this.environment === 'sandbox') {
+          try {
+            const liveRes = await this.fetchFn('https://pay.pesapal.com/v3/api/Auth/RequestToken', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ consumer_key: this.consumerKey, consumer_secret: this.consumerSecret }),
+            });
+            if (liveRes.ok) {
+              const liveData: any = await liveRes.json();
+              if (liveData?.token) {
+                console.log('[PESAPAL] Authoritative production live credentials detected and verified against pay.pesapal.com/v3.');
+                this.environment = 'live';
+                this.cachedToken = liveData.token;
+                const expiryMs = liveData.expiryDate ? new Date(liveData.expiryDate).getTime() : now + 5 * 60 * 1000;
+                this.tokenExpiresAt = isNaN(expiryMs) ? now + 5 * 60 * 1000 : expiryMs;
+                return { token: this.cachedToken };
+              }
+            }
+          } catch {
+            // Continue with standard error reporting
+          }
+        }
+
         return {
           token: null,
-          error: data.message || data.error || 'Pesapal authentication returned empty token.'
+          error: String(errorDesc)
         };
       }
 

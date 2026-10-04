@@ -6,6 +6,7 @@
  */
 
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 export interface EmailDispatchOptions {
   to: string;
@@ -110,14 +111,15 @@ export class EmailDeliveryService {
         attempts++;
         try {
           // Send via configured SMTP / API endpoint
-          await this.executeNetworkDispatch(options);
+          const dispatchRes = await this.executeNetworkDispatch(options);
+          const finalId = dispatchRes?.messageId || messageId;
           
-          this.logDelivery(messageId, options.to, options.subject, 'DELIVERED', options.category, options.text);
+          this.logDelivery(finalId, options.to, options.subject, 'DELIVERED', options.category, options.text);
           return {
             success: true,
-            messageId,
+            messageId: finalId,
             deliveryStatus: 'DELIVERED',
-            provider: 'Transactional SMTP',
+            provider: `Transactional SMTP (${this.smtpHost})`,
             timestamp: new Date().toISOString(),
             recipientMasked
           };
@@ -156,9 +158,9 @@ export class EmailDeliveryService {
     };
   }
 
-  private async executeNetworkDispatch(options: EmailDispatchOptions): Promise<void> {
+  private async executeNetworkDispatch(options: EmailDispatchOptions): Promise<{ messageId?: string; response?: string }> {
     // If SendGrid API Key or SMTP server is configured
-    if (this.smtpUser === 'apikey' && this.smtpPassword) {
+    if (this.smtpUser === 'apikey' && this.smtpPassword && this.smtpHost.includes('sendgrid')) {
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
         headers: {
@@ -180,10 +182,33 @@ export class EmailDeliveryService {
         const body = await response.text();
         throw new Error(`SendGrid API error (${response.status}): ${body}`);
       }
-      return;
+      return { messageId: `sg_${Date.now()}` };
     }
 
-    // Standard HTTP mock / webhook transport if configured
+    // Direct SMTP Transport (Gmail SMTP, standard RFC 5322 submission)
+    if (this.smtpHost && this.smtpUser && this.smtpPassword) {
+      const transporter = nodemailer.createTransport({
+        host: this.smtpHost.toLowerCase(),
+        port: this.smtpPort,
+        secure: this.smtpPort === 465,
+        auth: {
+          user: this.smtpUser,
+          pass: this.smtpPassword.trim()
+        }
+      });
+
+      const info = await transporter.sendMail({
+        from: this.smtpFrom,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html
+      });
+
+      return { messageId: info.messageId, response: info.response };
+    }
+
+    // Standard HTTP webhook transport if configured
     if (process.env.MAIL_WEBHOOK_URL) {
       const res = await fetch(process.env.MAIL_WEBHOOK_URL, {
         method: 'POST',
@@ -191,8 +216,10 @@ export class EmailDeliveryService {
         body: JSON.stringify(options)
       });
       if (!res.ok) throw new Error(`Webhook relay failed: ${res.status}`);
-      return;
+      return { messageId: `wh_${Date.now()}` };
     }
+
+    return {};
   }
 
   private logDelivery(id: string, to: string, subject: string, status: string, category: string, text?: string): void {

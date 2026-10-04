@@ -640,7 +640,7 @@ class GlobalIntelligenceEconomyV14Service {
     const mrr = monthlyGrossSum;
     const arr = mrr * 12;
     const gmv = Math.round(mrr * 1.45);
-    const takeRate = 12.5;
+    const takeRate = 0.35; // Weighted average platform fee (0.25% Indiv / 0.27% Group / 0.50% Org)
     const platformNetRevenue = Math.round((gmv * takeRate) / 100);
     const creatorPayouts = gmv - platformNetRevenue;
 

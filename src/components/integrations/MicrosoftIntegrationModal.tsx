@@ -38,10 +38,18 @@ export const MicrosoftIntegrationModal: React.FC<MicrosoftIntegrationModalProps>
   };
 
   const handleConnect = async () => {
+    if (connection.enabled === false) {
+      setHandoffNotice('Microsoft 365 connection is temporarily disabled awaiting Azure credentials.');
+      setTimeout(() => setHandoffNotice(null), 4000);
+      return;
+    }
     setIsLoading(true);
     const res = await microsoftIntegrationService.connectMicrosoftAccount();
     if (res.success && res.authUrl) {
-      window.open(res.authUrl, '_blank', 'width=600,height=700');
+      window.location.href = res.authUrl;
+    } else if (res.message) {
+      setHandoffNotice(res.message);
+      setTimeout(() => setHandoffNotice(null), 4000);
     }
     setIsLoading(false);
   };
@@ -96,9 +104,19 @@ export const MicrosoftIntegrationModal: React.FC<MicrosoftIntegrationModalProps>
         {/* Status Bar */}
         <div className="px-5 py-3 bg-slate-950/50 border-b border-white/5 flex items-center justify-between text-xs font-mono">
           <div className="flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${connection.connected ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+            <span className={`w-2 h-2 rounded-full ${
+              connection.connected 
+                ? 'bg-emerald-400' 
+                : connection.enabled === false 
+                  ? 'bg-amber-400/80' 
+                  : 'bg-slate-400'
+            }`}></span>
             <span className="text-gray-300">
-              {connection.connected ? `Connected (${connection.userPrincipalName || 'Tenant Account'})` : 'Operating in Secure Sovereign Sandbox Mode'}
+              {connection.connected 
+                ? `Connected (${connection.userPrincipalName || 'Tenant Account'})` 
+                : connection.enabled === false
+                  ? 'Microsoft 365 integration temporarily disabled.'
+                  : 'Microsoft 365 connection unavailable until integration is enabled.'}
             </span>
           </div>
 
@@ -111,6 +129,11 @@ export const MicrosoftIntegrationModal: React.FC<MicrosoftIntegrationModalProps>
               <Unplug className="w-3.5 h-3.5" />
               <span>Disconnect</span>
             </button>
+          ) : connection.enabled === false ? (
+            <div className="flex items-center gap-1.5 text-gray-500 text-[11px] font-mono">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-500/70" />
+              <span>Azure Credentials Pending</span>
+            </div>
           ) : (
             <button
               onClick={handleConnect}
@@ -122,6 +145,19 @@ export const MicrosoftIntegrationModal: React.FC<MicrosoftIntegrationModalProps>
             </button>
           )}
         </div>
+
+        {/* Disabled Notice Banner */}
+        {connection.enabled === false && (
+          <div className="mx-5 mt-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200/90 text-xs font-mono flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <div className="font-semibold text-amber-300">Microsoft 365 Integration Temporarily Disabled</div>
+              <p className="text-[11px] text-amber-200/80 leading-relaxed font-sans">
+                Azure credentials (<code className="font-mono text-amber-200">MICROSOFT_CLIENT_ID</code>, <code className="font-mono text-amber-200">MICROSOFT_CLIENT_SECRET</code>, <code className="font-mono text-amber-200">MICROSOFT_TENANT_ID</code>) are pending configuration. The complete integration and OpenXML adapters are preserved and will reactivate once credentials are provided.
+              </p>
+            </div>
+          </div>
+        )}
 
         {handoffNotice && (
           <div className="mx-5 mt-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-mono flex items-center gap-2">
@@ -144,50 +180,64 @@ export const MicrosoftIntegrationModal: React.FC<MicrosoftIntegrationModalProps>
           </div>
 
           <div className="space-y-2">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 hover:border-white/15 transition-all flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    item.officeType === 'word' ? 'bg-blue-500/10 text-blue-400' :
-                    item.officeType === 'excel' ? 'bg-emerald-500/10 text-emerald-400' :
-                    item.officeType === 'powerpoint' ? 'bg-amber-500/10 text-amber-400' : 'bg-gray-500/10 text-gray-400'
-                  }`}>
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-white">{item.name}</div>
-                    <div className="text-[10px] font-mono text-gray-400">
-                      {(item.size / 1024).toFixed(1)} KB • Modified {new Date(item.lastModifiedDateTime).toLocaleDateString()}
+            {items.length === 0 ? (
+              <div className="p-6 rounded-xl bg-slate-950/40 border border-white/5 text-center text-xs font-mono text-gray-400 space-y-2">
+                <Folder className="w-8 h-8 text-gray-600 mx-auto" />
+                <p>
+                  {connection.enabled === false 
+                    ? 'OneDrive remote synchronization is temporarily disabled awaiting Microsoft activation.' 
+                    : 'No OneDrive documents discovered in current workspace.'}
+                </p>
+                <p className="text-[11px] text-gray-500 font-sans">
+                  Local sovereign OpenXML generation engines (Word, Excel, PowerPoint) remain active and fully functional.
+                </p>
+              </div>
+            ) : (
+              items.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3.5 rounded-xl bg-slate-950/60 border border-white/5 hover:border-white/15 transition-all flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${
+                      item.officeType === 'word' ? 'bg-blue-500/10 text-blue-400' :
+                      item.officeType === 'excel' ? 'bg-emerald-500/10 text-emerald-400' :
+                      item.officeType === 'powerpoint' ? 'bg-amber-500/10 text-amber-400' : 'bg-gray-500/10 text-gray-400'
+                    }`}>
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-white">{item.name}</div>
+                      <div className="text-[10px] font-mono text-gray-400">
+                        {(item.size / 1024).toFixed(1)} KB • Modified {new Date(item.lastModifiedDateTime).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  {item.officeType && item.officeType !== 'generic' && (
-                    <button
-                      onClick={() => handleLaunchProtocol(item)}
-                      className="px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
-                      title="Direct desktop handoff via ms-protocol"
+                  <div className="flex items-center gap-2">
+                    {item.officeType && item.officeType !== 'generic' && (
+                      <button
+                        onClick={() => handleLaunchProtocol(item)}
+                        className="px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+                        title="Direct desktop handoff via ms-protocol"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Open in {item.officeType === 'word' ? 'Word' : item.officeType === 'excel' ? 'Excel' : 'PowerPoint'}</span>
+                      </button>
+                    )}
+                    <a
+                      href={item.webUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-all"
+                      title="View in OneDrive Web"
                     >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Open in {item.officeType === 'word' ? 'Word' : item.officeType === 'excel' ? 'Excel' : 'PowerPoint'}</span>
-                    </button>
-                  )}
-                  <a
-                    href={item.webUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-all"
-                    title="View in OneDrive Web"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Architecture Verification Footnote */}

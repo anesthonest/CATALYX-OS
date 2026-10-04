@@ -4,6 +4,7 @@ import {
   studioService, StudioItem, StudioType, StudioAsset, StudioVersion 
 } from '../../services/studioService';
 import { microsoftIntegrationService } from '../../services/microsoftIntegrationService';
+import { persistenceSyncService } from '../../services/persistenceSyncService';
 import { UserProfile } from '../../types';
 import { 
   Code, Film, Palette, PenTool, Video, Presentation, 
@@ -28,6 +29,7 @@ export const UniversalStudioView: React.FC<UniversalStudioViewProps> = ({ user, 
   const [saveStatus, setSaveStatus] = useState<string>('');
   const [versionSummary, setVersionSummary] = useState('');
   const [reviewNote, setReviewNote] = useState('');
+  const [handoffNotice, setHandoffNotice] = useState<string | null>(null);
 
   const studioTypes: { type: StudioType; name: string; icon: any; color: string }[] = [
     { type: 'software', name: 'Software Dev', icon: Code, color: 'text-blue-400' },
@@ -113,13 +115,23 @@ export const UniversalStudioView: React.FC<UniversalStudioViewProps> = ({ user, 
       fileUrl: `/assets/studios/export/${activeStudio?.id || 'sample'}.${officeType === 'word' ? 'docx' : officeType === 'excel' ? 'xlsx' : 'pptx'}`,
       fileName: `${activeStudio?.name || 'Studio_Document'}.${officeType === 'word' ? 'docx' : officeType === 'excel' ? 'xlsx' : 'pptx'}`,
       onFallback: () => {
-        alert(`Office desktop handoff dispatched. If Microsoft 365 is not detected, use the direct download fallback.`);
+        setHandoffNotice('Office desktop handoff dispatched. If Microsoft 365 is not detected, use the direct download fallback.');
+        setTimeout(() => setHandoffNotice(null), 5000);
       }
     });
   };
 
   return (
     <div className="space-y-6">
+      {handoffNotice && (
+        <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-mono flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <span>{handoffNotice}</span>
+          </div>
+          <button onClick={() => setHandoffNotice(null)} className="text-gray-400 hover:text-white text-xs font-bold cursor-pointer">×</button>
+        </div>
+      )}
       {/* Studio Header Banner */}
       <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-6 backdrop-blur-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -408,6 +420,41 @@ export const UniversalStudioView: React.FC<UniversalStudioViewProps> = ({ user, 
                 </p>
               </div>
 
+              {/* Primary Studio Package Downloads */}
+              <div className="p-4 rounded-xl bg-slate-950/70 border border-brand-cyan/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Download className="w-4 h-4 text-brand-cyan" />
+                    <span>Complete Studio Package Archive (ZIP)</span>
+                  </div>
+                  <div className="text-[10px] font-mono text-gray-400 mt-0.5">
+                    Includes manifest.json, working draft, version snapshot timeline, and audit history.
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (activeStudio) {
+                        persistenceSyncService.downloadStudioAsMarkdown(activeStudio);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-mono transition-all cursor-pointer"
+                  >
+                    Markdown
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (activeStudio) {
+                        persistenceSyncService.downloadStudioZip(activeStudio.id, activeStudio);
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg bg-brand-cyan text-slate-950 font-bold text-xs font-mono flex items-center gap-1.5 hover:opacity-90 transition-all cursor-pointer shadow-md"
+                  >
+                    Download ZIP
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {(activeStudio?.exportFormats || []).map((fmt, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-slate-950/70 border border-white/10 flex items-center justify-between">
@@ -420,7 +467,7 @@ export const UniversalStudioView: React.FC<UniversalStudioViewProps> = ({ user, 
                       className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Download className="w-3 h-3" />
-                      <span>Export</span>
+                      <span>Office Protocol</span>
                     </button>
                   </div>
                 ))}

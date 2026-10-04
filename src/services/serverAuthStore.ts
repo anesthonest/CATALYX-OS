@@ -13,6 +13,8 @@
  */
 
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { emailDeliveryService } from './emailDeliveryService';
 import { LegalPolicyService } from './legal/legalPolicyService';
 
@@ -97,7 +99,69 @@ export class ServerAuthStore {
   private readonly SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
   private constructor() {
+    this.ensureDataDir();
     this.seedDefaultAccounts();
+    this.loadFromDisk();
+  }
+
+  private ensureDataDir() {
+    const dir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+
+  private loadFromDisk() {
+    try {
+      const dir = this.ensureDataDir();
+      const accPath = path.join(dir, 'accounts.json');
+      if (fs.existsSync(accPath)) {
+        const raw = fs.readFileSync(accPath, 'utf-8');
+        const list: UserAccount[] = JSON.parse(raw);
+        for (const acc of list) {
+          this.accounts.set(acc.email.toLowerCase(), acc);
+          this.accountsByUid.set(acc.uid, acc);
+        }
+      }
+      const sessPath = path.join(dir, 'sessions.json');
+      if (fs.existsSync(sessPath)) {
+        const raw = fs.readFileSync(sessPath, 'utf-8');
+        const list: ActiveSession[] = JSON.parse(raw);
+        const now = Date.now();
+        for (const sess of list) {
+          if (sess.expiresAt > now) {
+            this.sessions.set(sess.token, sess);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[AUTH STORE] Could not load persisted accounts/sessions:', err);
+    }
+  }
+
+  public persistAccountsToDisk() {
+    try {
+      const dir = this.ensureDataDir();
+      const accPath = path.join(dir, 'accounts.json');
+      const tmp = `${accPath}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(Array.from(this.accounts.values()), null, 2), 'utf-8');
+      fs.renameSync(tmp, accPath);
+    } catch (err) {
+      console.error('[AUTH STORE] Failed to persist accounts to disk:', err);
+    }
+  }
+
+  public persistSessionsToDisk() {
+    try {
+      const dir = this.ensureDataDir();
+      const sessPath = path.join(dir, 'sessions.json');
+      const tmp = `${sessPath}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(Array.from(this.sessions.values()), null, 2), 'utf-8');
+      fs.renameSync(tmp, sessPath);
+    } catch (err) {
+      console.error('[AUTH STORE] Failed to persist sessions to disk:', err);
+    }
   }
 
   public static getInstance(): ServerAuthStore {
@@ -282,6 +346,7 @@ export class ServerAuthStore {
 
     this.accounts.set(email, account);
     this.accountsByUid.set(uid, account);
+    this.persistAccountsToDisk();
 
     // Issue authoritative session token immediately
     const sessionToken = this.createSession(account, params.ip);
@@ -500,6 +565,7 @@ export class ServerAuthStore {
 
     this.accounts.set(email, account);
     this.accountsByUid.set(uid, account);
+    this.persistAccountsToDisk();
 
     // Issue active session
     const sessionToken = this.createSession(account, params.ip);
@@ -876,6 +942,7 @@ export class ServerAuthStore {
     };
 
     this.sessions.set(token, session);
+    this.persistSessionsToDisk();
     return token;
   }
 
@@ -885,13 +952,16 @@ export class ServerAuthStore {
     if (!session) return null;
     if (session.expiresAt < Date.now()) {
       this.sessions.delete(token);
+      this.persistSessionsToDisk();
       return null;
     }
     return session;
   }
 
   public revokeSession(token: string): boolean {
-    return this.sessions.delete(token);
+    const res = this.sessions.delete(token);
+    if (res) this.persistSessionsToDisk();
+    return res;
   }
 
   public revokeAllUserSessions(uid: string): void {
@@ -900,6 +970,7 @@ export class ServerAuthStore {
         this.sessions.delete(token);
       }
     }
+    this.persistSessionsToDisk();
   }
 
   public getAccountByUid(uid: string): UserAccount | null {
@@ -991,6 +1062,7 @@ export class ServerAuthStore {
 
       this.accounts.set(email, account);
       this.accountsByUid.set(uid, account);
+      this.persistAccountsToDisk();
       isNewUser = true;
     }
 

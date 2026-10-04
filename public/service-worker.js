@@ -38,7 +38,14 @@ const SENSITIVE_API_PATTERNS = [
   /\/api\/legal\//i,
   /\/api\/marketplace\/purchase/i,
   /\/api\/user\//i,
-  /\/api\/admin\//i
+  /\/api\/admin\//i,
+  /\/api\/data\//i,
+  /\/api\/export\//i,
+  /\/api\/workspaces/i,
+  /\/api\/projects/i,
+  /\/api\/tasks/i,
+  /\/api\/goals/i,
+  /\/api\/studios/i
 ];
 
 self.addEventListener('install', (event) => {

@@ -70,6 +70,7 @@ import { QuickCreateModal } from './design-system/QuickCreateModal';
 import { UniversalSearchModal } from './design-system/UniversalSearchModal';
 import { OnboardingModal } from './design-system/OnboardingModal';
 import { CatalyxLogo } from './common/CatalyxLogo';
+import { SaveStatusBadge } from './common/SaveStatusBadge';
 import { usePWA } from '../hooks/usePWA';
 
 interface UnifiedNavigationV21Props {
@@ -321,6 +322,9 @@ export const UnifiedNavigationV21: React.FC<UnifiedNavigationV21Props> = ({
             <Sparkles className="w-3.5 h-3.5 text-purple-400" />
             <span>Ask AI</span>
           </button>
+
+          {/* Authoritative Data Persistence Save Status */}
+          <SaveStatusBadge className="hidden md:inline-flex" />
 
           {/* Live System Health Truth Widget */}
           <SystemHealthTruthWidget onNavigate={onSelectTab} />

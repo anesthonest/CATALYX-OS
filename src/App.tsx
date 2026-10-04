@@ -9,6 +9,7 @@ import {
 import { dbService, registerNotifications } from './firebase';
 import { v21ExperienceService } from './services/v21ExperienceService';
 import { authService } from './services/authService';
+import { persistenceSyncService } from './services/persistenceSyncService';
 import { safeStorage } from './utils/safeStorage';
 import { AuthLandingPage } from './components/auth/AuthLandingPage';
 import { CatalyxLogo } from './components/common/CatalyxLogo';
@@ -314,6 +315,16 @@ export default function App() {
 
   // 2. Fetch/Refreshes all relevant records for logged executive
   const loadUserData = async (uid: string) => {
+    // 1. Immediately hydrate from durable server storage
+    try {
+      const syncResult = await persistenceSyncService.hydrateFromServer();
+      if (syncResult.success && syncResult.data) {
+        dbService.hydrateFromSyncedData(uid, syncResult.data);
+      }
+    } catch (err) {
+      console.warn('[HYDRATION] Server sync fallback to local cache:', err);
+    }
+
     const prof = await dbService.getUserProfile(uid);
     if (prof) {
       setUser(prof);
@@ -329,6 +340,22 @@ export default function App() {
       // Workspaces logs
       const wsList = await dbService.getWorkspaces(uid);
       setWorkspaces(wsList);
+      
+      // Restore active workspace directly
+      const lastActiveId = persistenceSyncService.getLastActiveWorkspace(uid);
+      const foundLast = wsList.find(w => w.id === lastActiveId);
+      if (foundLast) {
+        setActiveWorkspace(foundLast);
+      } else if (wsList.length > 0) {
+        setActiveWorkspace(wsList[0]);
+        persistenceSyncService.setLastActiveWorkspace(uid, wsList[0].id);
+      } else {
+        // Auto-provision initial workspace if none exist
+        const defaultWS = await dbService.createWorkspace(uid, 'Executive Workspace');
+        setWorkspaces([defaultWS]);
+        setActiveWorkspace(defaultWS);
+        persistenceSyncService.setLastActiveWorkspace(uid, defaultWS.id);
+      }
       
       // Load global workspace invites targeting this user's mail
       const invites = await dbService.getInvites(prof.email);
@@ -375,6 +402,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
+      await persistenceSyncService.flushPendingQueue();
       const sessionToken = localStorage.getItem('catalyx_session_token');
       if (sessionToken) {
         await fetch('/api/auth/logout', {
@@ -482,6 +510,7 @@ export default function App() {
     const newWSObj = await dbService.createWorkspace(user.uid, name);
     setWorkspaces(prev => [...prev, newWSObj]);
     setActiveWorkspace(newWSObj); // Auto Open
+    persistenceSyncService.setLastActiveWorkspace(user.uid, newWSObj.id);
   };
 
   const handleAddWorkspaceTaskInApp = async (text: string) => {
@@ -624,7 +653,10 @@ export default function App() {
             user={user}
             workspaces={workspaces}
             onCreateWorkspace={handleCreateWorkspaceInApp}
-            onSelectWorkspace={(ws) => setActiveWorkspace(ws)}
+            onSelectWorkspace={(ws) => {
+              setActiveWorkspace(ws);
+              if (user) persistenceSyncService.setLastActiveWorkspace(user.uid, ws.id);
+            }}
             activeWorkspace={activeWorkspace}
             activeMembers={activeMembers}
             activeTasks={activeTasks}

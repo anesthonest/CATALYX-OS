@@ -32,12 +32,14 @@ import { serverAuthStore } from './src/services/serverAuthStore';
 import { emailDeliveryService } from './src/services/emailDeliveryService';
 import { marketplaceRatingService } from './src/services/marketplaceRatingService';
 import { missionControlService } from './src/services/missionControlService';
+import { officeDocumentGenerator } from './src/services/officeDocumentGenerator';
+import { serverPersistenceService } from './src/services/serverPersistenceService';
 
 // Initialize environment variables ASAP
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // Production HTTP Security Headers
 app.use((req, res, next) => {
@@ -1806,12 +1808,53 @@ app.post('/api/auth/login', async (req, res) => {
  */
 app.post('/api/auth/google', async (req, res) => {
   try {
-    const { googleId, email, name, accountType, acceptTerms } = req.body;
+    const { googleId, email, name, accountType, acceptTerms, idToken, credential } = req.body;
+    const token = idToken || credential;
+
+    let verifiedEmail = email;
+    let verifiedGoogleId = googleId;
+    let verifiedName = name;
+
+    // Cryptographic Google ID Token validation if provided
+    if (token) {
+      try {
+        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+        if (!verifyRes.ok) {
+          return res.status(401).json({
+            success: false,
+            error: 'Google ID token verification failed: invalid signature, expired, or untrusted issuer.'
+          });
+        }
+        const tokenInfo: any = await verifyRes.json();
+        const configuredClientId = process.env.VITE_GOOGLE_CLIENT_ID || '648117808742-tp1gc13hdta6hrdj3p5uet69podh5s2b.apps.googleusercontent.com';
+        if (tokenInfo.aud !== configuredClientId && !tokenInfo.aud?.includes('.apps.googleusercontent.com')) {
+          return res.status(401).json({
+            success: false,
+            error: 'Google ID token audience mismatch: token was not issued for this application.'
+          });
+        }
+        if (tokenInfo.email_verified !== 'true' && tokenInfo.email_verified !== true) {
+          return res.status(401).json({
+            success: false,
+            error: 'Google account email is not verified by Google.'
+          });
+        }
+        verifiedEmail = tokenInfo.email;
+        verifiedGoogleId = tokenInfo.sub;
+        verifiedName = tokenInfo.name || name;
+      } catch (err: any) {
+        return res.status(401).json({
+          success: false,
+          error: `Google token verification network failure: ${err?.message || err}`
+        });
+      }
+    }
+
     const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
     const result = await serverAuthStore.authenticateWithGoogle({
-      googleId,
-      email,
-      name,
+      googleId: verifiedGoogleId,
+      email: verifiedEmail,
+      name: verifiedName,
       accountType,
       acceptTerms: Boolean(acceptTerms),
       ip: clientIp
@@ -1995,6 +2038,353 @@ app.get('/api/payments/orders', (req, res) => {
   }
 
   res.json(allOrders);
+});
+
+// ============================================================================
+// CATALYX AUTHORITATIVE DURABLE PERSISTENCE & DATA RECONCILIATION API
+// ============================================================================
+
+/**
+ * Full User Data Sync (Load All Work on Reload / Re-authentication)
+ */
+app.get('/api/data/sync', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  }
+  const data = serverPersistenceService.syncUserData(actor.uid, actor.email);
+  res.json({ success: true, ...data });
+});
+
+/**
+ * Apply Client Sync Batch (Save Work Durably to Server)
+ */
+app.post('/api/data/sync', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  }
+  const result = serverPersistenceService.applyClientSyncBatch(actor.uid, actor.email, req.body || {});
+  res.json(result);
+});
+
+/**
+ * Workspaces Management API (Durable)
+ */
+app.get('/api/workspaces', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const list = serverPersistenceService.getWorkspacesForUser(actor.uid);
+  res.json(list);
+});
+
+app.post('/api/workspaces', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const name = (req.body?.name || '').trim();
+  if (!name) {
+    return res.status(400).json({ error: 'Workspace name is required' });
+  }
+  const ws = serverPersistenceService.createWorkspace(actor.uid, name, actor.email, (actor as any).username);
+  res.json({ success: true, workspace: ws });
+});
+
+app.put('/api/workspaces/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const updated = serverPersistenceService.updateWorkspace(req.params.id, req.body || {}, actor.uid);
+  if (!updated) {
+    return res.status(404).json({ error: 'Workspace not found or unauthorized' });
+  }
+  res.json({ success: true, workspace: updated });
+});
+
+app.delete('/api/workspaces/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const ok = serverPersistenceService.deleteWorkspace(req.params.id, actor.uid);
+  if (!ok) {
+    return res.status(403).json({ error: 'Cannot delete workspace: not owner or not found' });
+  }
+  res.json({ success: true });
+});
+
+app.get('/api/workspaces/:id/members', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const members = serverPersistenceService.getWorkspaceMembers(req.params.id, actor.uid);
+  res.json(members);
+});
+
+app.get('/api/workspaces/:id/tasks', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const tasks = serverPersistenceService.getWorkspaceTasks(req.params.id, actor.uid);
+  res.json(tasks);
+});
+
+app.post('/api/workspaces/:id/tasks', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const text = (req.body?.text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Task text required' });
+  const task = serverPersistenceService.addWorkspaceTask(req.params.id, text, req.body?.priority || 'medium', actor.uid);
+  if (!task) return res.status(404).json({ error: 'Workspace not found or unauthorized' });
+  res.json({ success: true, task });
+});
+
+app.post('/api/workspaces/:id/tasks/:taskId/complete', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const ok = serverPersistenceService.completeWorkspaceTask(req.params.id, req.params.taskId, actor.uid);
+  res.json({ success: ok });
+});
+
+app.get('/api/workspaces/:id/messages', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const msgs = serverPersistenceService.getWorkspaceMessages(req.params.id, actor.uid);
+  res.json(msgs);
+});
+
+app.post('/api/workspaces/:id/messages', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const text = (req.body?.text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Message text required' });
+  const msg = serverPersistenceService.addWorkspaceMessage(req.params.id, text, (actor as any).username || actor.email, actor.uid);
+  res.json({ success: true, message: msg });
+});
+
+app.get('/api/workspaces/:id/wikis', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const wikis = serverPersistenceService.getWorkspaceWikis(req.params.id, actor.uid);
+  res.json(wikis);
+});
+
+app.post('/api/workspaces/:id/wikis', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const title = (req.body?.title || '').trim();
+  const content = (req.body?.content || '').trim();
+  if (!title) return res.status(400).json({ error: 'Wiki title required' });
+  const wiki = serverPersistenceService.addWorkspaceWiki(req.params.id, title, content, (actor as any).username || actor.email, actor.uid);
+  res.json({ success: true, wiki });
+});
+
+/**
+ * Projects Management API (Durable)
+ */
+app.get('/api/projects', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const projects = serverPersistenceService.getProjectsForUser(actor.uid);
+  res.json(projects);
+});
+
+app.post('/api/projects', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const title = (req.body?.title || '').trim();
+  const description = (req.body?.description || '').trim();
+  if (!title) return res.status(400).json({ error: 'Project title required' });
+  const project = serverPersistenceService.createProject(actor.uid, title, description, req.body?.workspaceId);
+  res.json({ success: true, project });
+});
+
+app.put('/api/projects/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const updated = serverPersistenceService.updateProject(req.params.id, req.body || {}, actor.uid);
+  if (!updated) return res.status(404).json({ error: 'Project not found or unauthorized' });
+  res.json({ success: true, project: updated });
+});
+
+app.delete('/api/projects/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const ok = serverPersistenceService.deleteProject(req.params.id, actor.uid);
+  res.json({ success: ok });
+});
+
+/**
+ * Tasks Management API (Durable)
+ */
+app.get('/api/tasks', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const tasks = serverPersistenceService.getTasksForUser(actor.uid);
+  res.json(tasks);
+});
+
+app.post('/api/tasks', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const text = (req.body?.text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Task text required' });
+  const task = serverPersistenceService.createTask(actor.uid, text, req.body?.priority, req.body?.category, req.body?.dueDate);
+  res.json({ success: true, task });
+});
+
+app.put('/api/tasks/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const updated = serverPersistenceService.updateTask(req.params.id, req.body || {}, actor.uid);
+  if (!updated) return res.status(404).json({ error: 'Task not found or unauthorized' });
+  res.json({ success: true, task: updated });
+});
+
+app.delete('/api/tasks/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const ok = serverPersistenceService.deleteTask(req.params.id, actor.uid);
+  res.json({ success: ok });
+});
+
+/**
+ * Goals Management API (Durable)
+ */
+app.get('/api/goals', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const goals = serverPersistenceService.getGoalsForUser(actor.uid);
+  res.json(goals);
+});
+
+app.post('/api/goals', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const title = (req.body?.title || '').trim();
+  const description = (req.body?.description || '').trim();
+  if (!title) return res.status(400).json({ error: 'Goal title required' });
+  const goal = serverPersistenceService.createGoal(actor.uid, title, description, req.body?.targetDate || '', req.body?.type || 'short_term');
+  res.json({ success: true, goal });
+});
+
+app.put('/api/goals/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const updated = serverPersistenceService.updateGoal(req.params.id, req.body || {}, actor.uid);
+  if (!updated) return res.status(404).json({ error: 'Goal not found or unauthorized' });
+  res.json({ success: true, goal: updated });
+});
+
+app.delete('/api/goals/:id', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const ok = serverPersistenceService.deleteGoal(req.params.id, actor.uid);
+  res.json({ success: ok });
+});
+
+/**
+ * Universal Studios API & Autosave Drafts
+ */
+app.get('/api/studios', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const workspaceId = req.query.workspaceId as string;
+  if (!workspaceId) return res.status(400).json({ error: 'workspaceId query parameter required' });
+  const studios = serverPersistenceService.getStudiosForWorkspace(workspaceId, actor.uid);
+  res.json(studios);
+});
+
+app.post('/api/studios', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const saved = serverPersistenceService.saveStudio(req.body, actor.uid);
+    res.json({ success: true, studio: saved });
+  } catch (err: any) {
+    res.status(403).json({ error: err.message || 'Unauthorized studio modification' });
+  }
+});
+
+app.post('/api/studios/:id/draft', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const result = serverPersistenceService.saveStudioDraft(req.params.id, req.body?.draft || {}, actor.email, actor.uid);
+  res.json(result);
+});
+
+// ============================================================================
+// CATALYX GENUINE WORK EXPORT & DOWNLOAD ENGINE
+// ============================================================================
+
+/**
+ * Export Project as ZIP with Manifest, Tasks, Documents & JSON Metadata
+ */
+app.get('/api/export/project/:id', async (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  try {
+    const { buffer, filename } = await serverPersistenceService.exportProjectAsZip(req.params.id, actor.uid);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (err: any) {
+    res.status(404).json({ error: err.message || 'Project export failed' });
+  }
+});
+
+/**
+ * Export Workspace as ZIP with Manifest, Members, Wikis, Studios & Tasks
+ */
+app.get('/api/export/workspace/:id', async (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  try {
+    const { buffer, filename } = await serverPersistenceService.exportWorkspaceAsZip(req.params.id, actor.uid);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (err: any) {
+    res.status(404).json({ error: err.message || 'Workspace export failed' });
+  }
+});
+
+/**
+ * Export Studio Work as ZIP with Manifest, Active Draft & Version History
+ */
+app.get('/api/export/studio/:id', async (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  try {
+    const { buffer, filename } = await serverPersistenceService.exportStudioAsZip(req.params.id, actor.uid);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (err: any) {
+    res.status(404).json({ error: err.message || 'Studio export failed' });
+  }
+});
+
+/**
+ * Full User Data Portability Export (GDPR / SOC-2 Compliance Archive)
+ */
+app.get('/api/export/all', async (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized: Active session required' });
+  try {
+    const { buffer, filename } = await serverPersistenceService.exportAllUserDataAsZip(actor.uid);
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Complete data export failed' });
+  }
 });
 
 /**
@@ -2574,15 +2964,83 @@ app.post('/api/integrations/test', (req, res) => {
 /**
  * Microsoft Integration & Graph API Services (Phase 10 & 11)
  */
+interface ServerMicrosoftConnection {
+  connected: boolean;
+  userPrincipalName?: string;
+  displayName?: string;
+  tenantId?: string;
+  scopes: string[];
+  connectedAt?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  oneDriveQuotaBytes?: {
+    used: number;
+    total: number;
+  };
+}
+
+const serverMicrosoftStore = new Map<string, ServerMicrosoftConnection>();
+
+/**
+ * Server-authoritative Microsoft 365 Feature Flag
+ * Controlled via MICROSOFT_INTEGRATION_ENABLED environment variable.
+ * Defaults to 'false' when not explicitly set to 'true'.
+ */
+function isMicrosoftIntegrationEnabled(): boolean {
+  const flag = (process.env.MICROSOFT_INTEGRATION_ENABLED || '').trim().toLowerCase();
+  return flag === 'true';
+}
+
 app.get('/api/integrations/microsoft/status', (req, res) => {
   const actor = getAuthenticatedActor(req);
   if (!actor) {
     return res.status(401).json({ error: 'Unauthorized: Active session required' });
   }
+
+  const enabled = isMicrosoftIntegrationEnabled();
+
+  if (!enabled) {
+    return res.json({
+      enabled: false,
+      connected: false,
+      status: 'DISABLED_AWAITING_AZURE_CREDENTIALS',
+      message: 'Microsoft 365 integration temporarily disabled awaiting Azure credentials.',
+      scopes: [],
+      connection: {
+        enabled: false,
+        connected: false,
+        status: 'DISABLED_AWAITING_AZURE_CREDENTIALS',
+        message: 'Microsoft 365 integration temporarily disabled awaiting Azure credentials.',
+        scopes: []
+      }
+    });
+  }
+
+  const conn = serverMicrosoftStore.get(actor.uid);
+  if (conn && conn.connected && conn.accessToken) {
+    return res.json({
+      enabled: true,
+      connected: true,
+      scopes: conn.scopes,
+      connection: {
+        enabled: true,
+        connected: true,
+        userPrincipalName: conn.userPrincipalName,
+        displayName: conn.displayName,
+        tenantId: conn.tenantId,
+        scopes: conn.scopes,
+        connectedAt: conn.connectedAt,
+        oneDriveQuotaBytes: conn.oneDriveQuotaBytes
+      }
+    });
+  }
   res.json({
+    enabled: true,
     connected: false,
     scopes: ['User.Read', 'Files.ReadWrite', 'offline_access'],
     connection: {
+      enabled: true,
       connected: false,
       scopes: ['User.Read', 'Files.ReadWrite', 'offline_access']
     }
@@ -2594,8 +3052,18 @@ app.post('/api/integrations/microsoft/connect', (req, res) => {
   if (!actor) {
     return res.status(401).json({ error: 'Unauthorized: Active session required' });
   }
+
+  if (!isMicrosoftIntegrationEnabled()) {
+    return res.json({
+      success: false,
+      enabled: false,
+      disabled: true,
+      message: 'Microsoft 365 integration is temporarily disabled awaiting Azure credentials. Set MICROSOFT_INTEGRATION_ENABLED=true once credentials are configured.'
+    });
+  }
+
   const { clientId, tenantId } = req.body;
-  const targetTenant = tenantId || 'common';
+  const targetTenant = tenantId || process.env.MICROSOFT_TENANT_ID || 'common';
   const targetClient = clientId || process.env.MICROSOFT_CLIENT_ID || 'catalyx-m365-client';
   const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/microsoft/callback`;
   const scopes = encodeURIComponent('User.Read Files.ReadWrite offline_access');
@@ -2603,9 +3071,123 @@ app.post('/api/integrations/microsoft/connect', (req, res) => {
 
   res.json({
     success: true,
+    enabled: true,
     authUrl,
     message: 'Microsoft Graph OAuth 2.0 authorization sequence initiated.'
   });
+});
+
+/**
+ * Microsoft OAuth 2.0 Authorization Code Callback
+ */
+app.get('/api/integrations/microsoft/callback', async (req, res) => {
+  if (!isMicrosoftIntegrationEnabled()) {
+    console.warn('[MICROSOFT OAUTH] Callback invoked while Microsoft integration is disabled.');
+    return res.redirect('/?microsoft_error=integration_disabled');
+  }
+
+  const { code, state, error, error_description } = req.query;
+
+  if (error) {
+    console.warn('[MICROSOFT OAUTH] Provider returned error:', error, error_description);
+    return res.redirect(`/?microsoft_error=${encodeURIComponent(String(error_description || error))}`);
+  }
+
+  if (!code || !state) {
+    return res.status(400).send('Invalid OAuth callback parameters: code and state are required.');
+  }
+
+  const clientId = process.env.MICROSOFT_CLIENT_ID;
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+  const tenantId = process.env.MICROSOFT_TENANT_ID || 'common';
+
+  if (!clientId || !clientSecret) {
+    console.warn('[MICROSOFT OAUTH] Authorization code received but MICROSOFT_CLIENT_ID or MICROSOFT_CLIENT_SECRET is missing.');
+    return res.redirect('/?microsoft_error=missing_server_credentials');
+  }
+
+  const redirectUri = `${req.protocol}://${req.get('host')}/api/integrations/microsoft/callback`;
+
+  try {
+    const tokenRes = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code: String(code),
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      }).toString()
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.warn(`[MICROSOFT OAUTH] Token exchange failed (${tokenRes.status}):`, errText);
+      return res.redirect('/?microsoft_error=token_exchange_failed');
+    }
+
+    const tokenData: any = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+    const refreshToken = tokenData.refresh_token;
+    const expiresIn = Number(tokenData.expires_in) || 3600;
+
+    // Fetch user identity via Microsoft Graph /v1.0/me
+    let userPrincipalName = '';
+    let displayName = '';
+    try {
+      const meRes = await fetch('https://graph.microsoft.com/v1.0/me', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (meRes.ok) {
+        const meData: any = await meRes.json();
+        userPrincipalName = meData.userPrincipalName || meData.mail || '';
+        displayName = meData.displayName || '';
+      }
+    } catch (e) {
+      console.warn('[MICROSOFT GRAPH] Failed to query /me profile:', e);
+    }
+
+    // Fetch OneDrive quota via Microsoft Graph /v1.0/me/drive
+    let quotaUsed = 0;
+    let quotaTotal = 0;
+    try {
+      const driveRes = await fetch('https://graph.microsoft.com/v1.0/me/drive', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (driveRes.ok) {
+        const driveData: any = await driveRes.json();
+        quotaUsed = driveData?.quota?.used || 0;
+        quotaTotal = driveData?.quota?.total || 0;
+      }
+    } catch (e) {
+      console.warn('[MICROSOFT GRAPH] Failed to query /me/drive quota:', e);
+    }
+
+    // Save in server store keyed by user ID (state)
+    const actorUid = String(state);
+    serverMicrosoftStore.set(actorUid, {
+      connected: true,
+      userPrincipalName,
+      displayName,
+      tenantId,
+      scopes: ['User.Read', 'Files.ReadWrite', 'offline_access'],
+      connectedAt: new Date().toISOString(),
+      accessToken,
+      refreshToken,
+      expiresAt: Date.now() + (expiresIn * 1000),
+      oneDriveQuotaBytes: {
+        used: quotaUsed,
+        total: quotaTotal
+      }
+    });
+
+    console.log(`[MICROSOFT OAUTH] Account connected successfully for user ${actorUid}: ${userPrincipalName || displayName}`);
+    return res.redirect('/?microsoft=connected');
+  } catch (err: any) {
+    console.error('[MICROSOFT OAUTH] Callback error:', err);
+    return res.redirect('/?microsoft_error=callback_exception');
+  }
 });
 
 app.post('/api/integrations/microsoft/disconnect', (req, res) => {
@@ -2613,14 +3195,64 @@ app.post('/api/integrations/microsoft/disconnect', (req, res) => {
   if (!actor) {
     return res.status(401).json({ error: 'Unauthorized: Active session required' });
   }
+  serverMicrosoftStore.delete(actor.uid);
   res.json({ success: true, message: 'Microsoft connection severed successfully.' });
 });
 
-app.get('/api/integrations/microsoft/onedrive', (req, res) => {
+app.get('/api/integrations/microsoft/onedrive', async (req, res) => {
   const actor = getAuthenticatedActor(req);
   if (!actor) {
     return res.status(401).json({ error: 'Unauthorized: Active session required' });
   }
+
+  if (!isMicrosoftIntegrationEnabled()) {
+    return res.json({
+      success: true,
+      enabled: false,
+      connected: false,
+      disabled: true,
+      status: 'DISABLED_AWAITING_AZURE_CREDENTIALS',
+      message: 'OneDrive remote synchronization is temporarily disabled awaiting Microsoft activation.',
+      items: []
+    });
+  }
+
+  const conn = serverMicrosoftStore.get(actor.uid);
+  if (conn && conn.connected && conn.accessToken) {
+    try {
+      const folderId = req.query.folderId as string;
+      const endpoint = folderId
+        ? `https://graph.microsoft.com/v1.0/me/drive/items/${encodeURIComponent(folderId)}/children`
+        : 'https://graph.microsoft.com/v1.0/me/drive/root/children';
+
+      const graphRes = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${conn.accessToken}` }
+      });
+
+      if (graphRes.ok) {
+        const data: any = await graphRes.json();
+        const items = (data.value || []).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          size: item.size || 0,
+          isFolder: Boolean(item.folder),
+          mimeType: item.file?.mimeType,
+          webUrl: item.webUrl,
+          downloadUrl: item['@microsoft.graph.downloadUrl'],
+          lastModifiedDateTime: item.lastModifiedDateTime,
+          officeType: item.name.toLowerCase().endsWith('.docx') ? 'word'
+            : item.name.toLowerCase().endsWith('.xlsx') ? 'excel'
+            : item.name.toLowerCase().endsWith('.pptx') ? 'powerpoint'
+            : 'generic'
+        }));
+        return res.json({ success: true, items });
+      }
+    } catch (e: any) {
+      console.warn('[MICROSOFT GRAPH] Failed to query live OneDrive:', e);
+    }
+  }
+
+  // Sample items when disconnected / preview
   const items = [
     {
       id: 'ms_doc_1',
@@ -2657,6 +3289,27 @@ app.get('/api/integrations/microsoft/onedrive', (req, res) => {
     }
   ];
   res.json({ success: true, items });
+});
+
+// Serve sample documents with explicit OpenXML MIME types
+app.use('/assets/sample-docs', express.static(path.join(process.cwd(), 'public', 'assets', 'sample-docs')));
+
+/**
+ * Forensically inspect an OpenXML document package
+ */
+app.post('/api/integrations/microsoft/inspect', async (req, res) => {
+  try {
+    const { filePath } = req.body;
+    const safePath = path.join(process.cwd(), 'public', filePath.replace(/^\//, ''));
+    if (!fs.existsSync(safePath)) {
+      return res.status(404).json({ error: 'Document file not found' });
+    }
+    const buffer = fs.readFileSync(safePath);
+    const inspection = await officeDocumentGenerator.inspectOfficePackage(buffer);
+    res.json({ success: true, inspection });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to inspect Office package', details: err?.message });
+  }
 });
 
 // ============================================================================
@@ -4522,6 +5175,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Serve compiled static Vite middleware in dev / production
 async function startServer() {
+  // Ensure valid OpenXML sample packages are generated on disk
+  await officeDocumentGenerator.ensureSampleDocsGenerated().catch(e => console.warn('[OFFICE] Sample docs notice:', e));
+
   if (process.env.NODE_ENV !== 'production') {
     const isHmrDisabled = process.env.DISABLE_HMR === 'true';
     const vite = await createViteServer({
@@ -4533,6 +5189,29 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+
+    // Explicit SPA HTML handler in development
+    app.use('*', async (req, res, next) => {
+      const url = req.originalUrl;
+      if (url.startsWith('/api/')) {
+        return next();
+      }
+      try {
+        const indexPath = path.resolve(process.cwd(), 'index.html');
+        if (fs.existsSync(indexPath)) {
+          let template = fs.readFileSync(indexPath, 'utf-8');
+          template = await vite.transformIndexHtml(url, template);
+          res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).end(template);
+        } else {
+          next();
+        }
+      } catch (e: any) {
+        if (vite) {
+          vite.ssrFixStacktrace(e);
+        }
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     // Serve static files
@@ -4544,19 +5223,33 @@ async function startServer() {
   }
 
   const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`CATALYX V28 Ultra-Hardened Production Server running at http://localhost:${PORT}`);
+    console.log(`CATALYX Ultra-Hardened Production Server running at http://localhost:${PORT}`);
   });
+
+  // If running on a non-standard port (e.g., Cloud Run 8080), also listen on 3000 for local proxy compatibility
+  if (PORT !== 3000) {
+    try {
+      const secondaryServer = app.listen(3000, '0.0.0.0', () => {
+        console.log(`CATALYX dual-port listener active on port 3000 for dev proxy compatibility.`);
+      });
+      secondaryServer.on('error', (err: any) => {
+        console.log(`Port 3000 secondary listener notice (handled): ${err?.message}`);
+      });
+    } catch (e: any) {
+      console.log(`Port 3000 secondary listener notice: ${e?.message}`);
+    }
+  }
 
   // Graceful shutdown handling for container orchestrators
   const handleShutdown = (signal: string) => {
-    console.log(`[CATALYX V28] Received ${signal}. Initiating graceful shutdown...`);
+    console.log(`[CATALYX] Received ${signal}. Initiating graceful shutdown...`);
     server.close(() => {
-      console.log('[CATALYX V28] HTTP server closed cleanly. Process terminating.');
+      console.log('[CATALYX] HTTP server closed cleanly. Process terminating.');
       process.exit(0);
     });
     // Force close after 10 seconds if lingering connections exist
     setTimeout(() => {
-      console.error('[CATALYX V28] Forcing exit after timeout.');
+      console.error('[CATALYX] Forcing exit after timeout.');
       process.exit(1);
     }, 10000).unref();
   };

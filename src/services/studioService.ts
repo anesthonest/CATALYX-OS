@@ -17,6 +17,7 @@
  */
 
 import { safeStorage } from '../utils/safeStorage';
+import { persistenceSyncService } from './persistenceSyncService';
 
 export type StudioType =
   | 'software'
@@ -248,6 +249,7 @@ export class StudioService {
 
     list.push(newStudio);
     safeStorage.set(STORAGE_STUDIOS_KEY, list);
+    persistenceSyncService.queueSync({ studios: list });
     return newStudio;
   }
 
@@ -265,7 +267,10 @@ export class StudioService {
       details: 'Updated active working draft'
     });
 
-    return safeStorage.set(STORAGE_STUDIOS_KEY, list);
+    const ok = safeStorage.set(STORAGE_STUDIOS_KEY, list);
+    persistenceSyncService.autosaveStudioDraft(studioId, draftData);
+    persistenceSyncService.queueSync({ studios: list });
+    return ok;
   }
 
   public createVersionSnapshot(studioId: string, summary: string, actorEmail: string): StudioVersion | null {
@@ -291,6 +296,7 @@ export class StudioService {
     });
 
     safeStorage.set(STORAGE_STUDIOS_KEY, list);
+    persistenceSyncService.queueSync({ studios: list });
     return version;
   }
 

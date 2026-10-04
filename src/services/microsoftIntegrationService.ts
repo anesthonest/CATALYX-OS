@@ -13,7 +13,10 @@
 import { safeStorage } from '../utils/safeStorage';
 
 export interface MicrosoftAccountConnection {
+  enabled?: boolean;
   connected: boolean;
+  status?: string;
+  message?: string;
   userPrincipalName?: string;
   displayName?: string;
   tenantId?: string;
@@ -136,7 +139,15 @@ export class MicrosoftIntegrationService {
   /**
    * Browse permitted OneDrive files and directories
    */
-  public async browseOneDrive(folderId?: string): Promise<{ success: boolean; items: OneDriveItem[]; error?: string }> {
+  public async browseOneDrive(folderId?: string): Promise<{ 
+    success: boolean; 
+    items: OneDriveItem[]; 
+    error?: string; 
+    enabled?: boolean; 
+    disabled?: boolean; 
+    status?: string;
+    message?: string; 
+  }> {
     try {
       const sessionToken = safeStorage.getSessionToken();
       const query = folderId ? `?folderId=${encodeURIComponent(folderId)}` : '';

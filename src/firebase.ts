@@ -8,6 +8,7 @@ import {
   SmartNotification, FocusBlock, KnowledgeArticle 
 } from './types';
 import { safeStorage } from './utils/safeStorage';
+import { persistenceSyncService } from './services/persistenceSyncService';
 
 // Standard Firebase Config interface
 export interface SavedFirebaseConfig {
@@ -421,15 +422,47 @@ export const dbService = {
     return safeStorage.getActiveSession();
   },
 
-  async registerUser(username: string, email: string): Promise<UserProfile> {
+  async registerUser(username: string, email: string, explicitUid?: string): Promise<UserProfile> {
     const users = getSimData<UserProfile>('users');
-    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
+    const existingIdx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existingIdx !== -1) {
+      const existing = users[existingIdx];
+      if (explicitUid && existing.uid !== explicitUid) {
+        // Self-heal and migrate collections from old random UID to canonical server UID
+        const oldUid = existing.uid;
+        existing.uid = explicitUid;
+        users[existingIdx] = existing;
+        saveSimData('users', users);
+
+        const oldTasks = getSimData<Task>(`tasks_${oldUid}`);
+        if (oldTasks.length > 0) saveSimData(`tasks_${explicitUid}`, oldTasks);
+        const oldGoals = getSimData<Goal>(`goals_${oldUid}`);
+        if (oldGoals.length > 0) saveSimData(`goals_${explicitUid}`, oldGoals);
+        const oldProjects = getSimData<Project>(`projects_${oldUid}`);
+        if (oldProjects.length > 0) saveSimData(`projects_${explicitUid}`, oldProjects);
+
+        // Update workspace ownership if any
+        const wsList = getSimData<Workspace>('workspaces');
+        let wsModified = false;
+        for (const ws of wsList) {
+          if (ws.ownerId === oldUid) {
+            ws.ownerId = explicitUid;
+            wsModified = true;
+          }
+          if (ws.memberIds.includes(oldUid)) {
+            ws.memberIds = ws.memberIds.map(m => m === oldUid ? explicitUid : m);
+            wsModified = true;
+          }
+        }
+        if (wsModified) saveSimData('workspaces', wsList);
+      }
+      safeStorage.setActiveSession(existing.uid);
       return existing;
     }
 
+    const uid = explicitUid || ('usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9));
     const newUser: UserProfile = {
-      uid: 'user_' + Math.random().toString(36).substring(2, 11),
+      uid,
       username,
       email,
       xp: 0,
@@ -521,9 +554,89 @@ export const dbService = {
     return final;
   },
 
+  // --- RECONCILIATION & DURABLE PERSISTENCE REHYDRATION ---
+  async syncWithServer(uid: string): Promise<boolean> {
+    try {
+      const res = await persistenceSyncService.hydrateFromServer();
+      if (res.success && res.data) {
+        this.hydrateFromSyncedData(uid, res.data);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('[DB] syncWithServer failed, relying on local cached state:', err);
+      return false;
+    }
+  },
+
+  hydrateFromSyncedData(uid: string, data: {
+    workspaces?: Workspace[];
+    projects?: Project[];
+    tasks?: Task[];
+    goals?: Goal[];
+    studios?: any[];
+  }) {
+    if (Array.isArray(data.workspaces) && data.workspaces.length > 0) {
+      const existing = getSimData<Workspace>('workspaces');
+      const wsMap = new Map<string, Workspace>();
+      existing.forEach(w => wsMap.set(w.id, w));
+      data.workspaces.forEach(w => wsMap.set(w.id, w));
+      saveSimData('workspaces', Array.from(wsMap.values()));
+    }
+
+    if (Array.isArray(data.projects)) {
+      saveSimData(`projects_${uid}`, data.projects);
+    }
+
+    if (Array.isArray(data.tasks)) {
+      saveSimData(`tasks_${uid}`, data.tasks);
+    }
+
+    if (Array.isArray(data.goals)) {
+      saveSimData(`goals_${uid}`, data.goals);
+    }
+
+    if (Array.isArray(data.studios) && data.studios.length > 0) {
+      safeStorage.set('catalyx_studios', data.studios);
+    }
+
+    // Refresh user score / level
+    const users = getSimData<UserProfile>('users');
+    const uIdx = users.findIndex(u => u.uid === uid);
+    if (uIdx !== -1) {
+      const currentTasks = data.tasks || getSimData<Task>(`tasks_${uid}`);
+      const updated = runRuleEngine(users[uIdx], currentTasks);
+      users[uIdx] = updated;
+      saveSimData('users', users);
+    }
+  },
+
   // --- TASK SERVICES ---
   async getTasks(uid: string): Promise<Task[]> {
-    return getSimData<Task>(`tasks_${uid}`);
+    let tasks = getSimData<Task>(`tasks_${uid}`);
+    if (tasks.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch('/api/tasks', {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverTasks = await res.json();
+            if (Array.isArray(serverTasks) && serverTasks.length > 0) {
+              tasks = serverTasks;
+              saveSimData(`tasks_${uid}`, tasks);
+            }
+          }
+        } catch {
+          // offline fallback
+        }
+      }
+    }
+    return tasks;
   },
 
   async addTask(uid: string, text: string, priority?: Task['priority'], category?: Task['category'], dueDate?: string): Promise<Task[]> {
@@ -539,6 +652,21 @@ export const dbService = {
     };
     tasks.push(newTask);
     saveSimData(`tasks_${uid}`, tasks);
+    persistenceSyncService.queueSync({ tasks });
+
+    // Immediate direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ text, priority, category, dueDate })
+      }).catch(err => console.warn('[DB] Direct task save fallback to queue:', err));
+    }
 
     // Reward Create Task: +5 XP
     const profile = await this.getUserProfile(uid);
@@ -557,6 +685,21 @@ export const dbService = {
       tasks[idx].completed = true;
       tasks[idx].completedAt = new Date().toISOString();
       saveSimData(`tasks_${uid}`, tasks);
+      persistenceSyncService.queueSync({ tasks });
+
+      // Immediate direct REST write
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        fetch(`/api/tasks/${encodeURIComponent(taskId)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-token': sessionToken,
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({ completed: true, completedAt: tasks[idx].completedAt })
+        }).catch(err => console.warn('[DB] Direct task update fallback to queue:', err));
+      }
 
       // Reward Complete Task: +20 XP (only if not already completed)
       if (!alreadyCompleted) {
@@ -573,6 +716,19 @@ export const dbService = {
     let tasks = getSimData<Task>(`tasks_${uid}`);
     tasks = tasks.filter(t => t.id !== taskId);
     saveSimData(`tasks_${uid}`, tasks);
+    persistenceSyncService.queueSync({ tasks });
+
+    // Immediate direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch(`/api/tasks/${encodeURIComponent(taskId)}`, {
+        method: 'DELETE',
+        headers: {
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        }
+      }).catch(err => console.warn('[DB] Direct task delete fallback to queue:', err));
+    }
     
     // Trigger recalculation of execution scores
     const profile = await this.getUserProfile(uid);
@@ -614,7 +770,30 @@ export const dbService = {
 
   // --- GOAL SYSTEM (V2 addition) ---
   async getGoals(uid: string): Promise<Goal[]> {
-    return getSimData<Goal>(`goals_${uid}`);
+    let list = getSimData<Goal>(`goals_${uid}`);
+    if (list.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch('/api/goals', {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverGoals = await res.json();
+            if (Array.isArray(serverGoals) && serverGoals.length > 0) {
+              list = serverGoals;
+              saveSimData(`goals_${uid}`, list);
+            }
+          }
+        } catch {
+          // offline fallback
+        }
+      }
+    }
+    return list;
   },
 
   async addGoal(uid: string, title: string, description: string, targetDate: string, type: 'short_term' | 'long_term'): Promise<Goal[]> {
@@ -631,6 +810,21 @@ export const dbService = {
     };
     list.push(newItem);
     saveSimData(`goals_${uid}`, list);
+    persistenceSyncService.queueSync({ goals: list });
+
+    // Direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch('/api/goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ title, description, targetDate, type })
+      }).catch(err => console.warn('[DB] Direct goal save fallback to queue:', err));
+    }
 
     // Reward creating strategic targets: +15 XP
     const profile = await this.getUserProfile(uid);
@@ -655,6 +849,21 @@ export const dbService = {
         }
       }
       saveSimData(`goals_${uid}`, list);
+      persistenceSyncService.queueSync({ goals: list });
+
+      // Direct REST write
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        fetch(`/api/goals/${encodeURIComponent(goalId)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-token': sessionToken,
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({ progress, status: list[idx].status })
+        }).catch(err => console.warn('[DB] Direct goal update fallback to queue:', err));
+      }
     }
     return list;
   },
@@ -663,12 +872,49 @@ export const dbService = {
     const list = getSimData<Goal>(`goals_${uid}`);
     const filtered = list.filter(g => g.id !== goalId);
     saveSimData(`goals_${uid}`, filtered);
+    persistenceSyncService.queueSync({ goals: filtered });
+
+    // Direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch(`/api/goals/${encodeURIComponent(goalId)}`, {
+        method: 'DELETE',
+        headers: {
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        }
+      }).catch(err => console.warn('[DB] Direct goal delete fallback to queue:', err));
+    }
+
     return filtered;
   },
 
   // --- PROJECT MANAGEMENT (V2 addition) ---
   async getProjects(uid: string): Promise<Project[]> {
-    return getSimData<Project>(`projects_${uid}`);
+    let list = getSimData<Project>(`projects_${uid}`);
+    if (list.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch('/api/projects', {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverProjects = await res.json();
+            if (Array.isArray(serverProjects) && serverProjects.length > 0) {
+              list = serverProjects;
+              saveSimData(`projects_${uid}`, list);
+            }
+          }
+        } catch {
+          // offline fallback
+        }
+      }
+    }
+    return list;
   },
 
   async addProject(uid: string, title: string, description: string): Promise<Project[]> {
@@ -683,6 +929,22 @@ export const dbService = {
     };
     list.push(newItem);
     saveSimData(`projects_${uid}`, list);
+    persistenceSyncService.queueSync({ projects: list });
+
+    // Direct REST write for zero latency
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ title, description })
+      }).catch(err => console.warn('[DB] Direct project save fallback to queue:', err));
+    }
+
     return list;
   },
 
@@ -693,6 +955,21 @@ export const dbService = {
       list[idx].progress = progress;
       if (status) list[idx].status = status;
       saveSimData(`projects_${uid}`, list);
+      persistenceSyncService.queueSync({ projects: list });
+
+      // Direct REST write
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        fetch(`/api/projects/${encodeURIComponent(projectId)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-token': sessionToken,
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({ progress, status: list[idx].status })
+        }).catch(err => console.warn('[DB] Direct project update fallback to queue:', err));
+      }
     }
     return list;
   },
@@ -701,6 +978,20 @@ export const dbService = {
     const list = getSimData<Project>(`projects_${uid}`);
     const filtered = list.filter(p => p.id !== projectId);
     saveSimData(`projects_${uid}`, filtered);
+    persistenceSyncService.queueSync({ projects: filtered });
+
+    // Direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch(`/api/projects/${encodeURIComponent(projectId)}`, {
+        method: 'DELETE',
+        headers: {
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        }
+      }).catch(err => console.warn('[DB] Direct project delete fallback to queue:', err));
+    }
+
     return filtered;
   },
 
@@ -780,8 +1071,35 @@ export const dbService = {
 
   // --- WORKSPACE SYSTEMS ---
   async getWorkspaces(uid: string): Promise<Workspace[]> {
-    const list = getSimData<Workspace>('workspaces');
-    return list.filter(w => w.ownerId === uid || w.memberIds.includes(uid));
+    let list = getSimData<Workspace>('workspaces');
+    let userWorkspaces = list.filter(w => w.ownerId === uid || w.memberIds.includes(uid));
+    if (userWorkspaces.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch('/api/workspaces', {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverWs = await res.json();
+            if (Array.isArray(serverWs) && serverWs.length > 0) {
+              const wsMap = new Map<string, Workspace>();
+              list.forEach(w => wsMap.set(w.id, w));
+              serverWs.forEach((w: Workspace) => wsMap.set(w.id, w));
+              list = Array.from(wsMap.values());
+              saveSimData('workspaces', list);
+              userWorkspaces = list.filter(w => w.ownerId === uid || w.memberIds.includes(uid));
+            }
+          }
+        } catch {
+          // offline fallback
+        }
+      }
+    }
+    return userWorkspaces;
   },
 
   async createWorkspace(ownerId: string, name: string): Promise<Workspace> {
@@ -791,20 +1109,21 @@ export const dbService = {
       name,
       ownerId,
       memberIds: [ownerId],
-      teamProductivityScore: 50,
+      teamProductivityScore: 70,
       burnoutRisk: 'Low',
       teamMomentum: 'Moderate',
       createdAt: new Date().toISOString()
     };
     list.push(newWS);
     saveSimData('workspaces', list);
+    persistenceSyncService.queueSync({ workspaces: list });
 
     // Setup default workspace collections
     const ownerProfile = await this.getUserProfile(ownerId);
     const firstMember: WorkspaceMember = {
       uid: ownerId,
-      email: ownerProfile?.email || 'anesthonest81@gmail.com',
-      username: ownerProfile?.username || 'vine_executor',
+      email: ownerProfile?.email || 'user@catalyx.io',
+      username: ownerProfile?.username || 'Commander',
       role: 'owner',
       joinedAt: new Date().toISOString()
     };
@@ -831,11 +1150,46 @@ export const dbService = {
       }
     ]);
 
+    // Direct REST write for zero-latency durable persistence
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch('/api/workspaces', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ name })
+      }).catch(err => console.warn('[DB] Direct workspace write fallback to queue:', err));
+    }
+
     return newWS;
   },
 
   async getWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
-    return getSimData<WorkspaceMember>(`members_${workspaceId}`);
+    let list = getSimData<WorkspaceMember>(`members_${workspaceId}`);
+    if (list.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/members`, {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverMembers = await res.json();
+            if (Array.isArray(serverMembers) && serverMembers.length > 0) {
+              list = serverMembers;
+              saveSimData(`members_${workspaceId}`, list);
+            }
+          }
+        } catch {}
+      }
+    }
+    return list;
   },
 
   async inviteToWorkspace(workspaceId: string, email: string, senderEmail: string, workspaceName: string): Promise<WorkspaceInvite> {
@@ -903,7 +1257,28 @@ export const dbService = {
 
   // --- WORKSPACE TASKS ---
   async getWorkspaceTasks(workspaceId: string): Promise<WorkspaceTask[]> {
-    return getSimData<WorkspaceTask>(`tasks_${workspaceId}`);
+    let tasks = getSimData<WorkspaceTask>(`tasks_${workspaceId}`);
+    if (tasks.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/tasks`, {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverTasks = await res.json();
+            if (Array.isArray(serverTasks) && serverTasks.length > 0) {
+              tasks = serverTasks;
+              saveSimData(`tasks_${workspaceId}`, tasks);
+            }
+          }
+        } catch {}
+      }
+    }
+    return tasks;
   },
 
   async addWorkspaceTask(workspaceId: string, text: string, priority?: 'high' | 'medium' | 'low', assignedTo?: string): Promise<WorkspaceTask[]> {
@@ -918,6 +1293,21 @@ export const dbService = {
     };
     tasks.push(newTask);
     saveSimData(`tasks_${workspaceId}`, tasks);
+
+    // Direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ text, priority, assignedTo })
+      }).catch(err => console.warn('[DB] Direct workspace task write fallback:', err));
+    }
+
     return tasks;
   },
 
@@ -930,6 +1320,18 @@ export const dbService = {
       tasks[idx].completedAt = new Date().toISOString();
       tasks[idx].completedBy = uid;
       saveSimData(`tasks_${workspaceId}`, tasks);
+
+      // Direct REST write
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/tasks/${encodeURIComponent(taskId)}/complete`, {
+          method: 'POST',
+          headers: {
+            'x-session-token': sessionToken,
+            'Authorization': `Bearer ${sessionToken}`
+          }
+        }).catch(err => console.warn('[DB] Direct workspace task complete fallback:', err));
+      }
 
       // Reward Workspace Task Completion: +15 XP (only if not already completed)
       if (!alreadyCompleted) {
@@ -944,7 +1346,28 @@ export const dbService = {
 
   // --- WORKSPACE CHAT ---
   async getWorkspaceMessages(workspaceId: string): Promise<WorkspaceMessage[]> {
-    return getSimData<WorkspaceMessage>(`messages_${workspaceId}`);
+    let messages = getSimData<WorkspaceMessage>(`messages_${workspaceId}`);
+    if (messages.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/messages`, {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverMsgs = await res.json();
+            if (Array.isArray(serverMsgs) && serverMsgs.length > 0) {
+              messages = serverMsgs;
+              saveSimData(`messages_${workspaceId}`, messages);
+            }
+          }
+        } catch {}
+      }
+    }
+    return messages;
   },
 
   async addWorkspaceMessage(workspaceId: string, userId: string, username: string, text: string, ai = false): Promise<WorkspaceMessage[]> {
@@ -960,6 +1383,21 @@ export const dbService = {
     };
     messages.push(newMsg);
     saveSimData(`messages_${workspaceId}`, messages);
+
+    // Direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ text, username })
+      }).catch(err => console.warn('[DB] Direct workspace message write fallback:', err));
+    }
+
     return messages;
   },
 

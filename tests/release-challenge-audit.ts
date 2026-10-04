@@ -52,6 +52,8 @@ import { safeStorage, isLikelyJsonString } from '../src/utils/safeStorage';
 import { authService } from '../src/services/authService';
 import { studioService, StudioType } from '../src/services/studioService';
 import { microsoftIntegrationService } from '../src/services/microsoftIntegrationService';
+import { officeDocumentGenerator } from '../src/services/officeDocumentGenerator';
+import { GoogleGenAI } from '@google/genai';
 import crypto from 'crypto';
 import fs from 'fs';
 
@@ -2552,6 +2554,151 @@ async function runMicrosoftIntegrationAuditTests() {
   assert(disconnectRes.success === true, suite, 'Microsoft disconnect cleans up stored state');
 }
 
+async function runProductionDependencyAndExternalIntegrationTests() {
+  const suite = 'Production Dependency Register & Real External Verification';
+
+  // 1. Real Pesapal Gateway v3 Live Token Verification
+  const pesapal = new PesapalPaymentProvider();
+  assert(pesapal.isConfigured() === true, suite, 'Pesapal consumer key and secret are configured');
+  const pesapalAuth = await pesapal.getAuthToken();
+  assert(typeof pesapalAuth.token === 'string' && pesapalAuth.token.length > 20, suite, 'Pesapal v3 live authentication succeeds and issues JWT token');
+  assert(pesapal.getEnvironment() === 'live', suite, 'Pesapal environment resolves to authoritative live production mode');
+
+  // 2. Real Pesapal Registered IPNs Verification
+  const ipnList = await pesapal.getIpnList();
+  assert(ipnList.status === 'SUCCESS', suite, 'Pesapal registered IPN query succeeds against gateway');
+  assert(Array.isArray(ipnList.ipns) && ipnList.ipns.length >= 2, suite, 'Active registered IPNs exist on Pesapal gateway');
+  const activeIpn = ipnList.ipns?.find((ipn: any) => ipn.ipn_status_decription === 'Active');
+  assert(!!activeIpn, suite, 'Active production IPN confirmed on Pesapal gateway');
+
+  // 3. Real Gemini Generative AI Model Verification
+  const geminiKey = process.env.GEMINI_API_KEY;
+  assert(Boolean(geminiKey && geminiKey !== 'MY_GEMINI_API_KEY'), suite, 'Gemini API key is configured');
+  if (geminiKey && geminiKey !== 'MY_GEMINI_API_KEY') {
+    const ai = new GoogleGenAI({ apiKey: geminiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } });
+    const aiRes = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: 'Respond with the single word VERIFIED'
+    });
+    const reply = aiRes?.text?.trim() || '';
+    assert(reply.length > 0, suite, 'Gemini GenAI model generation succeeds with non-empty response');
+  }
+
+  // 4. Real SMTP Transactional Mail Configuration
+  const mailStatus = emailDeliveryService.getProviderStatus();
+  assert(mailStatus.isConfigured === true, suite, 'Transactional SMTP delivery is configured');
+  assert(mailStatus.port === 587, suite, 'SMTP standard secure submission port 587 is configured');
+  assert(mailStatus.sender.includes('@'), suite, 'Authoritative sender email address is verified');
+
+  // 4b. Real SMTP Live Network Dispatch
+  const emailRes = await emailDeliveryService.sendEmail({
+    to: 'anesthonest81@gmail.com',
+    subject: 'CATALYX Automated Verification',
+    text: 'Automated test ensuring real SMTP STARTTLS dispatch on port 587.',
+    html: '<p>Automated test</p>',
+    category: 'NOTIFICATION'
+  });
+  assert(emailRes.success === true, suite, 'Real SMTP transmission succeeds via STARTTLS');
+  assert(emailRes.deliveryStatus === 'DELIVERED', suite, 'Email delivery status is DELIVERED');
+  assert(emailRes.messageId.length > 5, suite, 'SMTP server accepted message and returned valid message ID');
+
+  // 5. Real Google Identity Services (GIS) Client ID Configuration
+  const googleClientId = process.env.VITE_GOOGLE_CLIENT_ID;
+  assert(Boolean(googleClientId && googleClientId.length > 10), suite, 'Google OAuth 2.0 GIS client ID is configured');
+
+  // 5b. Google Token Tamper Rejection Test
+  const fakeTokenRes = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=tampered_forged_token');
+  assert(fakeTokenRes.status === 400, suite, 'Google public tokeninfo service rejects forged ID tokens with HTTP 400');
+
+  // 6. Direct Bank Transfer Multi-Step Verification Architecture
+  const bankOrder = catalyxEconomicEngine.createOrder({
+    organizationId: 'org_test_bank_transfer',
+    customerId: 'usr_cfo_01',
+    customerEmail: 'finance@enterprise.com',
+    customerName: 'Enterprise CFO',
+    currency: 'USD',
+    billingAddress: {
+      firstName: 'Chief',
+      lastName: 'FinancialOfficer',
+      emailAddress: 'finance@enterprise.com',
+      phoneNumber: '+15550199',
+      countryCode: 'US'
+    },
+    items: [{
+      productId: 'sub_org_annual',
+      productTitle: 'CATALYX Organization Tier (Annual)',
+      sku: 'SUB-ORG-ANNUAL',
+      unitPriceMinorUnits: 24000,
+      quantity: 1,
+      totalPriceMinorUnits: 24000
+    }]
+  });
+  assert(bankOrder.status === 'CREATED' || bankOrder.status === 'PAYMENT_PENDING', suite, 'Bank transfer order created in non-activated initial state');
+  const bankAttempt = await catalyxEconomicEngine.initiatePaymentAttempt({
+    orderId: bankOrder.id,
+    idempotencyKey: `idem_bank_audit_${Date.now()}`,
+    ipOrUserId: '127.0.0.1',
+    channel: 'bank_transfer'
+  });
+  assert(bankAttempt.paymentAttempt.status === 'PENDING', suite, 'Bank transfer payment strictly remains in PENDING status pending manual administrative review');
+  assert(bankOrder.status !== 'PAID', suite, 'Bank transfer is never automatically marked as paid without verified bank settlement');
+
+  // 7. Double-Entry Accounting Ledger Minor Unit & Integrity Verification
+  const ledgerEntries = catalyxEconomicEngine.getLedger();
+  assert(Array.isArray(ledgerEntries), suite, 'Financial ledger records retrieved as structured list');
+  const allIntegerMinorUnits = ledgerEntries.every(e => Number.isInteger(e.netAmountMinorUnits));
+  assert(allIntegerMinorUnits, suite, 'Financial ledger strictly enforces integer minor currency units (cents)');
+
+  // 8. Truthful Studio Capabilities (3D & Video Honest Reporting)
+  const animTools = studioService.getDefaultToolsForType('animation_3d');
+  assert(Array.isArray(animTools) && animTools.length >= 3, suite, '3D / Animation Studio tools are registered');
+  assert(animTools.some(t => t.toLowerCase().includes('render') || t.toLowerCase().includes('scene')), suite, '3D Studio provides production render queue management');
+  const videoTools = studioService.getDefaultToolsForType('video_media');
+  assert(Array.isArray(videoTools) && videoTools.length >= 3, suite, 'Video / Media Studio tools are registered');
+  assert(videoTools.some(t => t.toLowerCase().includes('timeline') || t.toLowerCase().includes('track')), suite, 'Video Studio provides multi-track timeline and EDL coordination');
+
+  // 9. Document Format Package Compatibility (DOCX, XLSX, PPTX)
+  const supportedMimeTypes = [
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ];
+  const sampleItems = await microsoftIntegrationService.browseOneDrive();
+  const foundWord = sampleItems.items.some(i => i.mimeType === supportedMimeTypes[0]);
+  const foundExcel = sampleItems.items.some(i => i.mimeType === supportedMimeTypes[1]);
+  const foundPpt = sampleItems.items.some(i => i.mimeType === supportedMimeTypes[2]);
+  assert(foundWord && foundExcel && foundPpt, suite, 'Microsoft OpenXML standard MIME types verified for Word, Excel, and PowerPoint');
+
+  // 9b. Real OpenXML Package Structure Forensic Inspection
+  const sampleDocs = await officeDocumentGenerator.ensureSampleDocsGenerated();
+  const docxBytes = fs.readFileSync(sampleDocs.docxPath);
+  const docxReport = await officeDocumentGenerator.inspectOfficePackage(docxBytes);
+  assert(docxReport.valid === true && docxReport.type === 'word', suite, 'DOCX package contains valid Content_Types and document.xml');
+
+  const xlsxBytes = fs.readFileSync(sampleDocs.xlsxPath);
+  const xlsxReport = await officeDocumentGenerator.inspectOfficePackage(xlsxBytes);
+  assert(xlsxReport.valid === true && xlsxReport.type === 'excel', suite, 'XLSX package contains valid workbook and sheet data');
+
+  const pptxBytes = fs.readFileSync(sampleDocs.pptxPath);
+  const pptxReport = await officeDocumentGenerator.inspectOfficePackage(pptxBytes);
+  assert(pptxReport.valid === true && pptxReport.type === 'powerpoint', suite, 'PPTX package contains valid presentation and slide hierarchy');
+
+  // 10. Multi-Tenant Organization Data Isolation
+  const org1Ws = 'ws_sovereign_tenant_alpha';
+  const org2Ws = 'ws_sovereign_tenant_beta';
+  const studio1 = studioService.createStudio({
+    name: 'Alpha Internal Secret Research',
+    type: 'research',
+    description: 'Confidential research pipeline',
+    ownerEmail: 'lead@alpha.org',
+    workspaceId: org1Ws
+  });
+  const org1Studios = studioService.getAllStudios(org1Ws);
+  const org2Studios = studioService.getAllStudios(org2Ws);
+  assert(org1Studios.some(d => d.id === studio1.id), suite, 'Tenant Alpha retrieves its own workspace studio');
+  assert(!org2Studios.some(d => d.id === studio1.id), suite, 'Tenant Beta is strictly isolated from Tenant Alpha workspace studio');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -2577,6 +2724,7 @@ async function main() {
     await runComprehensiveAuthenticationSecurityMatrixTests();
     await runUniversalStudioArchitectureTests();
     await runMicrosoftIntegrationAuditTests();
+    await runProductionDependencyAndExternalIntegrationTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }

@@ -8,9 +8,10 @@ import { dbService } from '../firebase';
 import { workforceManagementService } from '../services/workforceManagementService';
 import { UniversalStudioView } from './studios/UniversalStudioView';
 import { MicrosoftIntegrationModal } from './integrations/MicrosoftIntegrationModal';
+import { persistenceSyncService } from '../services/persistenceSyncService';
 import { 
   Users, Plus, Check, Send, Sparkles, MessageSquare, 
-  Milestone, ShieldAlert, BadgeCheck, AlertCircle, RefreshCw, Zap, BookOpen, Key, Layers, ExternalLink
+  Milestone, ShieldAlert, BadgeCheck, AlertCircle, RefreshCw, Zap, BookOpen, Key, Layers, ExternalLink, Download, Archive
 } from 'lucide-react';
 
 interface WorkspaceTabProps {
@@ -75,6 +76,25 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
   // V31 Universal Studio Architecture and Microsoft Ecosystem State
   const [workspaceSubView, setWorkspaceSubView] = useState<'overview' | 'studios'>('overview');
   const [isMicrosoftModalOpen, setIsMicrosoftModalOpen] = useState(false);
+
+  // Workspace Durable Export State
+  const [isExportingWorkspace, setIsExportingWorkspace] = useState(false);
+  const [workspaceExportNotice, setWorkspaceExportNotice] = useState<string | null>(null);
+
+  const handleExportWorkspace = async (ws?: Workspace) => {
+    const target = ws || activeWorkspace;
+    if (!target) return;
+    setIsExportingWorkspace(true);
+    try {
+      await persistenceSyncService.downloadWorkspaceZip(target.id, target);
+      setWorkspaceExportNotice(`Exported "${target.name}" (ZIP Archive with Manifest, Wikis & Tasks)`);
+      setTimeout(() => setWorkspaceExportNotice(null), 3500);
+    } catch {
+      setWorkspaceExportNotice('Workspace export encountered an issue.');
+    } finally {
+      setIsExportingWorkspace(false);
+    }
+  };
 
   const handleJoinByCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,28 +292,44 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                 {workspaces.map((ws) => {
                   const isActive = activeWorkspace?.id === ws.id;
                   return (
-                    <button
+                    <div
                       key={ws.id}
-                      onClick={() => {
-                        onSelectWorkspace(ws);
-                        setAIAnalysis(null);
-                      }}
-                      className={`w-full text-left p-3 rounded-xl border text-xs font-semibold block transition-all cursor-pointer ${
+                      className={`w-full p-3 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition-all ${
                         isActive 
-                          ? 'bg-[#9d4edd]/20 border-[#9d4edd]/40 text-[#ffffff] font-semibold' 
+                          ? 'bg-[#9d4edd]/20 border-[#9d4edd]/40 text-[#ffffff]' 
                           : 'bg-black/10 border-white/5 text-gray-400 hover:bg-white/5 hover:text-white'
                       }`}
                     >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold block truncate leading-normal text-sm">{ws.name}</span>
-                        {ws.ownerId === user.uid && (
-                          <span className="px-1 text-[9px] font-mono border border-brand-purple/30 text-brand-purple bg-brand-purple/10 rounded">
-                            OWNER
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-gray-500 font-mono">Members: {ws.memberIds.length}</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          onSelectWorkspace(ws);
+                          setAIAnalysis(null);
+                        }}
+                        className="flex-1 text-left min-w-0 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="font-semibold block truncate leading-normal text-sm">{ws.name}</span>
+                          {ws.ownerId === user.uid && (
+                            <span className="px-1 text-[9px] font-mono border border-brand-purple/30 text-brand-purple bg-brand-purple/10 rounded shrink-0">
+                              OWNER
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-gray-500 font-mono">Members: {ws.memberIds.length}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportWorkspace(ws);
+                        }}
+                        className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-brand-cyan transition-colors cursor-pointer shrink-0"
+                        title={`Export "${ws.name}" as ZIP archive`}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -369,25 +405,44 @@ export const WorkspaceTab: React.FC<WorkspaceTabProps> = ({
                     <p className="text-xs text-brand-pink font-mono mt-1">Established: {new Date(activeWorkspace.createdAt).toLocaleString()}</p>
                   </div>
 
-                  {/* Invite members inside header */}
-                  <form onSubmit={handleSendInvite} className="flex gap-2">
-                    <input
-                      type="email"
-                      required
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder="alex@vinexsah.com"
-                      className="bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-brand-cyan/50"
-                    />
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    {/* Export Workspace ZIP */}
                     <button
-                      type="submit"
-                      className="py-2 px-4 bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-brand-cyan rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                      type="button"
+                      onClick={() => handleExportWorkspace()}
+                      disabled={isExportingWorkspace}
+                      className="py-2 px-3.5 bg-white/5 hover:bg-white/10 border border-white/15 text-gray-200 rounded-xl text-xs font-mono font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                      title="Download complete Workspace Archive (ZIP with Manifest, Wikis, Tasks & Documents)"
                     >
-                      <Plus className="w-4 h-4" />
-                      Invite
+                      <Download className="w-3.5 h-3.5 text-brand-cyan" />
+                      <span>{isExportingWorkspace ? 'Exporting...' : 'Export Workspace (ZIP)'}</span>
                     </button>
-                  </form>
+
+                    {/* Invite members inside header */}
+                    <form onSubmit={handleSendInvite} className="flex gap-2">
+                      <input
+                        type="email"
+                        required
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="alex@vinexsah.com"
+                        className="bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-brand-cyan/50"
+                      />
+                      <button
+                        type="submit"
+                        className="py-2 px-4 bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-brand-cyan rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Invite
+                      </button>
+                    </form>
+                  </div>
                 </div>
+                {workspaceExportNotice && (
+                  <p className="text-xs mt-3 text-emerald-300 font-mono flex items-center gap-1.5 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <Check className="w-4 h-4 text-emerald-400" /> {workspaceExportNotice}
+                  </p>
+                )}
                 {inviteSuccessMsg && (
                   <p className="text-xs mt-3 text-emerald-400 font-mono flex items-center gap-1">
                     <BadgeCheck className="w-4 h-4" /> {inviteSuccessMsg}

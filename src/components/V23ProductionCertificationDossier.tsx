@@ -48,6 +48,7 @@ export const V23ProductionCertificationDossier: React.FC<V23ProductionCertificat
 }) => {
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [selectedGateId, setSelectedGateId] = useState<string | null>('GATE-V23-01');
+  const [signoffNotice, setSignoffNotice] = useState<string | null>(null);
 
   const [gates, setGates] = useState<VerificationGateV23[]>([
     {
@@ -326,15 +327,21 @@ export const V23ProductionCertificationDossier: React.FC<V23ProductionCertificat
 
           <div className="pt-3 border-t border-white/10 flex items-center justify-between">
             <span className="text-xs text-gray-400">Ready for auditor sign-off</span>
-            <button
-              onClick={() => {
-                alert(`Dossier sign-off verified for ${selectedGate.name}. Cryptographic signature recorded.`);
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-            >
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              Sign Off Gate
-            </button>
+            <div className="flex items-center gap-3">
+              {signoffNotice && (
+                <span className="text-xs font-mono text-emerald-400 animate-fadeIn">{signoffNotice}</span>
+              )}
+              <button
+                onClick={() => {
+                  setSignoffNotice(`Sign-off verified: ${selectedGate.name}`);
+                  setTimeout(() => setSignoffNotice(null), 4000);
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                Sign Off Gate
+              </button>
+            </div>
           </div>
         </div>
       </div>

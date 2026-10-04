@@ -1,0 +1,39 @@
+[
+  {
+    "uid": "vine_demo_user",
+    "email": "anesthonest81@gmail.com",
+    "username": "anesthonest",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_catalyx_hq",
+    "role": "founder",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-01-01T00:00:00.000Z",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "passwordHash": "3ddc4385851ccc689370c67f976184c6b8bdba7c63b5c3a8384a9b9a826897f5",
+    "passwordSalt": "7c8af80aaa2724564bf2615baf545ca9",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "uid": "usr_1791126023291_16729040544e",
+    "email": "durable_test@catalyx.io",
+    "username": "durable_test",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791126023291_16729040544e",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-04T15:00:23.291Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-04T15:00:23.291Z",
+    "updatedAt": "2026-10-04T15:00:23.291Z",
+    "passwordHash": "25de191d7d9db7bec742cbcfc7c3cf011702f8f582a45255e5e83170a5693fd3",
+    "passwordSalt": "78c9892861b0c76a3bee66734ccb74a4",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-04T15:00:23.291Z"
+  }
+]
