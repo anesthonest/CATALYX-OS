@@ -1,0 +1,75 @@
+[
+  {
+    "id": "ws_1",
+    "name": "VINEXSAH Core Dev Workspace",
+    "ownerId": "vine_demo_user",
+    "memberIds": [
+      "vine_demo_user",
+      "member_alex"
+    ],
+    "teamProductivityScore": 85,
+    "burnoutRisk": "Low",
+    "teamMomentum": "Optimal",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "ws_audit_1791214486594",
+    "name": "Audit Core HQ",
+    "ownerId": "user_audit_executor_1791214486594",
+    "memberIds": [
+      "user_audit_executor_1791214486594"
+    ],
+    "teamProductivityScore": 70,
+    "burnoutRisk": "Low",
+    "teamMomentum": "Moderate",
+    "createdAt": "2026-10-05T15:34:46.594Z"
+  },
+  {
+    "id": "ws_audit_1791214530325",
+    "name": "Audit Core HQ",
+    "ownerId": "user_audit_executor_1791214530325",
+    "memberIds": [
+      "user_audit_executor_1791214530325"
+    ],
+    "teamProductivityScore": 70,
+    "burnoutRisk": "Low",
+    "teamMomentum": "Moderate",
+    "createdAt": "2026-10-05T15:35:30.326Z"
+  },
+  {
+    "id": "ws_audit_1791214560212",
+    "name": "Audit Core HQ",
+    "ownerId": "user_audit_executor_1791214560212",
+    "memberIds": [
+      "user_audit_executor_1791214560212"
+    ],
+    "teamProductivityScore": 70,
+    "burnoutRisk": "Low",
+    "teamMomentum": "Moderate",
+    "createdAt": "2026-10-05T15:36:00.212Z"
+  },
+  {
+    "id": "ws_audit_1791215335799",
+    "name": "Audit Core HQ",
+    "ownerId": "user_audit_executor_1791215335799",
+    "memberIds": [
+      "user_audit_executor_1791215335799"
+    ],
+    "teamProductivityScore": 70,
+    "burnoutRisk": "Low",
+    "teamMomentum": "Moderate",
+    "createdAt": "2026-10-05T15:48:55.800Z"
+  },
+  {
+    "id": "ws_audit_1791216937191",
+    "name": "Audit Core HQ",
+    "ownerId": "user_audit_executor_1791216937191",
+    "memberIds": [
+      "user_audit_executor_1791216937191"
+    ],
+    "teamProductivityScore": 70,
+    "burnoutRisk": "Low",
+    "teamMomentum": "Moderate",
+    "createdAt": "2026-10-05T16:15:37.191Z"
+  }
+]

@@ -53,6 +53,8 @@ import { authService } from '../src/services/authService';
 import { studioService, StudioType } from '../src/services/studioService';
 import { microsoftIntegrationService } from '../src/services/microsoftIntegrationService';
 import { officeDocumentGenerator } from '../src/services/officeDocumentGenerator';
+import { serverPersistenceService } from '../src/services/serverPersistenceService';
+import JSZip from 'jszip';
 import { GoogleGenAI } from '@google/genai';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -2699,6 +2701,123 @@ async function runProductionDependencyAndExternalIntegrationTests() {
   assert(!org2Studios.some(d => d.id === studio1.id), suite, 'Tenant Beta is strictly isolated from Tenant Alpha workspace studio');
 }
 
+async function runProductionDataPersistenceAndExportMatrixTests() {
+  const suite = 'Production Data Persistence, Work Export & PWA Hardening Matrix';
+
+  // 1. Workspace lifecycle & durable persistence
+  const testUser = 'user_audit_executor_' + Date.now();
+  const wsId = 'ws_audit_' + Date.now();
+  const ws = serverPersistenceService.createWorkspace(testUser, 'Audit Core HQ', 'audit@catalyx.io', 'AuditExecutor', wsId);
+  assert(ws.id === wsId, suite, 'Workspace created with deterministic custom ID');
+  assert(serverPersistenceService.getWorkspace(wsId, testUser) !== null, suite, 'Workspace durably retrievable by owner');
+
+  // 2. Project lifecycle & durable persistence
+  const projId = 'proj_audit_' + Date.now();
+  const proj = serverPersistenceService.createProject(testUser, 'Core Infrastructure Hardening', 'Audit task suite', wsId, projId);
+  assert(proj.id === projId, suite, 'Project created with deterministic custom ID');
+  const updatedProj = serverPersistenceService.updateProject(projId, { progress: 75, status: 'active' }, testUser);
+  assert(updatedProj !== null && updatedProj.progress === 75, suite, 'Project progress updated and persisted');
+
+  // 3. Task lifecycle & durable persistence
+  const taskId = 'task_audit_' + Date.now();
+  const task = serverPersistenceService.createTask(testUser, 'Verify zero data loss on browser restart', 'high', 'work', undefined, taskId);
+  assert(task.id === taskId, suite, 'Task created with deterministic custom ID');
+  const updatedTask = serverPersistenceService.updateTask(taskId, { completed: true }, testUser);
+  assert(updatedTask !== null && updatedTask.completed === true, suite, 'Task completion status persisted');
+
+  // 4. Goal lifecycle & durable persistence
+  const goalId = 'goal_audit_' + Date.now();
+  const goal = serverPersistenceService.createGoal(testUser, '100% Persistence Durability', 'Ensure zero data drop', '2026-12-31', 'short_term', goalId);
+  assert(goal.id === goalId, suite, 'Goal created with deterministic custom ID');
+  const updatedGoal = serverPersistenceService.updateGoal(goalId, { progress: 100, status: 'completed' }, testUser);
+  assert(updatedGoal !== null && updatedGoal.status === 'completed', suite, 'Goal completion status persisted');
+
+  // 5. Workspace subcollections (Tasks, Messages, Wikis)
+  const wtId = 'wt_audit_' + Date.now();
+  const wTask = serverPersistenceService.addWorkspaceTask(wsId, 'Deploy persistence sync engine', 'high', testUser, wtId);
+  assert(wTask !== null && wTask.id === wtId, suite, 'Workspace task created with deterministic ID');
+  const okComplete = serverPersistenceService.completeWorkspaceTask(wsId, wtId, testUser);
+  assert(okComplete === true, suite, 'Workspace task completed successfully');
+
+  const wmId = 'msg_audit_' + Date.now();
+  const wMsg = serverPersistenceService.addWorkspaceMessage(wsId, 'Sync operational', 'AuditExecutor', testUser, wmId);
+  assert(wMsg !== null && wMsg.id === wmId, suite, 'Workspace message added and persisted');
+
+  const wikiId = 'wik_audit_' + Date.now();
+  const wiki = serverPersistenceService.addWorkspaceWiki(wsId, 'Architecture Spec', 'Core persistence blueprint', 'AuditExecutor', testUser, wikiId);
+  assert(wiki !== null && wiki.id === wikiId, suite, 'Workspace wiki added and persisted');
+  const updatedWiki = serverPersistenceService.updateWorkspaceWiki(wsId, wikiId, 'Architecture Spec v2', 'Updated persistence blueprint', testUser);
+  assert(updatedWiki !== null && updatedWiki.title === 'Architecture Spec v2', suite, 'Workspace wiki update persisted');
+
+  // 6. Full batch sync reconciliation
+  const batchResult = serverPersistenceService.applyClientSyncBatch(testUser, 'audit@catalyx.io', {
+    workspaces: [ws],
+    projects: [updatedProj!],
+    tasks: [updatedTask!]
+  });
+  assert(batchResult.success === true && batchResult.appliedCount >= 1, suite, 'Client-server batch sync applies successfully');
+
+  // 7. Server hydration on reload / new session
+  const hydrated = serverPersistenceService.syncUserData(testUser, 'audit@catalyx.io');
+  assert(hydrated.workspaces.some(w => w.id === wsId), suite, 'Hydration restores user workspace on return');
+  assert(hydrated.projects.some(p => p.id === projId), suite, 'Hydration restores user project on return');
+  assert(hydrated.tasks.some(t => t.id === taskId), suite, 'Hydration restores user tasks on return');
+  assert(hydrated.goals.some(g => g.id === goalId), suite, 'Hydration restores user goals on return');
+
+  // 8. Project ZIP Export generation
+  const prjZip = await serverPersistenceService.exportProjectAsZip(projId, testUser);
+  assert(prjZip.buffer.length > 0 && prjZip.filename.endsWith('.zip'), suite, 'Project ZIP export generates non-empty buffer');
+  const prjZipParsed = await JSZip.loadAsync(prjZip.buffer);
+  assert(prjZipParsed.file('project.json') !== null, suite, 'Project ZIP package contains project.json');
+  assert(prjZipParsed.file('tasks.json') !== null, suite, 'Project ZIP package contains tasks.json');
+  assert(prjZipParsed.file('tasks.csv') !== null, suite, 'Project ZIP package contains tasks.csv');
+  assert(prjZipParsed.file('documents/overview.md') !== null, suite, 'Project ZIP package contains documents/overview.md');
+  assert(prjZipParsed.file('manifest.json') !== null, suite, 'Project ZIP package contains manifest.json');
+  const prjManifest = JSON.parse(await prjZipParsed.file('manifest.json')!.async('string'));
+  assert(prjManifest.exportType === 'PROJECT' && Boolean(prjManifest.checksumSha256), suite, 'Project manifest contains valid SHA-256 checksum');
+
+  // 9. Workspace ZIP Export generation
+  const wsZip = await serverPersistenceService.exportWorkspaceAsZip(wsId, testUser);
+  assert(wsZip.buffer.length > 0 && wsZip.filename.endsWith('.zip'), suite, 'Workspace ZIP export generates non-empty buffer');
+  const wsZipParsed = await JSZip.loadAsync(wsZip.buffer);
+  assert(wsZipParsed.file('workspace.json') !== null, suite, 'Workspace ZIP package contains workspace.json');
+  assert(wsZipParsed.file('members.json') !== null, suite, 'Workspace ZIP package contains members.json');
+  assert(wsZipParsed.file('tasks.json') !== null, suite, 'Workspace ZIP package contains tasks.json');
+  assert(wsZipParsed.file('manifest.json') !== null, suite, 'Workspace ZIP package contains manifest.json');
+
+  // 10. User Sovereign Archive Export generation
+  const userZip = await serverPersistenceService.exportAllUserDataAsZip(testUser);
+  assert(userZip.buffer.length > 0 && userZip.filename.endsWith('.zip'), suite, 'User Sovereign Archive ZIP generates non-empty buffer');
+  const userZipParsed = await JSZip.loadAsync(userZip.buffer);
+  assert(userZipParsed.file('manifest.json') !== null, suite, 'User archive contains root manifest.json');
+
+  // 11. PWA configuration & security boundaries
+  const manifestRaw = fs.readFileSync('public/manifest.json', 'utf8');
+  const manifest = JSON.parse(manifestRaw);
+  assert(manifest.display === 'standalone' && manifest.scope === '/' && manifest.start_url === '/', suite, 'PWA Web Manifest defines standalone display and scope');
+  assert(manifest.icons.some((i: any) => i.sizes === '192x192') && manifest.icons.some((i: any) => i.sizes === '512x512'), suite, 'PWA Web Manifest defines 192x192 and 512x512 icons');
+
+  const swCode = fs.readFileSync('public/service-worker.js', 'utf8');
+  assert(/api\\\/data/.test(swCode) && /api\\\/export/.test(swCode) && /api\\\/workspaces/.test(swCode) && /api\\\/projects/.test(swCode), suite, 'Service Worker strictly enforces sensitive API exclusion from cache');
+
+  // 12. Microsoft 365 dormant state preserved
+  const msStatus = await microsoftIntegrationService.getConnectionStatus();
+  assert(msStatus.connected === false, suite, 'Microsoft 365 strictly remains disabled awaiting Azure credentials');
+  assert(msStatus.enabled === false, suite, 'Microsoft 365 feature flag is server-authoritatively disabled');
+
+  // 13. Cross-User Data Isolation
+  const strangerUser = 'stranger_attacker_' + Date.now();
+  let unauthorizedExportThrown = false;
+  try {
+    await serverPersistenceService.exportProjectAsZip(projId, strangerUser);
+  } catch {
+    unauthorizedExportThrown = true;
+  }
+  assert(unauthorizedExportThrown === true, suite, 'Unauthorized user is strictly blocked from exporting another user project');
+  const strangerWs = serverPersistenceService.getWorkspace(wsId, strangerUser);
+  assert(strangerWs === null, suite, 'Unauthorized user cannot read another user private workspace');
+}
+
 async function main() {
   console.log('=== CATALYX INDEPENDENT RELEASE-CHALLENGE AUDIT SUITE ===\n');
 
@@ -2725,6 +2844,7 @@ async function main() {
     await runUniversalStudioArchitectureTests();
     await runMicrosoftIntegrationAuditTests();
     await runProductionDependencyAndExternalIntegrationTests();
+    await runProductionDataPersistenceAndExportMatrixTests();
   } catch (e: any) {
     console.error('Test execution fatal error:', e);
   }

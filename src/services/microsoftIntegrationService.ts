@@ -80,7 +80,10 @@ export class MicrosoftIntegrationService {
     }
 
     const cached = safeStorage.get<MicrosoftAccountConnection>(STORAGE_MS_CONN_KEY, {
+      enabled: false,
       connected: false,
+      status: 'DISABLED_AWAITING_AZURE_CREDENTIALS',
+      message: 'Microsoft 365 integration temporarily disabled awaiting Azure credentials.',
       scopes: []
     });
     return cached;

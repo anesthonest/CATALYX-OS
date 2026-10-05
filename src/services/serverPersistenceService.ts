@@ -322,8 +322,8 @@ export class ServerPersistenceService {
     return ws;
   }
 
-  public createWorkspace(ownerId: string, name: string, ownerEmail?: string, ownerUsername?: string): Workspace {
-    const id = `ws_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  public createWorkspace(ownerId: string, name: string, ownerEmail?: string, ownerUsername?: string, customId?: string): Workspace {
+    const id = (customId && !this.workspaces.has(customId)) ? customId : `ws_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const ws: Workspace = {
       id,
       name,
@@ -403,12 +403,13 @@ export class ServerPersistenceService {
     return this.workspaceTasks.get(workspaceId) || [];
   }
 
-  public addWorkspaceTask(workspaceId: string, text: string, priority: WorkspaceTask['priority'], userId: string): WorkspaceTask | null {
+  public addWorkspaceTask(workspaceId: string, text: string, priority: WorkspaceTask['priority'], userId: string, customId?: string): WorkspaceTask | null {
     const ws = this.getWorkspace(workspaceId, userId);
     if (!ws) return null;
     const list = this.workspaceTasks.get(workspaceId) || [];
+    const id = (customId && !list.some(t => t.id === customId)) ? customId : `wt_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
     const newTask: WorkspaceTask = {
-      id: `wt_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+      id,
       text,
       completed: false,
       priority: priority || 'medium',
@@ -439,12 +440,13 @@ export class ServerPersistenceService {
     return this.workspaceMessages.get(workspaceId) || [];
   }
 
-  public addWorkspaceMessage(workspaceId: string, text: string, username: string, userId: string): WorkspaceMessage | null {
+  public addWorkspaceMessage(workspaceId: string, text: string, username: string, userId: string, customId?: string): WorkspaceMessage | null {
     const ws = this.getWorkspace(workspaceId, userId);
     if (!ws) return null;
     const list = this.workspaceMessages.get(workspaceId) || [];
+    const id = (customId && !list.some(m => m.id === customId)) ? customId : `msg_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
     const msg: WorkspaceMessage = {
-      id: `msg_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+      id,
       text,
       username,
       userId,
@@ -463,12 +465,13 @@ export class ServerPersistenceService {
     return this.workspaceWikis.get(workspaceId) || [];
   }
 
-  public addWorkspaceWiki(workspaceId: string, title: string, content: string, authorName: string, userId: string): KnowledgeArticle | null {
+  public addWorkspaceWiki(workspaceId: string, title: string, content: string, authorName: string, userId: string, customId?: string): KnowledgeArticle | null {
     const ws = this.getWorkspace(workspaceId, userId);
     if (!ws) return null;
     const list = this.workspaceWikis.get(workspaceId) || [];
+    const id = (customId && !list.some(w => w.id === customId)) ? customId : `wik_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
     const article: KnowledgeArticle = {
-      id: `wik_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
+      id,
       title,
       content,
       authorName,
@@ -477,6 +480,19 @@ export class ServerPersistenceService {
     };
     list.push(article);
     this.workspaceWikis.set(workspaceId, list);
+    this.scheduleSave();
+    return article;
+  }
+
+  public updateWorkspaceWiki(workspaceId: string, wikiId: string, title: string, content: string, userId: string): KnowledgeArticle | null {
+    const ws = this.getWorkspace(workspaceId, userId);
+    if (!ws) return null;
+    const list = this.workspaceWikis.get(workspaceId) || [];
+    const article = list.find(w => w.id === wikiId);
+    if (!article) return null;
+    article.title = title;
+    article.content = content;
+    article.updatedAt = new Date().toISOString();
     this.scheduleSave();
     return article;
   }
@@ -501,8 +517,8 @@ export class ServerPersistenceService {
     return p;
   }
 
-  public createProject(userId: string, title: string, description: string, workspaceId?: string): Project {
-    const id = `proj_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  public createProject(userId: string, title: string, description: string, workspaceId?: string, customId?: string): Project {
+    const id = (customId && !this.projects.has(customId)) ? customId : `proj_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const p: Project & { userId: string; workspaceId?: string } = {
       id,
       userId,
@@ -549,8 +565,8 @@ export class ServerPersistenceService {
     return res;
   }
 
-  public createTask(userId: string, text: string, priority?: Task['priority'], category?: Task['category'], dueDate?: string): Task {
-    const id = `task_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  public createTask(userId: string, text: string, priority?: Task['priority'], category?: Task['category'], dueDate?: string, customId?: string): Task {
+    const id = (customId && !this.tasks.has(customId)) ? customId : `task_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const t: Task & { userId: string } = {
       id,
       userId,
@@ -597,8 +613,8 @@ export class ServerPersistenceService {
     return res;
   }
 
-  public createGoal(userId: string, title: string, description: string, targetDate: string, type: 'short_term' | 'long_term'): Goal {
-    const id = `goal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  public createGoal(userId: string, title: string, description: string, targetDate: string, type: 'short_term' | 'long_term', customId?: string): Goal {
+    const id = (customId && !this.goals.has(customId)) ? customId : `goal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const g: Goal & { userId: string } = {
       id,
       userId,

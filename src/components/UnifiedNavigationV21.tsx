@@ -324,7 +324,7 @@ export const UnifiedNavigationV21: React.FC<UnifiedNavigationV21Props> = ({
           </button>
 
           {/* Authoritative Data Persistence Save Status */}
-          <SaveStatusBadge className="hidden md:inline-flex" />
+          <SaveStatusBadge className="inline-flex" />
 
           {/* Live System Health Truth Widget */}
           <SystemHealthTruthWidget onNavigate={onSelectTab} />

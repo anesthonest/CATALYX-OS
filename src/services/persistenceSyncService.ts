@@ -244,24 +244,30 @@ export class PersistenceSyncService {
     this.isSyncing = true;
     this.updateStatus('saving', 'Saving to server...');
 
-    // Merge pending batches
-    const mergedBatch: any = {
-      workspaces: [],
-      projects: [],
-      tasks: [],
-      goals: [],
-      studios: []
-    };
+    // Merge pending batches by ID to ensure latest version is synced
+    const wsMap = new Map<string, any>();
+    const prjMap = new Map<string, any>();
+    const tskMap = new Map<string, any>();
+    const goalMap = new Map<string, any>();
+    const stdMap = new Map<string, any>();
 
     for (const item of queue) {
       if (item.batch) {
-        if (item.batch.workspaces) mergedBatch.workspaces.push(...item.batch.workspaces);
-        if (item.batch.projects) mergedBatch.projects.push(...item.batch.projects);
-        if (item.batch.tasks) mergedBatch.tasks.push(...item.batch.tasks);
-        if (item.batch.goals) mergedBatch.goals.push(...item.batch.goals);
-        if (item.batch.studios) mergedBatch.studios.push(...item.batch.studios);
+        if (Array.isArray(item.batch.workspaces)) item.batch.workspaces.forEach((w: any) => { if (w.id) wsMap.set(w.id, w); });
+        if (Array.isArray(item.batch.projects)) item.batch.projects.forEach((p: any) => { if (p.id) prjMap.set(p.id, p); });
+        if (Array.isArray(item.batch.tasks)) item.batch.tasks.forEach((t: any) => { if (t.id) tskMap.set(t.id, t); });
+        if (Array.isArray(item.batch.goals)) item.batch.goals.forEach((g: any) => { if (g.id) goalMap.set(g.id, g); });
+        if (Array.isArray(item.batch.studios)) item.batch.studios.forEach((s: any) => { if (s.id) stdMap.set(s.id, s); });
       }
     }
+
+    const mergedBatch = {
+      workspaces: Array.from(wsMap.values()),
+      projects: Array.from(prjMap.values()),
+      tasks: Array.from(tskMap.values()),
+      goals: Array.from(goalMap.values()),
+      studios: Array.from(stdMap.values())
+    };
 
     try {
       const res = await fetch('/api/data/sync', {

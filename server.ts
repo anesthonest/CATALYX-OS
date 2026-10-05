@@ -2089,7 +2089,7 @@ app.post('/api/workspaces', (req, res) => {
   if (!name) {
     return res.status(400).json({ error: 'Workspace name is required' });
   }
-  const ws = serverPersistenceService.createWorkspace(actor.uid, name, actor.email, (actor as any).username);
+  const ws = serverPersistenceService.createWorkspace(actor.uid, name, actor.email, (actor as any).username, req.body?.id);
   res.json({ success: true, workspace: ws });
 });
 
@@ -2136,7 +2136,7 @@ app.post('/api/workspaces/:id/tasks', (req, res) => {
   if (!actor) return res.status(401).json({ error: 'Unauthorized' });
   const text = (req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'Task text required' });
-  const task = serverPersistenceService.addWorkspaceTask(req.params.id, text, req.body?.priority || 'medium', actor.uid);
+  const task = serverPersistenceService.addWorkspaceTask(req.params.id, text, req.body?.priority || 'medium', actor.uid, req.body?.id);
   if (!task) return res.status(404).json({ error: 'Workspace not found or unauthorized' });
   res.json({ success: true, task });
 });
@@ -2160,7 +2160,7 @@ app.post('/api/workspaces/:id/messages', (req, res) => {
   if (!actor) return res.status(401).json({ error: 'Unauthorized' });
   const text = (req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'Message text required' });
-  const msg = serverPersistenceService.addWorkspaceMessage(req.params.id, text, (actor as any).username || actor.email, actor.uid);
+  const msg = serverPersistenceService.addWorkspaceMessage(req.params.id, text, (actor as any).username || actor.email, actor.uid, req.body?.id);
   res.json({ success: true, message: msg });
 });
 
@@ -2177,7 +2177,17 @@ app.post('/api/workspaces/:id/wikis', (req, res) => {
   const title = (req.body?.title || '').trim();
   const content = (req.body?.content || '').trim();
   if (!title) return res.status(400).json({ error: 'Wiki title required' });
-  const wiki = serverPersistenceService.addWorkspaceWiki(req.params.id, title, content, (actor as any).username || actor.email, actor.uid);
+  const wiki = serverPersistenceService.addWorkspaceWiki(req.params.id, title, content, (actor as any).username || actor.email, actor.uid, req.body?.id);
+  res.json({ success: true, wiki });
+});
+
+app.put('/api/workspaces/:id/wikis/:wikiId', (req, res) => {
+  const actor = getAuthenticatedActor(req);
+  if (!actor) return res.status(401).json({ error: 'Unauthorized' });
+  const title = (req.body?.title || '').trim();
+  const content = (req.body?.content || '').trim();
+  const wiki = serverPersistenceService.updateWorkspaceWiki(req.params.id, req.params.wikiId, title, content, actor.uid);
+  if (!wiki) return res.status(404).json({ error: 'Wiki article not found or unauthorized' });
   res.json({ success: true, wiki });
 });
 
@@ -2197,7 +2207,7 @@ app.post('/api/projects', (req, res) => {
   const title = (req.body?.title || '').trim();
   const description = (req.body?.description || '').trim();
   if (!title) return res.status(400).json({ error: 'Project title required' });
-  const project = serverPersistenceService.createProject(actor.uid, title, description, req.body?.workspaceId);
+  const project = serverPersistenceService.createProject(actor.uid, title, description, req.body?.workspaceId, req.body?.id);
   res.json({ success: true, project });
 });
 
@@ -2231,7 +2241,7 @@ app.post('/api/tasks', (req, res) => {
   if (!actor) return res.status(401).json({ error: 'Unauthorized' });
   const text = (req.body?.text || '').trim();
   if (!text) return res.status(400).json({ error: 'Task text required' });
-  const task = serverPersistenceService.createTask(actor.uid, text, req.body?.priority, req.body?.category, req.body?.dueDate);
+  const task = serverPersistenceService.createTask(actor.uid, text, req.body?.priority, req.body?.category, req.body?.dueDate, req.body?.id);
   res.json({ success: true, task });
 });
 
@@ -2266,7 +2276,7 @@ app.post('/api/goals', (req, res) => {
   const title = (req.body?.title || '').trim();
   const description = (req.body?.description || '').trim();
   if (!title) return res.status(400).json({ error: 'Goal title required' });
-  const goal = serverPersistenceService.createGoal(actor.uid, title, description, req.body?.targetDate || '', req.body?.type || 'short_term');
+  const goal = serverPersistenceService.createGoal(actor.uid, title, description, req.body?.targetDate || '', req.body?.type || 'short_term', req.body?.id);
   res.json({ success: true, goal });
 });
 

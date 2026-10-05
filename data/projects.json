@@ -1,0 +1,62 @@
+[
+  {
+    "id": "p1",
+    "userId": "vine_demo_user",
+    "workspaceId": "ws_1",
+    "title": "Project Antigravity Framework",
+    "description": "Autonomous execution validation engine deployment.",
+    "status": "active",
+    "progress": 45,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "proj_audit_1791214486594",
+    "userId": "user_audit_executor_1791214486594",
+    "workspaceId": "ws_audit_1791214486594",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-05T15:34:46.594Z"
+  },
+  {
+    "id": "proj_audit_1791214530326",
+    "userId": "user_audit_executor_1791214530325",
+    "workspaceId": "ws_audit_1791214530325",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-05T15:35:30.326Z"
+  },
+  {
+    "id": "proj_audit_1791214560212",
+    "userId": "user_audit_executor_1791214560212",
+    "workspaceId": "ws_audit_1791214560212",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-05T15:36:00.212Z"
+  },
+  {
+    "id": "proj_audit_1791215335800",
+    "userId": "user_audit_executor_1791215335799",
+    "workspaceId": "ws_audit_1791215335799",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-05T15:48:55.800Z"
+  },
+  {
+    "id": "proj_audit_1791216937192",
+    "userId": "user_audit_executor_1791216937191",
+    "workspaceId": "ws_audit_1791216937191",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-05T16:15:37.192Z"
+  }
+]

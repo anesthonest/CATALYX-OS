@@ -1,0 +1,102 @@
+{
+  "ws_1": [
+    {
+      "id": "w1",
+      "title": "CATALYX Standard Operating Procedure",
+      "content": "This wiki outlines the strict operational guidelines for team compliance. 1. Break tasks into under-30-minute intervals. 2. Lock in streaks proactively. 3. Tag AI Scout for immediate burnout profile analysis.",
+      "authorName": "vine_executor",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "ws_audit_1791214486594": [
+    {
+      "id": "wik_init_1791214486594",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:34:46.594Z",
+      "updatedAt": "2026-10-05T15:34:46.594Z"
+    },
+    {
+      "id": "wik_audit_1791214486595",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:34:46.595Z",
+      "updatedAt": "2026-10-05T15:34:46.595Z"
+    }
+  ],
+  "ws_audit_1791214530325": [
+    {
+      "id": "wik_init_1791214530326",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:35:30.326Z",
+      "updatedAt": "2026-10-05T15:35:30.326Z"
+    },
+    {
+      "id": "wik_audit_1791214530326",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:35:30.328Z",
+      "updatedAt": "2026-10-05T15:35:30.328Z"
+    }
+  ],
+  "ws_audit_1791214560212": [
+    {
+      "id": "wik_init_1791214560212",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:36:00.212Z",
+      "updatedAt": "2026-10-05T15:36:00.212Z"
+    },
+    {
+      "id": "wik_audit_1791214560213",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:36:00.213Z",
+      "updatedAt": "2026-10-05T15:36:00.213Z"
+    }
+  ],
+  "ws_audit_1791215335799": [
+    {
+      "id": "wik_init_1791215335800",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:48:55.800Z",
+      "updatedAt": "2026-10-05T15:48:55.800Z"
+    },
+    {
+      "id": "wik_audit_1791215335800",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T15:48:55.800Z",
+      "updatedAt": "2026-10-05T15:48:55.800Z"
+    }
+  ],
+  "ws_audit_1791216937191": [
+    {
+      "id": "wik_init_1791216937191",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T16:15:37.191Z",
+      "updatedAt": "2026-10-05T16:15:37.191Z"
+    },
+    {
+      "id": "wik_audit_1791216937192",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-05T16:15:37.192Z",
+      "updatedAt": "2026-10-05T16:15:37.192Z"
+    }
+  ]
+}

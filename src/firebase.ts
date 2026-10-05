@@ -664,7 +664,7 @@ export const dbService = {
           'x-session-token': sessionToken,
           'Authorization': `Bearer ${sessionToken}`
         },
-        body: JSON.stringify({ text, priority, category, dueDate })
+        body: JSON.stringify({ id: newTask.id, text, priority, category, dueDate })
       }).catch(err => console.warn('[DB] Direct task save fallback to queue:', err));
     }
 
@@ -822,7 +822,7 @@ export const dbService = {
           'x-session-token': sessionToken,
           'Authorization': `Bearer ${sessionToken}`
         },
-        body: JSON.stringify({ title, description, targetDate, type })
+        body: JSON.stringify({ id: newItem.id, title, description, targetDate, type })
       }).catch(err => console.warn('[DB] Direct goal save fallback to queue:', err));
     }
 
@@ -941,7 +941,7 @@ export const dbService = {
           'x-session-token': sessionToken,
           'Authorization': `Bearer ${sessionToken}`
         },
-        body: JSON.stringify({ title, description })
+        body: JSON.stringify({ id: newItem.id, title, description })
       }).catch(err => console.warn('[DB] Direct project save fallback to queue:', err));
     }
 
@@ -1160,7 +1160,7 @@ export const dbService = {
           'x-session-token': sessionToken,
           'Authorization': `Bearer ${sessionToken}`
         },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ id: newWS.id, name })
       }).catch(err => console.warn('[DB] Direct workspace write fallback to queue:', err));
     }
 
@@ -1304,7 +1304,7 @@ export const dbService = {
           'x-session-token': sessionToken,
           'Authorization': `Bearer ${sessionToken}`
         },
-        body: JSON.stringify({ text, priority, assignedTo })
+        body: JSON.stringify({ id: newTask.id, text, priority, assignedTo })
       }).catch(err => console.warn('[DB] Direct workspace task write fallback:', err));
     }
 
@@ -1394,7 +1394,7 @@ export const dbService = {
           'x-session-token': sessionToken,
           'Authorization': `Bearer ${sessionToken}`
         },
-        body: JSON.stringify({ text, username })
+        body: JSON.stringify({ id: newMsg.id, text, username })
       }).catch(err => console.warn('[DB] Direct workspace message write fallback:', err));
     }
 
@@ -1428,7 +1428,28 @@ export const dbService = {
 
   // --- KNOWLEDGE VAULT / WIKI (V2 addition) ---
   async getKnowledgeWiki(workspaceId: string): Promise<KnowledgeArticle[]> {
-    return getSimData<KnowledgeArticle>(`wiki_${workspaceId}`);
+    let list = getSimData<KnowledgeArticle>(`wiki_${workspaceId}`);
+    if (!list || list.length === 0) {
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        try {
+          const res = await fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/wikis`, {
+            headers: {
+              'x-session-token': sessionToken,
+              'Authorization': `Bearer ${sessionToken}`
+            }
+          });
+          if (res.ok) {
+            const serverWikis = await res.json();
+            if (Array.isArray(serverWikis) && serverWikis.length > 0) {
+              list = serverWikis;
+              saveSimData(`wiki_${workspaceId}`, list);
+            }
+          }
+        } catch {}
+      }
+    }
+    return list || [];
   },
 
   async addKnowledgeWikiItem(workspaceId: string, title: string, content: string, authorName: string): Promise<KnowledgeArticle[]> {
@@ -1443,6 +1464,21 @@ export const dbService = {
     };
     list.push(newItem);
     saveSimData(`wiki_${workspaceId}`, list);
+
+    // Direct REST write
+    const sessionToken = safeStorage.getSessionToken();
+    if (sessionToken) {
+      fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/wikis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-session-token': sessionToken,
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ id: newItem.id, title, content })
+      }).catch(err => console.warn('[DB] Direct wiki save fallback:', err));
+    }
+
     return list;
   },
 
@@ -1454,6 +1490,20 @@ export const dbService = {
       list[idx].content = content;
       list[idx].updatedAt = new Date().toISOString();
       saveSimData(`wiki_${workspaceId}`, list);
+
+      // Direct REST write
+      const sessionToken = safeStorage.getSessionToken();
+      if (sessionToken) {
+        fetch(`/api/workspaces/${encodeURIComponent(workspaceId)}/wikis/${encodeURIComponent(itemId)}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-token': sessionToken,
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({ title, content })
+        }).catch(err => console.warn('[DB] Direct wiki update fallback:', err));
+      }
     }
     return list;
   },

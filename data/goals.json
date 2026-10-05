@@ -1,0 +1,68 @@
+[
+  {
+    "id": "g1",
+    "userId": "vine_demo_user",
+    "title": "Build CATALYX Platform",
+    "description": "Upgrade system architecture to full AI-powered Execution OS.",
+    "targetDate": "2026-10-19T15:23:36.096Z",
+    "progress": 60,
+    "status": "active",
+    "type": "short_term",
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "goal_audit_1791214486594",
+    "userId": "user_audit_executor_1791214486594",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-05T15:34:46.595Z"
+  },
+  {
+    "id": "goal_audit_1791214530326",
+    "userId": "user_audit_executor_1791214530325",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-05T15:35:30.326Z"
+  },
+  {
+    "id": "goal_audit_1791214560212",
+    "userId": "user_audit_executor_1791214560212",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-05T15:36:00.212Z"
+  },
+  {
+    "id": "goal_audit_1791215335800",
+    "userId": "user_audit_executor_1791215335799",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-05T15:48:55.800Z"
+  },
+  {
+    "id": "goal_audit_1791216937192",
+    "userId": "user_audit_executor_1791216937191",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-05T16:15:37.192Z"
+  }
+]
