@@ -98,5 +98,169 @@
       "createdAt": "2026-10-05T16:15:37.192Z",
       "updatedAt": "2026-10-05T16:15:37.192Z"
     }
+  ],
+  "ws_audit_1791310622336": [
+    {
+      "id": "wik_init_1791310622336",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:17:02.336Z",
+      "updatedAt": "2026-10-06T18:17:02.336Z"
+    },
+    {
+      "id": "wik_audit_1791310622336",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:17:02.336Z",
+      "updatedAt": "2026-10-06T18:17:02.336Z"
+    }
+  ],
+  "ws_audit_1791310645528": [
+    {
+      "id": "wik_init_1791310645528",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:17:25.528Z",
+      "updatedAt": "2026-10-06T18:17:25.528Z"
+    },
+    {
+      "id": "wik_audit_1791310645528",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:17:25.528Z",
+      "updatedAt": "2026-10-06T18:17:25.528Z"
+    }
+  ],
+  "ws_audit_1791310690977": [
+    {
+      "id": "wik_init_1791310690977",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:18:10.977Z",
+      "updatedAt": "2026-10-06T18:18:10.977Z"
+    },
+    {
+      "id": "wik_audit_1791310690977",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:18:10.977Z",
+      "updatedAt": "2026-10-06T18:18:10.978Z"
+    }
+  ],
+  "ws_audit_1791310768404": [
+    {
+      "id": "wik_init_1791310768404",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:19:28.404Z",
+      "updatedAt": "2026-10-06T18:19:28.404Z"
+    },
+    {
+      "id": "wik_audit_1791310768405",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:19:28.405Z",
+      "updatedAt": "2026-10-06T18:19:28.405Z"
+    }
+  ],
+  "ws_1791311835461_321df322": [
+    {
+      "id": "wik_init_1791311835461",
+      "title": "Strategic Exec Board — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Strategic Exec Board. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "Commander",
+      "createdAt": "2026-10-06T18:37:15.461Z",
+      "updatedAt": "2026-10-06T18:37:15.461Z"
+    }
+  ],
+  "ws_1791312375600_3221f715": [
+    {
+      "id": "wik_init_1791312375600",
+      "title": "Alice Workspace — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Alice Workspace. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "Commander",
+      "createdAt": "2026-10-06T18:46:15.600Z",
+      "updatedAt": "2026-10-06T18:46:15.600Z"
+    }
+  ],
+  "ws_audit_1791312409161": [
+    {
+      "id": "wik_init_1791312409162",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:46:49.162Z",
+      "updatedAt": "2026-10-06T18:46:49.162Z"
+    },
+    {
+      "id": "wik_audit_1791312409162",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T18:46:49.162Z",
+      "updatedAt": "2026-10-06T18:46:49.162Z"
+    }
+  ],
+  "ws_audit_1791316109195": [
+    {
+      "id": "wik_init_1791316109196",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T19:48:29.196Z",
+      "updatedAt": "2026-10-06T19:48:29.196Z"
+    },
+    {
+      "id": "wik_audit_1791316109196",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T19:48:29.196Z",
+      "updatedAt": "2026-10-06T19:48:29.196Z"
+    }
+  ],
+  "ws_audit_1791316539762": [
+    {
+      "id": "wik_init_1791316539762",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T19:55:39.762Z",
+      "updatedAt": "2026-10-06T19:55:39.762Z"
+    },
+    {
+      "id": "wik_audit_1791316539762",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T19:55:39.763Z",
+      "updatedAt": "2026-10-06T19:55:39.763Z"
+    }
+  ],
+  "ws_audit_1791316804929": [
+    {
+      "id": "wik_init_1791316804929",
+      "title": "Audit Core HQ — Standard Operating Procedures",
+      "content": "Operational knowledge repository for Audit Core HQ. Track SOPs, architecture guidelines, and deployment specs here.",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T20:00:04.929Z",
+      "updatedAt": "2026-10-06T20:00:04.929Z"
+    },
+    {
+      "id": "wik_audit_1791316804929",
+      "title": "Architecture Spec v2",
+      "content": "Updated persistence blueprint",
+      "authorName": "AuditExecutor",
+      "createdAt": "2026-10-06T20:00:04.930Z",
+      "updatedAt": "2026-10-06T20:00:04.930Z"
+    }
   ]
 }

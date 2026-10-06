@@ -59,5 +59,95 @@
       "role": "owner",
       "joinedAt": "2026-10-05T16:15:37.191Z"
     }
+  ],
+  "ws_audit_1791310622336": [
+    {
+      "uid": "user_audit_executor_1791310622336",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T18:17:02.336Z"
+    }
+  ],
+  "ws_audit_1791310645528": [
+    {
+      "uid": "user_audit_executor_1791310645528",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T18:17:25.528Z"
+    }
+  ],
+  "ws_audit_1791310690977": [
+    {
+      "uid": "user_audit_executor_1791310690977",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T18:18:10.977Z"
+    }
+  ],
+  "ws_audit_1791310768404": [
+    {
+      "uid": "user_audit_executor_1791310768404",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T18:19:28.404Z"
+    }
+  ],
+  "ws_1791311835461_321df322": [
+    {
+      "uid": "usr_1791311835440_16c7f95c62c5",
+      "email": "browser_exec_1791311835292@catalyx.io",
+      "username": "Commander",
+      "role": "owner",
+      "joinedAt": "2026-10-06T18:37:15.461Z"
+    }
+  ],
+  "ws_1791312375600_3221f715": [
+    {
+      "uid": "usr_1791312375525_be3f7e3026e3",
+      "email": "tenant_alice@catalyx.io",
+      "username": "Commander",
+      "role": "owner",
+      "joinedAt": "2026-10-06T18:46:15.600Z"
+    }
+  ],
+  "ws_audit_1791312409161": [
+    {
+      "uid": "user_audit_executor_1791312409161",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T18:46:49.162Z"
+    }
+  ],
+  "ws_audit_1791316109195": [
+    {
+      "uid": "user_audit_executor_1791316109195",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T19:48:29.195Z"
+    }
+  ],
+  "ws_audit_1791316539762": [
+    {
+      "uid": "user_audit_executor_1791316539762",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T19:55:39.762Z"
+    }
+  ],
+  "ws_audit_1791316804929": [
+    {
+      "uid": "user_audit_executor_1791316804929",
+      "email": "audit@catalyx.io",
+      "username": "AuditExecutor",
+      "role": "owner",
+      "joinedAt": "2026-10-06T20:00:04.929Z"
+    }
   ]
 }

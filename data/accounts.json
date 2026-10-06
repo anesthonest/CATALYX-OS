@@ -9,12 +9,27 @@
     "emailVerified": true,
     "emailVerifiedAt": "2026-01-01T00:00:00.000Z",
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-01-01T00:00:00.000Z",
-    "passwordHash": "3ddc4385851ccc689370c67f976184c6b8bdba7c63b5c3a8384a9b9a826897f5",
-    "passwordSalt": "7c8af80aaa2724564bf2615baf545ca9",
-    "failedAttempts": 0,
+    "updatedAt": "2026-10-06T18:32:53.782Z",
+    "passwordHash": "4eea87bb1317cca1dca653307cba4222a829a2678082bf16d3ce885e5a73b0caf9a234946b4036b09b6280686bb959ded9d7b1e50f4d77f85838c94f66c51adc",
+    "passwordSalt": "98db8261bc21d8dcaae54f990c564db9",
+    "failedAttempts": 1,
     "termsAcceptedVersion": "v2026.3.2",
-    "termsAcceptedAt": "2026-01-01T00:00:00.000Z"
+    "termsAcceptedAt": "2026-01-01T00:00:00.000Z",
+    "googleId": "gid_google_7bdhpaz_1791219211220",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-05T16:53:32.687Z",
+    "authProviders": [
+      "password",
+      "google"
+    ],
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    }
   },
   {
     "uid": "usr_1791126023291_16729040544e",
@@ -1195,5 +1210,1981 @@
     "failedAttempts": 0,
     "termsAcceptedVersion": "v2026.3.2",
     "termsAcceptedAt": "2026-10-05T16:15:33.748Z"
+  },
+  {
+    "uid": "usr_1791222902007_da5363d831d6",
+    "email": "testuser99@catalyx.io",
+    "username": "Test User 99",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791222902007_da5363d831d6",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-05T17:55:02.007Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-05T17:55:02.007Z",
+    "updatedAt": "2026-10-05T17:55:02.007Z",
+    "passwordHash": "00bfe97328ca1a97613e4f4189247a2d6615f85a77e655697b127fdcfcf8730b",
+    "passwordSalt": "b8ba6e8a5c92ac0de69b5af670ad9e05",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-05T17:55:02.007Z"
+  },
+  {
+    "uid": "usr_1791223251520_3ab9867638b2",
+    "email": "executive_1791223251518@catalyx.io",
+    "username": "Executive Officer",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791223251520_3ab9867638b2",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-05T18:00:51.520Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-05T18:00:51.520Z",
+    "updatedAt": "2026-10-05T18:00:51.520Z",
+    "passwordHash": "e700a0b2badf34723b9371fdacd64b194ebf8f5fcc0e36e5478ea15b6fec282e",
+    "passwordSalt": "1aa5750bfdea379f0e784bb05fb732b8",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-05T18:00:51.520Z"
+  },
+  {
+    "uid": "usr_1791223251540_9258b1a75c1d",
+    "email": "brute_1791223251540@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791223251540_9258b1a75c1d",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-05T18:00:51.540Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-05T18:00:51.540Z",
+    "updatedAt": "2026-10-05T18:00:51.540Z",
+    "passwordHash": "04b376d413a22be975a7fe9c603d4bc1fb2a5d1f45bce97692439b269e2c6c8d",
+    "passwordSalt": "983b77f1381ad0e6a843abf7bf9fd1cf",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-05T18:00:51.540Z"
+  },
+  {
+    "uid": "usr_1791310616610_11dff0c094d5",
+    "email": "executive_1791310616608@catalyx.io",
+    "username": "Executive Officer",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791310616610_11dff0c094d5",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:56.610Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:56.610Z",
+    "updatedAt": "2026-10-06T18:16:56.610Z",
+    "passwordHash": "3d03398bc19fbaf2b0d2561c28d5fc24105b4a455bf798b7c11e60115a908de3",
+    "passwordSalt": "297f247490716a60571fcd39b96dfba2",
+    "failedAttempts": 1,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:56.610Z"
+  },
+  {
+    "uid": "usr_1791310616629_7bf123d9a785",
+    "email": "brute_1791310616628@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310616629_7bf123d9a785",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:56.629Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:56.629Z",
+    "updatedAt": "2026-10-06T18:16:56.629Z",
+    "passwordHash": "ed684940c1f12530082f7770d06fcc10927ba8c62cdc0a261501e548ca581390",
+    "passwordSalt": "221d536b4e571a274755ee98c8c5efa6",
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:56.629Z",
+    "lockedUntil": 1791310676634
+  },
+  {
+    "uid": "usr_1791310618695_b72f7a450b3b",
+    "email": "test_signup_1791310616705@catalyx.io",
+    "username": "Verification Tester",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310618695_b72f7a450b3b",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:58.695Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:58.695Z",
+    "updatedAt": "2026-10-06T18:16:58.695Z",
+    "passwordHash": "48cf18e2ff4c2a3231f9d31264ad828017255e08710514e72f319b2b4ded3b12",
+    "passwordSalt": "bd49133fc77144f0612f0808cf811196",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:58.695Z"
+  },
+  {
+    "uid": "usr_1791310619212_9ce40151faff",
+    "email": "googler_1791310619212@gmail.com",
+    "username": "Google Identity User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310619212_9ce40151faff",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.212Z",
+    "googleId": "gid_1791310619212",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:16:59.212Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:16:59.212Z",
+    "updatedAt": "2026-10-06T18:16:59.212Z",
+    "passwordHash": "38e9bf5a05b664285398946e400bb23005cd0a717ffd78c6d712004a320ac0ab",
+    "passwordSalt": "856c32ca7f71e037dabdbf520219f778",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.212Z"
+  },
+  {
+    "uid": "usr_1791310619822_9229f3774e1c",
+    "email": "link_target_1791310619821@catalyx.io",
+    "username": "Link Target User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310619822_9229f3774e1c",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.822Z",
+    "authProviders": [
+      "password",
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:16:59.822Z",
+    "updatedAt": "2026-10-06T18:16:59.822Z",
+    "passwordHash": "34089d5a482cf6077176e252df1ea495a02c015606a98e09672bedeb59c7da27",
+    "passwordSalt": "e5181343fad655d7fa1c11b8b4a3c764",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.822Z",
+    "googleId": "gid_link_1791310619822",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:16:59.822Z"
+  },
+  {
+    "uid": "usr_1791310619822_53c5e04df740",
+    "email": "competitor_1791310619822@catalyx.io",
+    "username": "Competitor User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310619822_53c5e04df740",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.822Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:59.822Z",
+    "updatedAt": "2026-10-06T18:16:59.822Z",
+    "passwordHash": "0ee82d5be59211ee42d2d687abd2f397e8f0c2c4aba2c2b7910a42cca8b5e56c",
+    "passwordSalt": "e96d05c93e5f731c77987574f14521dd",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.822Z"
+  },
+  {
+    "uid": "usr_1791310619823_30a553fb3afa",
+    "email": "forensic_ind_1791310619823@catalyx.io",
+    "username": "Forensic Individual",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310619823_30a553fb3afa",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.823Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:59.823Z",
+    "updatedAt": "2026-10-06T18:16:59.823Z",
+    "passwordHash": "5ead1e0a0c9782a5fb120f136f295b59ebcf00e23424d88524726f9501d08884",
+    "passwordSalt": "b499ef375ec2024f4e6b3bf615f74cdd",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.823Z"
+  },
+  {
+    "uid": "usr_1791310619825_fd305d8a5445",
+    "email": "forensic_grp_1791310619825@catalyx.io",
+    "username": "Forensic Group User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310619825_fd305d8a5445",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.825Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:59.825Z",
+    "updatedAt": "2026-10-06T18:16:59.825Z",
+    "passwordHash": "0c8a634d42f75a560fb3da8dfc5fad046b83a0e69e22c3da143f079eb4952717",
+    "passwordSalt": "ad7e497f52f1ed18179cd162a96edcbc",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.825Z"
+  },
+  {
+    "uid": "usr_1791310619826_93949dc3e0d7",
+    "email": "forensic_org_1791310619826@catalyx.io",
+    "username": "Forensic Org User",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791310619826_93949dc3e0d7",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.826Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:59.826Z",
+    "updatedAt": "2026-10-06T18:16:59.826Z",
+    "passwordHash": "c604dc5cb17164bacbe4498022c4d0e260e5e5b4478a789a5b48f5fec5f0c815",
+    "passwordSalt": "3a865e098cdb1733bf48c69ff1f27f4d",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.826Z"
+  },
+  {
+    "uid": "usr_1791310619827_e26e6ec43cdd",
+    "email": "forensic_invalid_1791310619827@catalyx.io",
+    "username": "Adversary User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310619827_e26e6ec43cdd",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.827Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:16:59.827Z",
+    "updatedAt": "2026-10-06T18:16:59.827Z",
+    "passwordHash": "bdba0210a881ccfe6e44cfdba63065e746e8734f481c592c33264f7884982704",
+    "passwordSalt": "c5e7b5ca2fbecc68b3b75f5be983c774",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.827Z"
+  },
+  {
+    "uid": "usr_1791310619829_7348bea83496",
+    "email": "google_grp_1791310619829@gmail.com",
+    "username": "Google Group Lead",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310619829_7348bea83496",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:16:59.829Z",
+    "googleId": "gid_forensic_1791310619829",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:16:59.829Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:16:59.829Z",
+    "updatedAt": "2026-10-06T18:16:59.829Z",
+    "passwordHash": "24aaba51f52e6f0d6b6f4bb1041fc06deb1cfd866666b903ea54f4d0446effd6",
+    "passwordSalt": "13281a5b326874d6d38b3973d4682391",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:16:59.829Z"
+  },
+  {
+    "uid": "usr_1791310639311_c06dde3e2eca",
+    "email": "executive_1791310639309@catalyx.io",
+    "username": "Executive Officer",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791310639311_c06dde3e2eca",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:19.311Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:19.311Z",
+    "updatedAt": "2026-10-06T18:17:19.311Z",
+    "passwordHash": "b2fe34e120e35aeb6452659692de52fae160c411318fc6c9fe582910f5721342",
+    "passwordSalt": "fe3720f3e366228f3a93debd248afab1",
+    "failedAttempts": 1,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:19.311Z"
+  },
+  {
+    "uid": "usr_1791310639328_3320ceaad3f0",
+    "email": "brute_1791310639328@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310639328_3320ceaad3f0",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:19.328Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:19.328Z",
+    "updatedAt": "2026-10-06T18:17:19.328Z",
+    "passwordHash": "1483fac8e37b2d802eef6562d30409f184dd7d511187124dd74392cf9f6a90f3",
+    "passwordSalt": "c6d66f29e54be35face1c0069b1c2b09",
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:19.328Z",
+    "lockedUntil": 1791310699332
+  },
+  {
+    "uid": "usr_1791310640585_655339bdb562",
+    "email": "test_signup_1791310639399@catalyx.io",
+    "username": "Verification Tester",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310640585_655339bdb562",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:20.585Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:20.585Z",
+    "updatedAt": "2026-10-06T18:17:20.585Z",
+    "passwordHash": "8574a129142a6eb3f1266005eaf531e8ac2b3655466379e01657eebb059ddd9d",
+    "passwordSalt": "7b3fbda0935dfc2b19c53061e15b17cb",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:20.585Z"
+  },
+  {
+    "uid": "usr_1791310641466_9c07b2551c73",
+    "email": "googler_1791310641466@gmail.com",
+    "username": "Google Identity User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310641466_9c07b2551c73",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:21.466Z",
+    "googleId": "gid_1791310641466",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:17:21.466Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:17:21.466Z",
+    "updatedAt": "2026-10-06T18:17:21.466Z",
+    "passwordHash": "e7cbc4d7c43a9db37b9f1373b86a459cf61e85e8a99e5a0fc65d11985cd99df8",
+    "passwordSalt": "0bc3254802d9ffa0eb3808d5eb9470f3",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:21.466Z"
+  },
+  {
+    "uid": "usr_1791310642046_b2bace68c8c9",
+    "email": "link_target_1791310642046@catalyx.io",
+    "username": "Link Target User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310642046_b2bace68c8c9",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:22.047Z",
+    "authProviders": [
+      "password",
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:17:22.047Z",
+    "updatedAt": "2026-10-06T18:17:22.047Z",
+    "passwordHash": "7a7dc9c419ff901bbfced0b2cb534c575480bbee3a41b29d8ca5c54c93d43e2c",
+    "passwordSalt": "39e770874a3019b8873d1f89e5f1f338",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:22.047Z",
+    "googleId": "gid_link_1791310642047",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:17:22.047Z"
+  },
+  {
+    "uid": "usr_1791310642047_875572bd26f1",
+    "email": "competitor_1791310642047@catalyx.io",
+    "username": "Competitor User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310642047_875572bd26f1",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:22.047Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:22.047Z",
+    "updatedAt": "2026-10-06T18:17:22.047Z",
+    "passwordHash": "9f8dfd922aee281ec529271192a38091d3d378f163854b93cb3029b2d574cedd",
+    "passwordSalt": "39bee20e1875221c44b550cef4f667b4",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:22.047Z"
+  },
+  {
+    "uid": "usr_1791310642048_73a6bf2def3a",
+    "email": "forensic_ind_1791310642048@catalyx.io",
+    "username": "Forensic Individual",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310642048_73a6bf2def3a",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:22.048Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:22.048Z",
+    "updatedAt": "2026-10-06T18:17:22.048Z",
+    "passwordHash": "c979435048d8f55c44401d55bbbaad2fe627c9132b9c7219e9e29f479a88d405",
+    "passwordSalt": "488c841f80cb3427f9867241ac9dcb1b",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:22.048Z"
+  },
+  {
+    "uid": "usr_1791310642049_733dd08e4c69",
+    "email": "forensic_grp_1791310642049@catalyx.io",
+    "username": "Forensic Group User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310642049_733dd08e4c69",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:22.049Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:22.049Z",
+    "updatedAt": "2026-10-06T18:17:22.049Z",
+    "passwordHash": "581a5cbfd665de0854b01e12952d5195a79b18ce2b492160a8bec0431f61c65c",
+    "passwordSalt": "5c39018214859cf9d9f17dd124709199",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:22.049Z"
+  },
+  {
+    "uid": "usr_1791310642050_251fee2b583a",
+    "email": "forensic_org_1791310642050@catalyx.io",
+    "username": "Forensic Org User",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791310642050_251fee2b583a",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:22.050Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:22.050Z",
+    "updatedAt": "2026-10-06T18:17:22.050Z",
+    "passwordHash": "b2a76e6caf0bd493305222a9ffd8d279580da44b2fa40f74edb87ac2781811eb",
+    "passwordSalt": "f7fa3f228505f27d95981efbefbaf9cf",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:22.050Z"
+  },
+  {
+    "uid": "usr_1791310642052_02d86b8aac1c",
+    "email": "forensic_invalid_1791310642052@catalyx.io",
+    "username": "Adversary User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310642052_02d86b8aac1c",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:22.052Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:17:22.052Z",
+    "updatedAt": "2026-10-06T18:17:22.052Z",
+    "passwordHash": "e12a8de04d522fcd2e182696fd02ba6e40d9d7aed570a1db54d97dc295b3f017",
+    "passwordSalt": "924868c0bb57c95859a8f29a5255d211",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:22.052Z"
+  },
+  {
+    "uid": "usr_1791310642053_40db24bc2333",
+    "email": "google_grp_1791310642053@gmail.com",
+    "username": "Google Group Lead",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310642053_40db24bc2333",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:17:22.054Z",
+    "googleId": "gid_forensic_1791310642053",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:17:22.054Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:17:22.054Z",
+    "updatedAt": "2026-10-06T18:17:22.054Z",
+    "passwordHash": "e303964507f9f40c7f0119721043a314721328812b76ad37b9cc7094352b4e30",
+    "passwordSalt": "87937abdc239a5b47ec31e7b5391bd36",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:17:22.054Z"
+  },
+  {
+    "uid": "usr_1791310683460_a6c0bcec9251",
+    "email": "executive_1791310683459@catalyx.io",
+    "username": "Executive Officer",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791310683460_a6c0bcec9251",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:03.460Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:03.460Z",
+    "updatedAt": "2026-10-06T18:18:03.460Z",
+    "passwordHash": "42efa2a8ac8a2f1379959a6329a206723ce7e7f5e35a574fdf89a3b575c82679",
+    "passwordSalt": "fd138e3e8c946813392cfa692ef7d296",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:03.460Z"
+  },
+  {
+    "uid": "usr_1791310683480_200cbacb7999",
+    "email": "brute_1791310683480@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310683480_200cbacb7999",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:03.480Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:03.480Z",
+    "updatedAt": "2026-10-06T18:18:03.480Z",
+    "passwordHash": "e7dd0d3ca3f13c1d62fdac56ac5c461f567ee34678aa84b938ef3cd96e9ab1d4",
+    "passwordSalt": "282c6393f877e66579cd80b8932d6dde",
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:03.480Z",
+    "lockedUntil": 1791310743486
+  },
+  {
+    "uid": "usr_1791310684192_7dde3f25fb4a",
+    "email": "test_signup_1791310683575@catalyx.io",
+    "username": "Verification Tester",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310684192_7dde3f25fb4a",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:04.192Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:04.192Z",
+    "updatedAt": "2026-10-06T18:18:04.192Z",
+    "passwordHash": "01624822cc8cbb6c8112cdf028c575eadef9f832ec9e5646f27a4fcb084bd341",
+    "passwordSalt": "71766a29dc12c03c826577132232a9ef",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:04.192Z"
+  },
+  {
+    "uid": "usr_1791310685380_a5aa421ea8ae",
+    "email": "googler_1791310685380@gmail.com",
+    "username": "Google Identity User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310685380_a5aa421ea8ae",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:05.380Z",
+    "googleId": "gid_1791310685380",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:18:05.380Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:18:05.380Z",
+    "updatedAt": "2026-10-06T18:18:05.380Z",
+    "passwordHash": "aa18c62dd08578234643dcb9478623ed923c9112f3de66bbc95676795c2a1992",
+    "passwordSalt": "87d538767865697195ccc82f54760a2d",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:05.380Z"
+  },
+  {
+    "uid": "usr_1791310686047_57fe56bb90a1",
+    "email": "link_target_1791310686047@catalyx.io",
+    "username": "Link Target User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310686047_57fe56bb90a1",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:06.047Z",
+    "authProviders": [
+      "password",
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:18:06.047Z",
+    "updatedAt": "2026-10-06T18:18:06.048Z",
+    "passwordHash": "71ccff5930b361f71976ae6bcdcdf816799a8c06f909edc29e6f151a41ab85b6",
+    "passwordSalt": "96fb9f2582290ac8abab5ea25db60fda",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:06.047Z",
+    "googleId": "gid_link_1791310686047",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:18:06.048Z"
+  },
+  {
+    "uid": "usr_1791310686048_589573c8f4db",
+    "email": "competitor_1791310686048@catalyx.io",
+    "username": "Competitor User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310686048_589573c8f4db",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:06.048Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:06.048Z",
+    "updatedAt": "2026-10-06T18:18:06.048Z",
+    "passwordHash": "d9822ca00ccdd1d56306c3c5091b3794bd69c8ebc97a48f7a75d38e26f786a8f",
+    "passwordSalt": "f16659f5491954c59a37a490d567402d",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:06.048Z"
+  },
+  {
+    "uid": "usr_1791310686048_401003ab6d02",
+    "email": "forensic_ind_1791310686048@catalyx.io",
+    "username": "Forensic Individual",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310686048_401003ab6d02",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:06.048Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:06.048Z",
+    "updatedAt": "2026-10-06T18:18:06.048Z",
+    "passwordHash": "d86ad534062c2c96fcf784d3eaba1de36a161739f3c87e16df5a3be7ca5fe257",
+    "passwordSalt": "d2610d30bfa93c2b3d6af37c589886fc",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:06.048Z"
+  },
+  {
+    "uid": "usr_1791310686050_f2328fbdc2a2",
+    "email": "forensic_grp_1791310686050@catalyx.io",
+    "username": "Forensic Group User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310686050_f2328fbdc2a2",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:06.050Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:06.050Z",
+    "updatedAt": "2026-10-06T18:18:06.050Z",
+    "passwordHash": "19df93d7cc5ac5890b3666e9c7a058000037b5e926df126fe57e44f2409b1e9f",
+    "passwordSalt": "c71151d917dd84453942c890c7c8ca66",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:06.050Z"
+  },
+  {
+    "uid": "usr_1791310686052_9a45971eb23f",
+    "email": "forensic_org_1791310686052@catalyx.io",
+    "username": "Forensic Org User",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791310686052_9a45971eb23f",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:06.052Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:06.052Z",
+    "updatedAt": "2026-10-06T18:18:06.052Z",
+    "passwordHash": "2cb3014c06816bd6382dee7c3a8269011ef763a5773387107fc4474e1cb8d585",
+    "passwordSalt": "844656231d1449b726d3ce607fc8f2ba",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:06.052Z"
+  },
+  {
+    "uid": "usr_1791310686053_03f06dc4ca3e",
+    "email": "forensic_invalid_1791310686053@catalyx.io",
+    "username": "Adversary User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310686053_03f06dc4ca3e",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:06.053Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:06.053Z",
+    "updatedAt": "2026-10-06T18:18:06.053Z",
+    "passwordHash": "8240283d39430a8a16c6ebbac248de80a283380e96fcb6bb00b69a7c7ea9a9f4",
+    "passwordSalt": "14b3206d9d4e73c98ecb56f7222c38e9",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:06.053Z"
+  },
+  {
+    "uid": "usr_1791310686055_acd743773dfe",
+    "email": "google_grp_1791310686055@gmail.com",
+    "username": "Google Group Lead",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791310686055_acd743773dfe",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:06.055Z",
+    "googleId": "gid_forensic_1791310686055",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:18:06.055Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:18:06.055Z",
+    "updatedAt": "2026-10-06T18:18:06.055Z",
+    "passwordHash": "13a7757c26f5a9cc8acc9bdfb076d9660774fd9b423dc5c3b943ebc86a8446dc",
+    "passwordSalt": "d2008dedd4063e4c163ca0e3ba1af3e7",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:06.055Z"
+  },
+  {
+    "uid": "usr_1791310711069_6dc6aae425aa",
+    "email": "forensic_user_2026@catalyx.io",
+    "username": "Forensic Tester",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791310711069_6dc6aae425aa",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:18:31.069Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:18:31.069Z",
+    "updatedAt": "2026-10-06T18:18:31.069Z",
+    "passwordHash": "97982f842b62b34c52dddd0208868bd453c53a1ef0292ab5586343535367c1a7",
+    "passwordSalt": "8ddc9b02c17ac23ec12121ed3cb29450",
+    "failedAttempts": 1,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:18:31.069Z"
+  },
+  {
+    "uid": "usr_1791310859127_dcfad35dfcc1",
+    "email": "audit_trial_test_user_42@catalyx.io",
+    "username": "Audit Trial User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791310859127_dcfad35dfcc1",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:20:59.127Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:20:59.127Z",
+    "updatedAt": "2026-10-06T18:20:59.127Z",
+    "passwordHash": "41d0ae5aefc4de3ae35431e279f3f38e8e4630a84c9af27ff051db17744c5000",
+    "passwordSalt": "059abe405b5444267f203e1e2e3896af",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:20:59.127Z"
+  },
+  {
+    "uid": "usr_1791311564322_469beb22cd5b",
+    "email": "scrypt_user_v2@catalyx.io",
+    "username": "Scrypt User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791311564322_469beb22cd5b",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:32:44.322Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:32:44.323Z",
+    "updatedAt": "2026-10-06T18:32:44.323Z",
+    "passwordHash": "d7f11e05327bacb0692fa9917ddc5e78733e97e1461aa7e5abfdfb8fb7e832ed9d636a7a3885c030ab1e28564d63a2c9246f5b8685e714cc99d29b2a3d83b6e6",
+    "passwordSalt": "fbf3ba2a085b4c532adb91a35be33877",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 3,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:32:44.323Z"
+  },
+  {
+    "uid": "usr_1791311596094_6af8a0fd193b",
+    "email": "brute_lockout_test@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791311596094_6af8a0fd193b",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:33:16.094Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:33:16.094Z",
+    "updatedAt": "2026-10-06T18:33:16.094Z",
+    "passwordHash": "736b063895b69268d13120715331257db63ce4a93dda0fa5e2fc128b668992465e5e44a6ff83febd126a7a228a2faf29b3e76aef6a86491c9adf9eafe59c886f",
+    "passwordSalt": "e6bb56bc1433a9a02a80e254eee9b7b5",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:33:16.094Z",
+    "lockedUntil": 1791311660790
+  },
+  {
+    "uid": "usr_1791311621022_64797a970bcf",
+    "email": "recovery_test_v2@catalyx.io",
+    "username": "Recovery User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791311621022_64797a970bcf",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:33:41.022Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:33:41.022Z",
+    "updatedAt": "2026-10-06T18:33:41.022Z",
+    "passwordHash": "37fef822169f6715a14b75ef5af329116a8b5b22d7343d081e884757f402385f1bef3ba07d9f0142d48e63403a3519ab20c4c3596bdde6ab1929f4d639c4a6a1",
+    "passwordSalt": "e90461780f33185b2564e175810cd76a",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:33:41.022Z"
+  },
+  {
+    "uid": "usr_1791311835440_16c7f95c62c5",
+    "email": "browser_exec_1791311835292@catalyx.io",
+    "username": "Browser Executive",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791311835440_16c7f95c62c5",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:37:15.441Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:37:15.441Z",
+    "updatedAt": "2026-10-06T18:37:15.441Z",
+    "passwordHash": "976f27a1b3a0e2c416c1907261aa65a1adcdcc3a997f9172c309c5675bff0ecce47d1f0cf12a44acb7260da63d2a511390518bb62ff2ae4ab342f60d7f678d70",
+    "passwordSalt": "1163b2768c597e628dbb8bd7ea115a02",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:37:15.441Z"
+  },
+  {
+    "uid": "usr_1791311844881_08ccdc9b95e7",
+    "email": "tenant_alpha_iso@catalyx.io",
+    "username": "Tenant Alpha",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791311844881_08ccdc9b95e7",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:37:24.881Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:37:24.881Z",
+    "updatedAt": "2026-10-06T18:37:24.881Z",
+    "passwordHash": "064b53bc5b41e6c7eb731cf866568464ed7546170b634fb4838ed1a4e7b2dbbfcb6c506ea6c5494b9217b09fe3844cefa54c10a893bb8789acea675a330019fc",
+    "passwordSalt": "89884ad5caeaf553906528f8631e4643",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:37:24.881Z"
+  },
+  {
+    "uid": "usr_1791311844938_9efc608f6a42",
+    "email": "tenant_beta_iso@catalyx.io",
+    "username": "Tenant Beta",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791311844938_9efc608f6a42",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:37:24.938Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:37:24.938Z",
+    "updatedAt": "2026-10-06T18:37:24.938Z",
+    "passwordHash": "d0a9cf375bbc5aee3398ec1827600b53af1cac6ccba99def8821b0c29ff3eb7fed906962250f6aee9adc328133e8786c4de5be311db2d520b240f7ef91e10c55",
+    "passwordSalt": "95362163959c8df807464bd55fa1055d",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:37:24.938Z"
+  },
+  {
+    "uid": "usr_1791312375525_be3f7e3026e3",
+    "email": "tenant_alice@catalyx.io",
+    "username": "Alice",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312375525_be3f7e3026e3",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:15.525Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:15.525Z",
+    "updatedAt": "2026-10-06T18:46:15.525Z",
+    "passwordHash": "676d0b16f938f1196c00b64cbed22ce6bc352005c74152f4f720d7c202117e5805fffbbbbf59d5eec5821088b1e119f6a995b1063e93f05d76d94aa0d1d7d0df",
+    "passwordSalt": "1d9c6df63ee6fdd982fd89616a78b016",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:15.525Z"
+  },
+  {
+    "uid": "usr_1791312375588_aa8a440271db",
+    "email": "tenant_bob@catalyx.io",
+    "username": "Bob",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312375588_aa8a440271db",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:15.588Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:15.588Z",
+    "updatedAt": "2026-10-06T18:46:15.588Z",
+    "passwordHash": "c4b21ad0c4a48752107a5ba03157015d72f3b10005dd10de487eccc6a3c04d157c0e9a3f4876340135a29e7b5ad06e46bb29f9404e1ca1361c6f3a159253db29",
+    "passwordSalt": "ec4265abf9dd9ae491a99f88459f16a4",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:15.588Z"
+  },
+  {
+    "uid": "usr_1791312392358_5aed6d6b6946",
+    "email": "final_audit_1791312392200@catalyx.io",
+    "username": "Final Audit User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312392358_5aed6d6b6946",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:32.358Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:32.358Z",
+    "updatedAt": "2026-10-06T18:46:32.358Z",
+    "passwordHash": "36266a12a91d279e88d41b39d5cd4faa4136e0c9eb4300b5a0cfb779532407d32d2f823039e28d2c2cc09d47ed04a117ad6503d0ed466729ff73c2bcbda409b6",
+    "passwordSalt": "09892da470d94bde4b6aec6a234656ff",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:32.358Z",
+    "lockedUntil": 1791312452665
+  },
+  {
+    "uid": "usr_1791312392771_8908f62f1d52",
+    "email": "refresh_user_1791312392200@catalyx.io",
+    "username": "Refresh User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312392771_8908f62f1d52",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:32.771Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:32.771Z",
+    "updatedAt": "2026-10-06T18:46:32.771Z",
+    "passwordHash": "423eda051a90b9e6bdd0746096d641bdee3a9d3260589a2ecdb577fa4146237af83b6bf924b2e87d766f70aad9f3ec3fb5f29aaa0760dc14b661d0b1275e13a9",
+    "passwordSalt": "f50cd6c9b75feaac1b7daf8f3d249b86",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:32.771Z"
+  },
+  {
+    "uid": "usr_1791312393431_b46288721480",
+    "email": "google_user_1791312392200@catalyx.io",
+    "username": "Google User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312393431_b46288721480",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:33.431Z",
+    "googleId": "gid_test_1791312392200",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:46:33.431Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:46:33.431Z",
+    "updatedAt": "2026-10-06T18:46:33.431Z",
+    "passwordHash": "b14e85ec5d64bd5114841eec052f9ca231c0a21ed3fd2e7f0bfdb3439fedd4bc",
+    "passwordSalt": "238ea8cbf169ccf4f8bbf26ab1f01d5a",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:33.431Z"
+  },
+  {
+    "uid": "usr_1791312401153_581ac81ccf8a",
+    "email": "executive_1791312401085@catalyx.io",
+    "username": "Executive Officer",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791312401153_581ac81ccf8a",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:41.153Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:41.153Z",
+    "updatedAt": "2026-10-06T18:46:41.153Z",
+    "passwordHash": "ed7d508d627ef75ea052ecd4d77a92d3857869904a0c3c9fa5dad5b4d0e5753e1320a3f8ea0b6176a2b71ab501545b2081ba9701393a277e5d1b21f9747b82c8",
+    "passwordSalt": "637fa8cf6fa56264e18fd72493b6fb37",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:41.153Z"
+  },
+  {
+    "uid": "usr_1791312401288_5054ae767984",
+    "email": "brute_1791312401245@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312401288_5054ae767984",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:41.288Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:41.288Z",
+    "updatedAt": "2026-10-06T18:46:41.288Z",
+    "passwordHash": "eff29973acf613f1b602653db75856051296c3808ee4b178a6fd30f5e3d364e3dab7b5984906ea1b41c71ba0d820a49f9bb93ebdf8b4e61a0ff2ad1ddd4ebfee",
+    "passwordSalt": "48d152309376bdbb30d8baef76fe301a",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:41.288Z",
+    "lockedUntil": 1791312461467
+  },
+  {
+    "uid": "usr_1791312402831_f13e0557828b",
+    "email": "test_signup_1791312401728@catalyx.io",
+    "username": "Verification Tester",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791312402831_f13e0557828b",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:42.832Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:42.832Z",
+    "updatedAt": "2026-10-06T18:46:42.832Z",
+    "passwordHash": "4ee04a5fcd8aa00a3c141ee1d2d667db7b450647ee1f2a79ee9b6dda1cd175b29cd2b2ca58d4a4d107594c054dd298b0381f9561223d8b33779b54a51a0769be",
+    "passwordSalt": "2793ce5bd0b5c1cc751c596f58555ff0",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:42.832Z"
+  },
+  {
+    "uid": "usr_1791312403981_6f3f9480c025",
+    "email": "googler_1791312403981@gmail.com",
+    "username": "Google Identity User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791312403981_6f3f9480c025",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:43.981Z",
+    "googleId": "gid_1791312403981",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:46:43.981Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:46:43.981Z",
+    "updatedAt": "2026-10-06T18:46:43.981Z",
+    "passwordHash": "0617d121cc2a37e0dbea5ce6534dcf0ffa4ef381f574de798d5c4c6e6b5c346c",
+    "passwordSalt": "5f4d166eac439761b700fb75080518ab",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:43.981Z"
+  },
+  {
+    "uid": "usr_1791312404658_602ec8f61416",
+    "email": "link_target_1791312404657@catalyx.io",
+    "username": "Link Target User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312404658_602ec8f61416",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:44.700Z",
+    "authProviders": [
+      "password",
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:46:44.700Z",
+    "updatedAt": "2026-10-06T18:46:44.701Z",
+    "passwordHash": "cdd191467d391a69af74a4084adf2d797c929326626e0d411596b9fb395fea7abd65a78d35fb30599364ec7c59e5f5b426b8438b767171891a7d73b47f6ab279",
+    "passwordSalt": "3ae4a7c7866f77fb06b29fb3df4e72ef",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:44.700Z",
+    "googleId": "gid_link_1791312404700",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:46:44.701Z"
+  },
+  {
+    "uid": "usr_1791312404701_7011b43acd89",
+    "email": "competitor_1791312404701@catalyx.io",
+    "username": "Competitor User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312404701_7011b43acd89",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:44.740Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:44.740Z",
+    "updatedAt": "2026-10-06T18:46:44.740Z",
+    "passwordHash": "4259cb228ea099806e85e757b55a3eff8f9e7391ad0a8ba5a8228b6ee30732226b662d9f881fb03cd32100226003329ea29b2e0495e7c9a7826adc146f58c5da",
+    "passwordSalt": "0bcfcde8c5544fed29a6523de1e65cb1",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:44.740Z"
+  },
+  {
+    "uid": "usr_1791312404820_e045e32c3261",
+    "email": "forensic_ind_1791312404781@catalyx.io",
+    "username": "Forensic Individual",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312404820_e045e32c3261",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:44.820Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:44.820Z",
+    "updatedAt": "2026-10-06T18:46:44.820Z",
+    "passwordHash": "4211b54435eb8e0af928756e86ef804a3c5065bbd5f4bb2d1980cc394d7d6515be7022834885a06007f72ef9d2a09814484c13cf1a6b6c4756f3bc00214916f6",
+    "passwordSalt": "31c48b2635e014c8539cdb850f28c37c",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:44.820Z"
+  },
+  {
+    "uid": "usr_1791312404861_d6eaeef82786",
+    "email": "forensic_grp_1791312404822@catalyx.io",
+    "username": "Forensic Group User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791312404861_d6eaeef82786",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:44.861Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:44.861Z",
+    "updatedAt": "2026-10-06T18:46:44.861Z",
+    "passwordHash": "fe246c176d6559d31a40ee37844af1fdb5db34955b587aeb86dab06b135ecb151b5722af135957e91913b17f962a1d88ac0b0c7bed26a163f41e48f707352f23",
+    "passwordSalt": "9dd2f1f9e1599f597871cc05c7cc3a20",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:44.861Z"
+  },
+  {
+    "uid": "usr_1791312404902_acab31ad2fe3",
+    "email": "forensic_org_1791312404863@catalyx.io",
+    "username": "Forensic Org User",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791312404902_acab31ad2fe3",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:44.902Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:44.902Z",
+    "updatedAt": "2026-10-06T18:46:44.902Z",
+    "passwordHash": "bda4f977ea2f01466c19a798c54797ef83c0a52af36f817bed90750db87e46cca76d84eb9600c72da34fe154f552abf1b365b478803762ed9124948627e3a671",
+    "passwordSalt": "1b31703ee17652d0c1e6857b4e19b906",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:44.902Z"
+  },
+  {
+    "uid": "usr_1791312404944_6bd3ffe7e2dd",
+    "email": "forensic_invalid_1791312404904@catalyx.io",
+    "username": "Adversary User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791312404944_6bd3ffe7e2dd",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:44.944Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T18:46:44.944Z",
+    "updatedAt": "2026-10-06T18:46:44.944Z",
+    "passwordHash": "c808fb8bd47b6c07d34077b0ed6e042820f0ea4f671830cc954a7f24a73f54531dc97210554b427c4b3cd33b7af4f700cf578c4d9590b3830724de88e94da705",
+    "passwordSalt": "d23f810ee0d748e53ce81e3152d29d43",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:44.944Z"
+  },
+  {
+    "uid": "usr_1791312404946_45f3bec55889",
+    "email": "google_grp_1791312404946@gmail.com",
+    "username": "Google Group Lead",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791312404946_45f3bec55889",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T18:46:44.946Z",
+    "googleId": "gid_forensic_1791312404946",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T18:46:44.946Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T18:46:44.946Z",
+    "updatedAt": "2026-10-06T18:46:44.946Z",
+    "passwordHash": "97f069512c2d67cbb5bddae876804006cac078886deb76cff43c43ffefd86cb1",
+    "passwordSalt": "95dd0eccc68aa34a43ff271dc16efa74",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T18:46:44.946Z"
+  },
+  {
+    "uid": "usr_1791316556167_fcd92a608946",
+    "email": "v32_audit_1791316555934@catalyx.io",
+    "username": "V32 Audit User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316556167_fcd92a608946",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:55:56.167Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:55:56.168Z",
+    "updatedAt": "2026-10-06T19:55:56.168Z",
+    "passwordHash": "7412294af0f1d674d495ddb199d40b515cc9367a239530ef5f6143811365efe75811eef25b94580909cf5a06081d87d105a3e984792c271695171491ee801836",
+    "passwordSalt": "7a7aa6fe76a91a3a165644507369d571",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:55:56.168Z"
+  },
+  {
+    "uid": "usr_legacy_1791316565352",
+    "email": "legacy_sha256_user_1791316565348@catalyx.io",
+    "username": "Legacy User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_legacy",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:56:05.352Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:56:05.353Z",
+    "updatedAt": "2026-10-06T19:56:05.353Z",
+    "passwordHash": "385942523022950f891e04812a2468cbbc3cf80d4abdb0359f88b767abb4c9df",
+    "passwordSalt": "63c03afdb6696d7db8c9e1746b843149",
+    "hashAlgorithm": "sha256",
+    "hashVersion": 1,
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "2026.1"
+  },
+  {
+    "uid": "usr_1791316646591_4dcdf3b82e93",
+    "email": "executive_1791316646518@catalyx.io",
+    "username": "Executive Officer",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791316646591_4dcdf3b82e93",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:57:26.591Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:57:26.591Z",
+    "updatedAt": "2026-10-06T19:57:26.591Z",
+    "passwordHash": "bbbc4f7bdd1d5a81d0f58e471efdbb589da29ce8075eb31d0d9d7d9a5b521826783fd77d85545d19ca76fbc515cb040117e52357651b132ee4f67993702fb165",
+    "passwordSalt": "4f6c4e77837250431c94d8c3e1dbccf4",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:57:26.591Z"
+  },
+  {
+    "uid": "usr_1791316646790_219128473e61",
+    "email": "brute_1791316646678@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316646790_219128473e61",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:57:26.790Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:57:26.790Z",
+    "updatedAt": "2026-10-06T19:57:26.790Z",
+    "passwordHash": "219b2ac967363c7bc8b258080192ff6abe330078c6084eaca33d9bd026ac9a9832a24f0c3a5930fa1668096b7be7a0d5335325253936bca101aa199cc991bd29",
+    "passwordSalt": "ce5f1bf757e4c77682c56b7962c2f829",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:57:26.790Z",
+    "lockedUntil": 1791316707040
+  },
+  {
+    "uid": "usr_legacy_1791316647211",
+    "email": "legacy_1791316647211@catalyx.io",
+    "username": "Legacy User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_legacy_1791316647211",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:57:27.211Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:57:27.211Z",
+    "updatedAt": "2026-10-06T19:57:27.252Z",
+    "passwordHash": "ab946e388d685eca00761528ba9ff777088d1367eb6ff420bf960e6a9cd70bb9cdcbf3ea945474eb7a351af19b7410f7efae2ac08d91ac3e046d327d663a6b7b",
+    "passwordSalt": "5eea416787c82c5c718860520044ed04",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    }
+  },
+  {
+    "uid": "usr_1791316654367_3596fdfa0e6e",
+    "email": "executive.tester.1791316653584@catalyx.enterprise.io",
+    "username": "Executive Tester",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791316654367_3596fdfa0e6e",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:57:34.367Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:57:34.367Z",
+    "updatedAt": "2026-10-06T19:57:34.367Z",
+    "passwordHash": "1cbf98a9222d146d7f5bae23954e696b1d41a2699480698dd29ab96d6ac79641c7ff48edad09c0647bfa0983d733a699e1b7bc85139565fd19eebe86d0c5e14e",
+    "passwordSalt": "52502482e0c04fec6fb50da49f9a9255",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:57:34.367Z"
+  },
+  {
+    "uid": "usr_1791316655734_f4cdda13a05e",
+    "email": "recovery.user.1791316655001@catalyx.enterprise.io",
+    "username": "Recovery User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316655734_f4cdda13a05e",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:57:35.734Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:57:35.734Z",
+    "updatedAt": "2026-10-06T19:57:37.735Z",
+    "passwordHash": "50538aa37955c9555567183a3e53a2117684a5bfeeac5f0a35ddd2113ecff04cd1ff36d76a7c863b8e57e7e6a991490a4fd3c1a949df8b0decb16903d8ecde81",
+    "passwordSalt": "c890160260d542590dec04e02158ce5b",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:57:35.734Z"
+  },
+  {
+    "uid": "usr_1791316659043_45b1dc8534dd",
+    "email": "tenant.alpha.1791316658474@catalyx.io",
+    "username": "Tenant Alpha Admin",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791316659043_45b1dc8534dd",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:57:39.043Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:57:39.043Z",
+    "updatedAt": "2026-10-06T19:57:39.043Z",
+    "passwordHash": "36fcc10849e3a1d1b9b104d7da5ae08b4735c32aba1283c2b99b5be5af3cd1a72a608f591194cf7c7b8810fd116b16d8f2cfa58430594732f8c0704527eff22b",
+    "passwordSalt": "06d5360bf7d067610c861d4ceb5cc345",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:57:39.043Z"
+  },
+  {
+    "uid": "usr_1791316660188_8ad8298bc901",
+    "email": "tenant.beta.1791316658474@catalyx.io",
+    "username": "Tenant Beta Creator",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316660188_8ad8298bc901",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:57:40.189Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:57:40.189Z",
+    "updatedAt": "2026-10-06T19:57:40.189Z",
+    "passwordHash": "9e7cd4e8e09a86283f93344d88b139466043548498682ecf9700f4c2e843612d1e637ff84eefd49c6f207e6d8b93c84a7eb98deff390f5abc0a8733999fabf79",
+    "passwordSalt": "137fb424b4997c6a831b0f22f289f252",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:57:40.189Z"
+  },
+  {
+    "uid": "usr_1791316796049_ba12fc46c04a",
+    "email": "executive_1791316795886@catalyx.io",
+    "username": "Executive Officer",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791316796049_ba12fc46c04a",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:59:56.049Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:59:56.049Z",
+    "updatedAt": "2026-10-06T19:59:56.049Z",
+    "passwordHash": "d9bf21bf5425779df5f3a98f2cd36dea4227d8a7369a0ba0db353a396d1b9f395afee720a4802f5c4a410dbc1b7527fa32994536183ef1e4927a6252a7f74819",
+    "passwordSalt": "25f94e006cbbe72c9441c4c10d6a5aff",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:59:56.049Z"
+  },
+  {
+    "uid": "usr_1791316796554_e08c67e2faa2",
+    "email": "brute_1791316796311@catalyx.io",
+    "username": "Brute Target",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316796554_e08c67e2faa2",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:59:56.556Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:59:56.556Z",
+    "updatedAt": "2026-10-06T19:59:56.556Z",
+    "passwordHash": "27e94fee71b4cc586bea4929ff17ad2735b962fe4e3c255ebd4716fb7aa1159f373ead1e5d77d27310c92f093ef142ea225a26139cfc319c3f6b3ecf367474df",
+    "passwordSalt": "d4f6971ed42a2e35aec7e26499da0948",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 5,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:59:56.556Z",
+    "lockedUntil": 1791316857317
+  },
+  {
+    "uid": "usr_legacy_1791316797525",
+    "email": "legacy_1791316797525@catalyx.io",
+    "username": "Legacy User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_legacy_1791316797525",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:59:57.525Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:59:57.525Z",
+    "updatedAt": "2026-10-06T19:59:57.581Z",
+    "passwordHash": "f558c68bf99d27fcbd0065b92c7bde93cd69335645e7dbdc313d72cdbbe1f36c4e75369a0e2d22b8046aee088d5cf922055e2af9e789d08b93b66cb3395f5ec6",
+    "passwordSalt": "c63d3cfb1ef32f4737d636702364aaaa",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    }
+  },
+  {
+    "uid": "usr_1791316798657_2c1bd81a3143",
+    "email": "test_signup_1791316797816@catalyx.io",
+    "username": "Verification Tester",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791316798657_2c1bd81a3143",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:59:58.657Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T19:59:58.657Z",
+    "updatedAt": "2026-10-06T19:59:58.657Z",
+    "passwordHash": "80ce7adeaf9e32855bb34c45c192a8daa71407755d6ff798da1a33fe66c5a4ef1d800959d642797516b5c80dc3e76e57379cc301c8c9d23d133acc5380d0b9ff",
+    "passwordSalt": "9ac9b38b37d730c7ddb2b00db62ba557",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:59:58.657Z"
+  },
+  {
+    "uid": "usr_1791316799245_b769442eec3c",
+    "email": "googler_1791316799245@gmail.com",
+    "username": "Google Identity User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791316799245_b769442eec3c",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T19:59:59.245Z",
+    "googleId": "gid_1791316799245",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T19:59:59.245Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T19:59:59.245Z",
+    "updatedAt": "2026-10-06T19:59:59.245Z",
+    "passwordHash": "860fd43968454432f39ae4c8ef412341717b44b42b8352e0605327c7edad033f",
+    "passwordSalt": "1328ca9bb6e4a3fefa5004d08aab31bf",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T19:59:59.245Z"
+  },
+  {
+    "uid": "usr_1791316799964_3abc222e422d",
+    "email": "link_target_1791316799964@catalyx.io",
+    "username": "Link Target User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316799964_3abc222e422d",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T20:00:00.013Z",
+    "authProviders": [
+      "password",
+      "google"
+    ],
+    "createdAt": "2026-10-06T20:00:00.013Z",
+    "updatedAt": "2026-10-06T20:00:00.014Z",
+    "passwordHash": "4535d6111e7b72da06e252432e144a25e9216664e3f5f0529562a9ff08e536d21726d29624a85ce671dff8af695c119e94ee55ee1cdc40fa5ee90765f4061628",
+    "passwordSalt": "8b99ffdb66b2072af604e13d1fbadfdb",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T20:00:00.013Z",
+    "googleId": "gid_link_1791316800013",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T20:00:00.014Z"
+  },
+  {
+    "uid": "usr_1791316800014_309471448d2e",
+    "email": "competitor_1791316800014@catalyx.io",
+    "username": "Competitor User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316800014_309471448d2e",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T20:00:00.054Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T20:00:00.054Z",
+    "updatedAt": "2026-10-06T20:00:00.054Z",
+    "passwordHash": "e41ee05fb51b7cbea5485f19f2f6b71e6c50ce438573f62ecb9cfbc4a25ae449aa7ac49dba838e83be264af0c41681c3a37c010c3e11269026d278b7735b15c2",
+    "passwordSalt": "be7f8dffad2f923e42a27b719dd7520d",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T20:00:00.054Z"
+  },
+  {
+    "uid": "usr_1791316800140_460e6277b34d",
+    "email": "forensic_ind_1791316800094@catalyx.io",
+    "username": "Forensic Individual",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316800140_460e6277b34d",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T20:00:00.141Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T20:00:00.141Z",
+    "updatedAt": "2026-10-06T20:00:00.141Z",
+    "passwordHash": "acdc621b1668534cc2e3d6cc7bdc069446928a0503551067908b0516e877b505b33ae56fe21318bc7132d35c14be90f6376474ca0152612a8e5067e9ad38539b",
+    "passwordSalt": "096cff5b8946baeb304f0d9da51dddea",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T20:00:00.141Z"
+  },
+  {
+    "uid": "usr_1791316800186_c40e2a2ab6fd",
+    "email": "forensic_grp_1791316800143@catalyx.io",
+    "username": "Forensic Group User",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791316800186_c40e2a2ab6fd",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T20:00:00.186Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T20:00:00.186Z",
+    "updatedAt": "2026-10-06T20:00:00.186Z",
+    "passwordHash": "07fc4567b85f4075074fad4b4dff31a0d02556d343852ffca042b197594bd17b8f95c07cd145e4a50d9489b426876d5dff526fff122fb0d98aa82ae6d833d575",
+    "passwordSalt": "43993edde9cb033635ecab1b97de33da",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T20:00:00.186Z"
+  },
+  {
+    "uid": "usr_1791316800235_49a7978b1056",
+    "email": "forensic_org_1791316800188@catalyx.io",
+    "username": "Forensic Org User",
+    "accountType": "ORGANIZATION",
+    "organizationId": "org_usr_1791316800235_49a7978b1056",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T20:00:00.235Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T20:00:00.235Z",
+    "updatedAt": "2026-10-06T20:00:00.235Z",
+    "passwordHash": "87c7e2415ea773fffac90c47f42668b5bb1f48e7191021916574a5b2ba8de99f93cf17b01713ac8b7f3c5e35bfe0abc72745bca81e117f895a981b144d182a42",
+    "passwordSalt": "bab328c5bb68b241eac2c7b877d44bb8",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T20:00:00.235Z"
+  },
+  {
+    "uid": "usr_1791316800285_3ea636df9179",
+    "email": "forensic_invalid_1791316800238@catalyx.io",
+    "username": "Adversary User",
+    "accountType": "INDIVIDUAL",
+    "organizationId": "org_usr_1791316800285_3ea636df9179",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T20:00:00.285Z",
+    "authProviders": [
+      "password"
+    ],
+    "createdAt": "2026-10-06T20:00:00.285Z",
+    "updatedAt": "2026-10-06T20:00:00.285Z",
+    "passwordHash": "29e55432beea2bfbd976fface13dc20ca5359883cd1d6325f07839290e350682c5fa7cec546d0226aadf8c04893b228c0603fa143a289aa2e6451a749f186672",
+    "passwordSalt": "8275532ad9e3ce1f8d87e108c77134af",
+    "hashAlgorithm": "scrypt",
+    "hashVersion": 2,
+    "hashParams": {
+      "N": 16384,
+      "r": 8,
+      "p": 1,
+      "keylen": 64
+    },
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T20:00:00.285Z"
+  },
+  {
+    "uid": "usr_1791316800288_223856a732b2",
+    "email": "google_grp_1791316800287@gmail.com",
+    "username": "Google Group Lead",
+    "accountType": "GROUP",
+    "organizationId": "org_usr_1791316800288_223856a732b2",
+    "role": "user",
+    "emailVerified": true,
+    "emailVerifiedAt": "2026-10-06T20:00:00.288Z",
+    "googleId": "gid_forensic_1791316800287",
+    "googleLinked": true,
+    "googleLinkedAt": "2026-10-06T20:00:00.288Z",
+    "authProviders": [
+      "google"
+    ],
+    "createdAt": "2026-10-06T20:00:00.288Z",
+    "updatedAt": "2026-10-06T20:00:00.288Z",
+    "passwordHash": "d2d96654c1efc784d02c3e2189b14abdf435b1dd3cb302f9092cd7a40bed5e3a",
+    "passwordSalt": "33476995987c84eda6509591fca2c6f6",
+    "failedAttempts": 0,
+    "termsAcceptedVersion": "v2026.3.2",
+    "termsAcceptedAt": "2026-10-06T20:00:00.288Z"
   }
 ]

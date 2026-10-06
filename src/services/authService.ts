@@ -93,11 +93,23 @@ export class AuthService {
     if (!password || password.length < 8) {
       return { valid: false, error: 'Password must be at least 8 characters long.' };
     }
-    if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+    if (password.length > 256) {
+      return { valid: false, error: 'Password must not exceed 256 characters.' };
+    }
+    // Unicode-aware letter checking (ASCII or Unicode \p{L})
+    const hasLetter = /[a-zA-Z]/.test(password) || /\p{L}/u.test(password);
+    if (!hasLetter) {
+      return { valid: false, error: 'Password must include at least one letter.' };
+    }
+    // Unicode-aware number or symbol checking (ASCII or Unicode digits/punctuation/symbols)
+    const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) || /[\p{N}\p{P}\p{S}]/u.test(password);
+    if (!hasNumberOrSymbol) {
       return { valid: false, error: 'Password must include at least one number or symbol.' };
     }
-    if (!/[a-zA-Z]/.test(password)) {
-      return { valid: false, error: 'Password must include at least one letter.' };
+    // Protect against trivial passwords
+    const trivialList = ['password', '12345678', 'qwerty123', 'admin1234', 'catalyx123'];
+    if (trivialList.includes(password.toLowerCase())) {
+      return { valid: false, error: 'Password is too common and easily guessed. Please choose a stronger password.' };
     }
     return { valid: true };
   }
@@ -139,13 +151,14 @@ export class AuthService {
   }
 
   /**
-   * Registers a new account with comprehensive validation, hashing, and legal compliance
+   * Registers a new account with comprehensive validation, server-authoritative persistence, and trial creation
    */
   public async register(params: RegisterParams): Promise<AuthResult> {
     const email = params.email.trim().toLowerCase();
     const username = params.username.trim();
     const password = params.password;
     const confirmPassword = params.confirmPassword;
+    const accountType = params.accountType || 'INDIVIDUAL';
 
     // 1. Mandatory Terms Check
     if (!params.acceptTerms) {
@@ -166,75 +179,23 @@ export class AuthService {
     }
 
     // 4. Username Format Validation
-    if (username.length < 3 || username.length > 32) {
-      return { success: false, error: 'Username must be between 3 and 32 characters.' };
+    if (username.length < 2 || username.length > 64) {
+      return { success: false, error: 'Display name must be between 2 and 64 characters.' };
     }
 
-    // 5. Password Strength Validation
+    // 5. Password Confirmation Matching
+    if (password !== confirmPassword) {
+      return { success: false, error: 'Password confirmation does not match.' };
+    }
+
+    // 6. Password Strength Validation
     const strengthCheck = this.validatePasswordStrength(password);
     if (!strengthCheck.valid) {
       return { success: false, error: strengthCheck.error };
     }
 
-    // 6. Password Confirmation Matching
-    if (password !== confirmPassword) {
-      return { success: false, error: 'Password confirmation does not match.' };
-    }
-
-    // 7. Duplicate Account Detection
-    const users = getSimData<UserProfile>('users');
-    const existingUser = users.find(u => u.email.toLowerCase() === email);
-    const credentials = this.getCredentials();
-    const existingCred = credentials.find(c => c.email.toLowerCase() === email);
-
-    if (existingUser || existingCred) {
-      return {
-        success: false,
-        error: 'An account with this email address already exists. Please sign in instead.'
-      };
-    }
-
-    // 8. Cryptographic Password Hashing
-    const salt = this.generateSalt();
-    const passwordHash = await this.hashPassword(password, salt);
-
-    // 9. Create User Profile
-    const newUser = await dbService.registerUser(username, email);
-    
-    // Update profile attributes with account type and terms
-    const accountType = params.accountType || 'INDIVIDUAL';
-    const updatedProfile = await dbService.updateUserProfile(newUser.uid, {
-      accountType,
-      organizationId: `org_${newUser.uid}`,
-      termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
-      termsAcceptedAt: new Date().toISOString(),
-      emailVerified: true,
-      emailVerifiedAt: new Date().toISOString(),
-      role: 'user'
-    });
-
-    // 10. Store Secure Credential
-    credentials.push({
-      email,
-      uid: updatedProfile.uid,
-      passwordHash,
-      salt,
-      failedAttempts: 0
-    });
-    this.saveCredentials(credentials);
-
-    // 11. Authoritative 1-Month Free Trial Activation on Client
-    try {
-      const { BillingService } = await import('./billingService');
-      BillingService.initializeTrialSubscription(
-        updatedProfile.organizationId || updatedProfile.uid,
-        accountType
-      );
-    } catch (err) {
-      console.warn('[AUTH] Could not initialize client trial subscription:', err);
-    }
-
-    // 12. Sync with Server Registration Route & Terms Acceptance
+    // 7. Authoritative Server Registration
+    let serverData: any = null;
     try {
       const serverRes = await fetch('/api/auth/register', {
         method: 'POST',
@@ -248,36 +209,120 @@ export class AuthService {
           acceptTerms: true
         })
       });
-      if (serverRes.ok) {
-        const data = await serverRes.json();
-        if (data.sessionToken) {
-          safeStorage.setSessionToken(data.sessionToken);
-        }
+
+      serverData = await serverRes.json();
+
+      if (!serverRes.ok || !serverData.success) {
+        return {
+          success: false,
+          error: serverData?.error || 'Registration failed.'
+        };
       }
-    } catch {
-      // Local fallback in browser mock mode
+    } catch (networkErr: any) {
+      // In Node test environment without running HTTP server:
+      if (typeof window === 'undefined' && (globalThis as any).__serverAuthStore) {
+        try {
+          const directRes = await (globalThis as any).__serverAuthStore.register({
+            email,
+            username,
+            password,
+            confirmPassword,
+            accountType,
+            acceptTerms: true
+          });
+          if (!directRes.success || !directRes.user) {
+            return {
+              success: false,
+              error: directRes.error || 'Registration failed.'
+            };
+          }
+          serverData = directRes;
+        } catch (nodeErr: any) {
+          return {
+            success: false,
+            error: nodeErr.message || 'Registration failed.'
+          };
+        }
+      } else {
+        return {
+          success: false,
+          error: networkErr.message || 'Unable to connect to authentication server. Please check your connection.'
+        };
+      }
     }
 
+    if (!serverData?.user) {
+      return { success: false, error: 'Server registration returned incomplete payload.' };
+    }
+
+    // 8. Authoritative Session Token Storage
+    if (serverData.sessionToken) {
+      safeStorage.setSessionToken(serverData.sessionToken);
+    }
+
+    // 9. Sync User Profile Locally with the canonical Server UID
+    const serverUser = serverData.user;
+    const uid = serverUser.uid;
+
+    let userProfile = await dbService.registerUser(serverUser.username, serverUser.email, uid);
+    userProfile = await dbService.updateUserProfile(uid, {
+      accountType: serverUser.accountType || accountType,
+      organizationId: serverUser.organizationId || `org_${uid}`,
+      role: serverUser.role || 'user',
+      emailVerified: serverUser.emailVerified ?? true,
+      emailVerifiedAt: serverUser.emailVerifiedAt || new Date().toISOString(),
+      termsAcceptedVersion: serverUser.termsAcceptedVersion || LegalPolicyService.CURRENT_VERSION,
+      termsAcceptedAt: serverUser.termsAcceptedAt || new Date().toISOString()
+    });
+
+    // 10. Synchronize Client Trial Subscription
+    try {
+      const { BillingService } = await import('./billingService');
+      BillingService.initializeTrialSubscription(
+        userProfile.organizationId || userProfile.uid,
+        accountType
+      );
+    } catch (err) {
+      console.warn('[AUTH] Could not initialize client trial subscription:', err);
+    }
+
+    // 11. Sync credentials store for local offline reset/testing
+    const credentials = this.getCredentials();
+    const existingCredIdx = credentials.findIndex(c => c.email.toLowerCase() === email);
+    if (existingCredIdx !== -1) {
+      credentials[existingCredIdx].uid = uid;
+    } else {
+      credentials.push({
+        email,
+        uid,
+        passwordHash: '',
+        salt: '',
+        failedAttempts: 0
+      });
+    }
+    this.saveCredentials(credentials);
+
+    // 12. Record Legal Terms Acceptance on server
     try {
       await fetch('/api/legal/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: updatedProfile.uid,
-          userEmail: updatedProfile.email,
+          userId: uid,
+          userEmail: email,
           termsVersion: LegalPolicyService.CURRENT_VERSION
         })
       });
     } catch {
-      // Local fallback in simulated mode
+      // non-blocking
     }
 
-    // 13. Establish active session
-    safeStorage.setActiveSession(updatedProfile.uid);
+    // 12. Establish canonical active session
+    safeStorage.setActiveSession(uid);
 
     return {
       success: true,
-      user: updatedProfile
+      user: userProfile
     };
   }
 
@@ -300,6 +345,9 @@ export class AuthService {
       return { success: false, error: 'Please enter a valid email address.' };
     }
 
+    let serverData: any = null;
+    let networkFailed = false;
+
     // Attempt authoritative backend server authentication first
     try {
       const serverRes = await fetch('/api/auth/login', {
@@ -308,103 +356,70 @@ export class AuthService {
         body: JSON.stringify({ email, password })
       });
 
-      const serverData = await serverRes.json();
+      serverData = await serverRes.json();
 
       if (!serverRes.ok || !serverData.success) {
         // SERVER EXPLICITLY REJECTED CREDENTIALS (e.g. 401 Unauthorized, locked account, invalid password)
-        // CRITICAL SECURITY INVARIANT: Invalidate any active session immediately!
         safeStorage.clearActiveSession();
         return {
           success: false,
-          error: serverData.error || 'Incorrect email or password.',
-          retryAfterSeconds: serverData.retryAfterSeconds
+          error: serverData?.error || 'Incorrect email or password.',
+          retryAfterSeconds: serverData?.retryAfterSeconds
         };
       }
-
-      // Successful server-side authentication
-      if (serverData.sessionToken) {
-        safeStorage.setSessionToken(serverData.sessionToken);
-      }
-      if (serverData.user) {
-        safeStorage.setActiveSession(serverData.user.uid);
-        let profile = await dbService.getUserProfile(serverData.user.uid);
-        if (!profile) {
-          profile = await dbService.registerUser(serverData.user.username, serverData.user.email);
-        }
-        return {
-          success: true,
-          user: profile
-        };
-      }
-      safeStorage.clearActiveSession();
-      return { success: false, error: 'Server authentication payload incomplete.' };
     } catch {
-      // Offline fallback: Network connection failure to backend server
+      networkFailed = true;
     }
 
-    // In offline-only sandbox or test environments without backend HTTP listener:
-    const credentials = this.getCredentials();
-    const credIndex = credentials.findIndex(c => c.email.toLowerCase() === email);
-
-    if (credIndex === -1) {
-      safeStorage.clearActiveSession();
-      return {
-        success: false,
-        error: 'Incorrect email or password.'
-      };
-    }
-
-    const cred = credentials[credIndex];
-
-    // Check for active lockout
-    const now = Date.now();
-    if (cred.lockedUntil && cred.lockedUntil > now) {
-      safeStorage.clearActiveSession();
-      const remainingSeconds = Math.ceil((cred.lockedUntil - now) / 1000);
-      return {
-        success: false,
-        error: `Account temporarily locked due to excessive failed attempts. Please try again in ${remainingSeconds} seconds or use account recovery.`,
-        retryAfterSeconds: remainingSeconds
-      };
-    }
-
-    // Verify Password Hash
-    const computedHash = await this.hashPassword(password, cred.salt);
-    if (computedHash !== cred.passwordHash) {
-      safeStorage.clearActiveSession();
-      cred.failedAttempts = (cred.failedAttempts || 0) + 1;
-
-      if (cred.failedAttempts >= MAX_FAILED_ATTEMPTS) {
-        cred.lockedUntil = now + LOCKOUT_DURATION_MS;
-        this.saveCredentials(credentials);
+    // In Node test environment where HTTP server is not listening:
+    if (networkFailed) {
+      if (typeof window === 'undefined' && (globalThis as any).__serverAuthStore) {
+        try {
+          const directRes = await (globalThis as any).__serverAuthStore.authenticate({ email, password });
+          if (!directRes.success || !directRes.user) {
+            safeStorage.clearActiveSession();
+            return {
+              success: false,
+              error: directRes.error || 'Incorrect email or password.',
+              retryAfterSeconds: directRes.retryAfterSeconds
+            };
+          }
+          serverData = directRes;
+        } catch {
+          safeStorage.clearActiveSession();
+          return { success: false, error: 'Authentication service unreachable.' };
+        }
+      } else {
+        safeStorage.clearActiveSession();
         return {
           success: false,
-          error: `Account temporarily locked due to excessive failed attempts. Please try again in 60 seconds or use account recovery.`,
-          retryAfterSeconds: 60
+          error: 'Unable to connect to authentication server. Please verify your network connection.'
         };
       }
-
-      this.saveCredentials(credentials);
-      return {
-        success: false,
-        error: 'Incorrect email or password.'
-      };
     }
 
-    // Successful offline login: reset failed attempts counter
-    cred.failedAttempts = 0;
-    delete cred.lockedUntil;
-    this.saveCredentials(credentials);
+    if (!serverData?.user) {
+      safeStorage.clearActiveSession();
+      return { success: false, error: 'Server authentication payload incomplete.' };
+    }
 
-    // Retrieve full user profile
-    let profile = await dbService.getUserProfile(cred.uid);
+    // Successful authoritative authentication
+    const uid = serverData.user.uid;
+    if (serverData.sessionToken) {
+      safeStorage.setSessionToken(serverData.sessionToken);
+    }
+    safeStorage.setActiveSession(uid);
+
+    let profile = await dbService.getUserProfile(uid);
     if (!profile) {
-      // Re-create profile if missing from users collection
-      profile = await dbService.registerUser(email.split('@')[0], email);
+      profile = await dbService.registerUser(serverData.user.username, serverData.user.email, uid);
     }
-
-    // Establish active session
-    safeStorage.setActiveSession(profile.uid);
+    profile = await dbService.updateUserProfile(uid, {
+      accountType: serverData.user.accountType || profile.accountType,
+      organizationId: serverData.user.organizationId || profile.organizationId,
+      role: serverData.user.role || profile.role,
+      emailVerified: serverData.user.emailVerified ?? true
+    });
 
     return {
       success: true,
@@ -437,7 +452,23 @@ export class AuthService {
   public async requestPasswordReset(email: string): Promise<{ success: boolean; message: string; demoToken?: string }> {
     const cleanEmail = email.trim().toLowerCase();
     const credentials = this.getCredentials();
-    const credIndex = credentials.findIndex(c => c.email.toLowerCase() === cleanEmail);
+    let credIndex = credentials.findIndex(c => c.email.toLowerCase() === cleanEmail);
+
+    if (credIndex === -1) {
+      const users = getSimData<UserProfile>('users');
+      const foundUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+      const serverAccount = (globalThis as any).__serverAuthStore?.getAccountByEmail?.(cleanEmail);
+      if (foundUser || serverAccount) {
+        credentials.push({
+          email: cleanEmail,
+          uid: foundUser?.uid || serverAccount?.uid || 'usr_temp',
+          passwordHash: '',
+          salt: '',
+          failedAttempts: 0
+        });
+        credIndex = credentials.length - 1;
+      }
+    }
 
     if (credIndex === -1) {
       // Return ambiguous message for account security/enumeration prevention
@@ -503,6 +534,28 @@ export class AuthService {
     delete cred.resetTokenExpires;
     delete cred.lockedUntil;
     this.saveCredentials(credentials);
+
+    if (typeof window === 'undefined' && (globalThis as any).__serverAuthStore) {
+      const serverAcc = (globalThis as any).__serverAuthStore.getAccountByEmail?.(cleanEmail);
+      if (serverAcc) {
+        const serverSalt = (globalThis as any).__serverAuthStore.generateSalt();
+        serverAcc.passwordSalt = serverSalt;
+        serverAcc.passwordHash = (globalThis as any).__serverAuthStore.hashPasswordScrypt
+          ? (globalThis as any).__serverAuthStore.hashPasswordScrypt(newPassword, serverSalt)
+          : (globalThis as any).__serverAuthStore.hashPasswordWithSalt(newPassword, serverSalt);
+        serverAcc.hashAlgorithm = 'scrypt';
+        serverAcc.hashVersion = 2;
+        serverAcc.hashParams = {
+          N: 16384,
+          r: 8,
+          p: 1,
+          keylen: 64
+        };
+        serverAcc.failedAttempts = 0;
+        delete serverAcc.lockedUntil;
+        (globalThis as any).__serverAuthStore.persistAccountsToDisk?.();
+      }
+    }
 
     return {
       success: true,
@@ -857,16 +910,21 @@ export class AuthService {
       }
 
       if (data.user) {
-        const profile = await dbService.getUserProfile(data.user.uid) || await dbService.registerUser(data.user.username, data.user.email);
-        const synced = await dbService.updateUserProfile(profile.uid, {
-          emailVerified: true,
-          emailVerifiedAt: data.user.emailVerifiedAt || new Date().toISOString(),
-          accountType: data.user.accountType
-        });
+        const uid = data.user.uid;
         if (data.sessionToken) {
           safeStorage.setSessionToken(data.sessionToken);
         }
-        safeStorage.setActiveSession(synced.uid);
+        safeStorage.setActiveSession(uid);
+        let profile = await dbService.getUserProfile(uid);
+        if (!profile) {
+          profile = await dbService.registerUser(data.user.username || params.name || data.user.email.split('@')[0], data.user.email, uid);
+        }
+        const synced = await dbService.updateUserProfile(uid, {
+          emailVerified: true,
+          emailVerifiedAt: data.user.emailVerifiedAt || new Date().toISOString(),
+          accountType: data.user.accountType || params.accountType || 'INDIVIDUAL',
+          organizationId: data.user.organizationId || `org_${uid}`
+        });
         return { success: true, user: synced };
       }
 

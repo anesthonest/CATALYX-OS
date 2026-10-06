@@ -855,7 +855,7 @@ async function runAuthenticationAndIdentitySecurityTests() {
   assert(
     loginSuccess.success === true && loginSuccess.user?.email === testEmail,
     suite,
-    'Valid authentication succeeds against salted SHA-256 hash'
+    'Valid authentication succeeds against memory-hard scrypt hash'
   );
 
   // 9. Brute-Force Rate Limiting & Account Lockout
@@ -1000,6 +1000,98 @@ async function runAuthenticationAndIdentitySecurityTests() {
     suite,
     'Logout clears active session'
   );
+
+  // 14. Modern scrypt Parameter Metadata Verification
+  const scryptAccount = serverAuthStore.getAccountByEmail(testEmail);
+  assert(
+    scryptAccount !== null && scryptAccount?.hashAlgorithm === 'scrypt',
+    suite,
+    'Modern user account stores explicit scrypt algorithm identifier'
+  );
+  assert(
+    scryptAccount?.hashVersion === 2,
+    suite,
+    'Modern user account stores hashVersion 2'
+  );
+  assert(
+    scryptAccount?.hashParams?.N === 16384 &&
+    scryptAccount?.hashParams?.r === 8 &&
+    scryptAccount?.hashParams?.p === 1 &&
+    scryptAccount?.hashParams?.keylen === 64,
+    suite,
+    'scrypt parameters conform strictly to audited OWASP specification (N=16384, r=8, p=1, keylen=64)'
+  );
+
+  // 15. Transparent Atomic Legacy SHA-256 to scrypt Migration
+  const legacyEmail = `legacy_${Date.now()}@catalyx.io`;
+  const legacyPass = 'LegacyPass2026!';
+  const legacySalt = serverAuthStore.generateSalt();
+  const legacyHash = serverAuthStore.hashPasswordWithSalt(legacyPass, legacySalt);
+  const legacyAcc: any = {
+    uid: `usr_legacy_${Date.now()}`,
+    email: legacyEmail,
+    username: 'Legacy User',
+    accountType: 'INDIVIDUAL',
+    organizationId: `org_legacy_${Date.now()}`,
+    role: 'user',
+    emailVerified: true,
+    emailVerifiedAt: new Date().toISOString(),
+    authProviders: ['password'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    passwordHash: legacyHash,
+    passwordSalt: legacySalt,
+    hashAlgorithm: 'sha256',
+    hashVersion: 1,
+    failedAttempts: 0,
+    termsAcceptedVersion: 'v2026.3.2'
+  };
+  (serverAuthStore as any).accounts.set(legacyEmail, legacyAcc);
+  (serverAuthStore as any).accountsByUid.set(legacyAcc.uid, legacyAcc);
+
+  // Failed login against legacy account must NOT mutate the password hash
+  const failedLegacy = await serverAuthStore.authenticate({
+    email: legacyEmail,
+    password: 'WrongPassword123!'
+  });
+  assert(!failedLegacy.success, suite, 'Failed login on legacy account is rejected');
+  const unchangedLegacy = serverAuthStore.getAccountByEmail(legacyEmail);
+  assert(
+    unchangedLegacy?.passwordHash === legacyHash && unchangedLegacy?.hashAlgorithm === 'sha256',
+    suite,
+    'Failed login never mutates or migrates stored legacy password hash'
+  );
+
+  // Successful login against legacy account triggers transparent atomic migration to scrypt
+  const successfulMigration = await serverAuthStore.authenticate({
+    email: legacyEmail,
+    password: legacyPass
+  });
+  assert(successfulMigration.success, suite, 'Authentication against legacy SHA-256 account succeeds');
+  const migratedAcc = serverAuthStore.getAccountByEmail(legacyEmail);
+  assert(
+    migratedAcc?.hashAlgorithm === 'scrypt' && migratedAcc?.hashVersion === 2,
+    suite,
+    'Successful legacy authentication transparently and atomically migrates account to scrypt (v2)'
+  );
+  assert(
+    migratedAcc?.passwordHash !== legacyHash && migratedAcc?.passwordHash.length === 128,
+    suite,
+    'Migrated account stores 512-bit (128 hex chars) memory-hard scrypt hash'
+  );
+
+  // Subsequent login verifies with scrypt
+  const subsequentLogin = await serverAuthStore.authenticate({
+    email: legacyEmail,
+    password: legacyPass
+  });
+  assert(subsequentLogin.success, suite, 'Subsequent authentication validates successfully using migrated scrypt hash');
+
+  // 16. Session Revocation & Invalidation
+  const activeSessToken = subsequentLogin.sessionToken!;
+  assert(serverAuthStore.getSession(activeSessToken) !== null, suite, 'Newly issued session is valid');
+  serverAuthStore.revokeSession(activeSessToken);
+  assert(serverAuthStore.getSession(activeSessToken) === null, suite, 'Revoked session is immediately invalidated');
 }
 
 async function runEconomicPolicyRegressionAndAntiLegacyTests() {

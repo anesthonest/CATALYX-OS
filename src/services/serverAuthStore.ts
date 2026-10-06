@@ -15,6 +15,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import util from 'util';
 import { emailDeliveryService } from './emailDeliveryService';
 import { LegalPolicyService } from './legal/legalPolicyService';
 
@@ -25,6 +26,14 @@ export interface PendingRegistration {
   accountType: 'INDIVIDUAL' | 'GROUP' | 'ORGANIZATION';
   passwordHash: string;
   passwordSalt: string;
+  hashAlgorithm?: 'scrypt' | 'sha256';
+  hashVersion?: number;
+  hashParams?: {
+    N?: number;
+    r?: number;
+    p?: number;
+    keylen?: number;
+  };
   otpHash: string;
   otpSalt: string;
   expiresAt: number;
@@ -67,6 +76,14 @@ export interface UserAccount {
   updatedAt: string;
   passwordHash: string;
   passwordSalt: string;
+  hashAlgorithm?: 'scrypt' | 'sha256';
+  hashVersion?: number;
+  hashParams?: {
+    N?: number;
+    r?: number;
+    p?: number;
+    keylen?: number;
+  };
   failedAttempts: number;
   lockedUntil?: number;
   termsAcceptedVersion: string;
@@ -140,6 +157,10 @@ export class ServerAuthStore {
     }
   }
 
+  public reloadFromDisk(): void {
+    this.loadFromDisk();
+  }
+
   public persistAccountsToDisk() {
     try {
       const dir = this.ensureDataDir();
@@ -167,6 +188,7 @@ export class ServerAuthStore {
   public static getInstance(): ServerAuthStore {
     if (!ServerAuthStore.instance) {
       ServerAuthStore.instance = new ServerAuthStore();
+      (globalThis as any).__serverAuthStore = ServerAuthStore.instance;
     }
     return ServerAuthStore.instance;
   }
@@ -200,13 +222,77 @@ export class ServerAuthStore {
   }
 
   // =========================================================================
-  // CRYPTOGRAPHIC PRIMITIVES (TIMING-SAFE)
+  // CRYPTOGRAPHIC PRIMITIVES (TIMING-SAFE & OWASP-COMPLIANT SCRYPT)
   // =========================================================================
+
+  // OWASP-recommended scrypt memory-hard parameters:
+  // N=16384 (CPU/memory cost), r=8 (block size), p=1 (parallelization), keylen=64 (512-bit hash)
+  public static readonly SCRYPT_N = 16384;
+  public static readonly SCRYPT_R = 8;
+  public static readonly SCRYPT_P = 1;
+  public static readonly SCRYPT_KEYLEN = 64;
+  public static readonly SCRYPT_MAXMEM = 32 * 1024 * 1024; // 32MB max memory
 
   public generateSalt(): string {
     return crypto.randomBytes(16).toString('hex');
   }
 
+  /**
+   * Modern OWASP-compliant memory-hard scrypt password hash
+   */
+  public hashPasswordScrypt(
+    password: string,
+    salt: string,
+    params?: { N?: number; r?: number; p?: number; keylen?: number }
+  ): string {
+    const N = params?.N || ServerAuthStore.SCRYPT_N;
+    const r = params?.r || ServerAuthStore.SCRYPT_R;
+    const p = params?.p || ServerAuthStore.SCRYPT_P;
+    const keylen = params?.keylen || ServerAuthStore.SCRYPT_KEYLEN;
+    const buf = crypto.scryptSync(password, salt, keylen, {
+      N,
+      r,
+      p,
+      maxmem: ServerAuthStore.SCRYPT_MAXMEM
+    });
+    return buf.toString('hex');
+  }
+
+  /**
+   * Modern OWASP-compliant memory-hard scrypt password hash (non-blocking async)
+   */
+  public async hashPasswordScryptAsync(
+    password: string,
+    salt: string,
+    params?: { N?: number; r?: number; p?: number; keylen?: number }
+  ): Promise<string> {
+    const N = params?.N || ServerAuthStore.SCRYPT_N;
+    const r = params?.r || ServerAuthStore.SCRYPT_R;
+    const p = params?.p || ServerAuthStore.SCRYPT_P;
+    const keylen = params?.keylen || ServerAuthStore.SCRYPT_KEYLEN;
+    const buf = await new Promise<Buffer>((resolve, reject) => {
+      crypto.scrypt(
+        password,
+        salt,
+        keylen,
+        {
+          N,
+          r,
+          p,
+          maxmem: ServerAuthStore.SCRYPT_MAXMEM
+        },
+        (err, derivedKey) => {
+          if (err) reject(err);
+          else resolve(derivedKey as Buffer);
+        }
+      );
+    });
+    return buf.toString('hex');
+  }
+
+  /**
+   * Legacy SHA-256 salted hash (retained for backward compatibility and transparent migration)
+   */
   public hashPasswordWithSalt(password: string, salt: string): string {
     return crypto.createHash('sha256').update(`${salt}:${password}:catalyx_sec_domain`).digest('hex');
   }
@@ -245,11 +331,23 @@ export class ServerAuthStore {
     if (!password || password.length < 8) {
       return { valid: false, error: 'Password must be at least 8 characters long.' };
     }
-    if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+    if (password.length > 256) {
+      return { valid: false, error: 'Password must not exceed 256 characters.' };
+    }
+    // Unicode-aware letter checking (ASCII or Unicode \p{L})
+    const hasLetter = /[a-zA-Z]/.test(password) || /\p{L}/u.test(password);
+    if (!hasLetter) {
+      return { valid: false, error: 'Password must include at least one letter.' };
+    }
+    // Unicode-aware number or symbol checking (ASCII or Unicode digits/punctuation/symbols)
+    const hasNumberOrSymbol = /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password) || /[\p{N}\p{P}\p{S}]/u.test(password);
+    if (!hasNumberOrSymbol) {
       return { valid: false, error: 'Password must include at least one number or symbol.' };
     }
-    if (!/[a-zA-Z]/.test(password)) {
-      return { valid: false, error: 'Password must include at least one letter.' };
+    // Protect against trivial passwords
+    const trivialList = ['password', '12345678', 'qwerty123', 'admin1234', 'catalyx123'];
+    if (trivialList.includes(password.toLowerCase())) {
+      return { valid: false, error: 'Password is too common and easily guessed. Please choose a stronger password.' };
     }
     return { valid: true };
   }
@@ -320,7 +418,7 @@ export class ServerAuthStore {
     const accountType = allowedTypes.includes(params.accountType as any) ? params.accountType! : 'INDIVIDUAL';
 
     const salt = this.generateSalt();
-    const passwordHash = this.hashPasswordWithSalt(password, salt);
+    const passwordHash = await this.hashPasswordScryptAsync(password, salt);
 
     const uid = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
     const organizationId = `org_${uid}`;
@@ -339,6 +437,14 @@ export class ServerAuthStore {
       updatedAt: new Date().toISOString(),
       passwordHash,
       passwordSalt: salt,
+      hashAlgorithm: 'scrypt',
+      hashVersion: 2,
+      hashParams: {
+        N: ServerAuthStore.SCRYPT_N,
+        r: ServerAuthStore.SCRYPT_R,
+        p: ServerAuthStore.SCRYPT_P,
+        keylen: ServerAuthStore.SCRYPT_KEYLEN
+      },
       failedAttempts: 0,
       termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
       termsAcceptedAt: new Date().toISOString()
@@ -444,7 +550,7 @@ export class ServerAuthStore {
     const otpHash = this.hashOtp(otp, otpSalt);
 
     const passwordSalt = this.generateSalt();
-    const passwordHash = this.hashPasswordWithSalt(password, passwordSalt);
+    const passwordHash = await this.hashPasswordScryptAsync(password, passwordSalt);
 
     const challengeId = `reg_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
     const pending: PendingRegistration = {
@@ -454,6 +560,14 @@ export class ServerAuthStore {
       accountType: params.accountType || 'INDIVIDUAL',
       passwordHash,
       passwordSalt,
+      hashAlgorithm: 'scrypt',
+      hashVersion: 2,
+      hashParams: {
+        N: ServerAuthStore.SCRYPT_N,
+        r: ServerAuthStore.SCRYPT_R,
+        p: ServerAuthStore.SCRYPT_P,
+        keylen: ServerAuthStore.SCRYPT_KEYLEN
+      },
       otpHash,
       otpSalt,
       expiresAt: now + this.OTP_TTL_MS,
@@ -558,6 +672,14 @@ export class ServerAuthStore {
       updatedAt: new Date().toISOString(),
       passwordHash: pending.passwordHash,
       passwordSalt: pending.passwordSalt,
+      hashAlgorithm: pending.hashAlgorithm || 'scrypt',
+      hashVersion: pending.hashVersion || 2,
+      hashParams: pending.hashParams || {
+        N: ServerAuthStore.SCRYPT_N,
+        r: ServerAuthStore.SCRYPT_R,
+        p: ServerAuthStore.SCRYPT_P,
+        keylen: ServerAuthStore.SCRYPT_KEYLEN
+      },
       failedAttempts: 0,
       termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
       termsAcceptedAt: new Date().toISOString()
@@ -646,7 +768,7 @@ export class ServerAuthStore {
     const organizationId = `org_${uid}`;
 
     const salt = this.generateSalt();
-    const hash = this.hashPasswordWithSalt(params.password || crypto.randomBytes(16).toString('hex'), salt);
+    const hash = await this.hashPasswordScryptAsync(params.password || crypto.randomBytes(16).toString('hex'), salt);
 
     const account: UserAccount = {
       uid,
@@ -662,6 +784,14 @@ export class ServerAuthStore {
       updatedAt: new Date().toISOString(),
       passwordHash: hash,
       passwordSalt: salt,
+      hashAlgorithm: 'scrypt',
+      hashVersion: 2,
+      hashParams: {
+        N: ServerAuthStore.SCRYPT_N,
+        r: ServerAuthStore.SCRYPT_R,
+        p: ServerAuthStore.SCRYPT_P,
+        keylen: ServerAuthStore.SCRYPT_KEYLEN
+      },
       failedAttempts: 0,
       termsAcceptedVersion: LegalPolicyService.CURRENT_VERSION,
       termsAcceptedAt: new Date().toISOString()
@@ -673,7 +803,7 @@ export class ServerAuthStore {
   }
 
   // =========================================================================
-  // AUTHENTICATION & LOGIN (BRUTE-FORCE RESILIENT)
+  // AUTHENTICATION & LOGIN (BRUTE-FORCE RESILIENT & TIMING PROTECTED)
   // =========================================================================
 
   public async authenticate(params: {
@@ -696,9 +826,9 @@ export class ServerAuthStore {
 
     const account = this.accounts.get(email);
     if (!account) {
-      // Timing-safe constant work to defeat timing attacks
+      // Timing-safe constant work using memory-hard scrypt to defeat timing attacks
       const fakeSalt = this.generateSalt();
-      this.hashPasswordWithSalt(password, fakeSalt);
+      await this.hashPasswordScryptAsync(password, fakeSalt);
       return {
         success: false,
         error: 'Incorrect email or password.'
@@ -716,9 +846,21 @@ export class ServerAuthStore {
       };
     }
 
-    // Verify password hash
-    const candidateHash = this.hashPasswordWithSalt(password, account.passwordSalt);
-    const matches = this.timingSafeEqual(candidateHash, account.passwordHash);
+    // Verify password hash based on algorithm version
+    let matches = false;
+    let needsMigration = false;
+
+    if (account.hashAlgorithm === 'scrypt' || account.hashVersion === 2) {
+      const candidateHash = await this.hashPasswordScryptAsync(password, account.passwordSalt, account.hashParams);
+      matches = this.timingSafeEqual(candidateHash, account.passwordHash);
+    } else {
+      // Legacy SHA-256 (Version 1) verification
+      const candidateHash = this.hashPasswordWithSalt(password, account.passwordSalt);
+      matches = this.timingSafeEqual(candidateHash, account.passwordHash);
+      if (matches) {
+        needsMigration = true;
+      }
+    }
 
     if (!matches) {
       account.failedAttempts += 1;
@@ -739,6 +881,25 @@ export class ServerAuthStore {
     // Success: reset failed attempts
     account.failedAttempts = 0;
     delete account.lockedUntil;
+
+    // Transparent zero-downtime migration: rehash with modern scrypt and atomically replace
+    if (needsMigration) {
+      const newSalt = this.generateSalt();
+      const newHash = await this.hashPasswordScryptAsync(password, newSalt);
+      account.hashAlgorithm = 'scrypt';
+      account.hashVersion = 2;
+      account.hashParams = {
+        N: ServerAuthStore.SCRYPT_N,
+        r: ServerAuthStore.SCRYPT_R,
+        p: ServerAuthStore.SCRYPT_P,
+        keylen: ServerAuthStore.SCRYPT_KEYLEN
+      };
+      account.passwordSalt = newSalt;
+      account.passwordHash = newHash;
+      account.updatedAt = new Date().toISOString();
+      this.persistAccountsToDisk();
+      console.log(`[AUTH] Transparently upgraded user ${account.uid} to modern OWASP-compliant scrypt hash (Version 2)`);
+    }
 
     const sessionToken = this.createSession(account, params.ip);
 
@@ -902,14 +1063,23 @@ export class ServerAuthStore {
     recovery.used = true;
     this.pendingRecoveries.delete(cleanEmail);
 
-    // Rotate salt and update password
+    // Rotate salt and update password with modern scrypt
     const newSalt = this.generateSalt();
-    const newHash = this.hashPasswordWithSalt(newPassword, newSalt);
+    const newHash = await this.hashPasswordScryptAsync(newPassword, newSalt);
     account.passwordSalt = newSalt;
     account.passwordHash = newHash;
+    account.hashAlgorithm = 'scrypt';
+    account.hashVersion = 2;
+    account.hashParams = {
+      N: ServerAuthStore.SCRYPT_N,
+      r: ServerAuthStore.SCRYPT_R,
+      p: ServerAuthStore.SCRYPT_P,
+      keylen: ServerAuthStore.SCRYPT_KEYLEN
+    };
     account.failedAttempts = 0;
     delete account.lockedUntil;
     account.updatedAt = new Date().toISOString();
+    this.persistAccountsToDisk();
 
     // Revoke all existing sessions for this user for security
     this.revokeAllUserSessions(account.uid);

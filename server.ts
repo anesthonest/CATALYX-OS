@@ -155,7 +155,7 @@ async function generateContentWithResilience(options: GeminiResilienceOptions): 
     return { text: null, modelUsed: 'LOCAL_GROUNDED_ENGINE', source: 'FALLBACK' };
   }
 
-  // Model fallback sequence: primary flash, then flash-latest
+  // Model fallback sequence: primary stable flash (gemini-3.8-flash), then moving alias (gemini-flash-latest)
   const candidateModels = [
     options.model || 'gemini-3.8-flash',
     'gemini-flash-latest',
@@ -164,48 +164,59 @@ async function generateContentWithResilience(options: GeminiResilienceOptions): 
 
   for (let i = 0; i < modelsToTry.length; i++) {
     const model = modelsToTry[i];
-    const timeoutMs = i === 0 ? 4500 : 3000;
+    const timeoutMs = i === 0 ? 7000 : 5000;
+    const maxRetries = 1; // Bounded retry for transient capacity spikes
 
-    try {
-      let timeoutId: any;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('TIMEOUT_CAPACITY_SPIKE')), timeoutMs);
-      });
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        let timeoutId: any;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('TIMEOUT_CAPACITY_SPIKE')), timeoutMs);
+        });
 
-      const callPromise = ai.models.generateContent({
-        model,
-        contents: options.contents,
-        config: options.config,
-      });
+        const callPromise = ai.models.generateContent({
+          model,
+          contents: options.contents,
+          config: options.config,
+        });
 
-      const response: any = await Promise.race([callPromise, timeoutPromise]);
-      clearTimeout(timeoutId);
+        const response: any = await Promise.race([callPromise, timeoutPromise]);
+        clearTimeout(timeoutId);
 
-      const replyText = response?.text?.trim();
-      if (replyText) {
-        return {
-          text: replyText,
-          modelUsed: model,
-          source: 'GEMINI_AI',
-        };
-      }
-    } catch (err: any) {
-      const errMsg = err?.message || String(err);
-      const errStatus = err?.status || err?.code || (err?.error && err.error.code);
-      const isTransientCapacity =
-        errStatus === 503 ||
-        errStatus === 429 ||
-        errMsg.includes('503') ||
-        errMsg.includes('429') ||
-        errMsg.includes('TIMEOUT') ||
-        errMsg.includes('UNAVAILABLE') ||
-        errMsg.includes('high demand') ||
-        errMsg.includes('RESOURCE_EXHAUSTED');
+        const replyText = response?.text?.trim();
+        if (replyText) {
+          return {
+            text: replyText,
+            modelUsed: model,
+            source: 'GEMINI_AI',
+          };
+        }
+      } catch (err: any) {
+        const errMsg = err?.message || String(err);
+        const errStatus = err?.status || err?.code || (err?.error && err.error.code);
+        const isTransientCapacity =
+          errStatus === 503 ||
+          errStatus === 429 ||
+          errMsg.includes('503') ||
+          errMsg.includes('429') ||
+          errMsg.includes('TIMEOUT') ||
+          errMsg.includes('UNAVAILABLE') ||
+          errMsg.includes('high demand') ||
+          errMsg.includes('RESOURCE_EXHAUSTED');
 
-      if (isTransientCapacity) {
-        console.log(`[CATALYX AI Engine] Model '${model}' high-demand capacity spike handled gracefully. Advancing failover...`);
-      } else {
-        console.log(`[CATALYX AI Engine] Generation notice on '${model}': ${errMsg.slice(0, 80)}. Advancing failover...`);
+        if (attempt < maxRetries && isTransientCapacity) {
+          // Bounded jittered backoff: 250ms - 450ms
+          const jitterBackoffMs = 250 + Math.floor(Math.random() * 200);
+          await new Promise(resolve => setTimeout(resolve, jitterBackoffMs));
+          continue;
+        }
+
+        if (isTransientCapacity) {
+          console.log(`[CATALYX AI Engine] Model '${model}' high-demand capacity spike handled gracefully. Advancing failover...`);
+        } else {
+          console.log(`[CATALYX AI Engine] Generation notice on '${model}': ${errMsg.slice(0, 80)}. Advancing failover...`);
+        }
+        break; // Advance to next model candidate
       }
     }
   }
@@ -1661,11 +1672,27 @@ app.all(['/api/billing/stripe/*', '/api/billing/stripe'], (_req, res) => {
 });
 
 /**
- * Helper to resolve authenticated actor from session token or authorization header
+ * Helper to extract session token from Authorization header, x-session-token, or secure cookie
+ */
+function extractSessionToken(req: express.Request): string {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) return authHeader.substring(7).trim();
+  if (authHeader?.startsWith('bearer ')) return authHeader.substring(7).trim();
+  const xToken = req.headers['x-session-token'];
+  if (typeof xToken === 'string' && xToken.trim()) return xToken.trim();
+  const rawCookie = req.headers.cookie;
+  if (rawCookie) {
+    const match = rawCookie.match(/(?:^|;\s*)catalyx_session_token=([^;]+)/);
+    if (match) return decodeURIComponent(match[1]).trim();
+  }
+  return '';
+}
+
+/**
+ * Helper to resolve authenticated actor from session token, cookie, or authorization header
  */
 function getAuthenticatedActor(req: express.Request): { uid: string; email: string; organizationId: string; role: string } | null {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : (req.headers['x-session-token'] as string);
+  const token = extractSessionToken(req);
   if (token) {
     const session = serverAuthStore.getSession(token);
     if (session) {
@@ -1711,9 +1738,16 @@ app.post('/api/auth/register', async (req, res) => {
     // Authoritative trial subscription initialization on the server
     const subRecord = serverSubscriptionStore.get(result.user.organizationId || result.user.uid);
 
+    // Sanitize user object to never leak hash or salt
+    const { passwordHash, passwordSalt, ...safeUser } = result.user as any;
+
+    if (result.sessionToken) {
+      res.setHeader('Set-Cookie', `catalyx_session_token=${result.sessionToken}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=604800`);
+    }
+
     res.json({
       success: true,
-      user: result.user,
+      user: safeUser,
       sessionToken: result.sessionToken,
       subscription: subRecord
     });
@@ -1794,10 +1828,19 @@ app.post('/api/auth/login', async (req, res) => {
       password,
       ip: clientIp
     });
-    if (!result.success) {
+    if (!result.success || !result.user) {
       return res.status(401).json(result);
     }
-    res.json(result);
+    // Sanitize user object to never leak hash or salt
+    const { passwordHash, passwordSalt, ...safeUser } = result.user as any;
+    if (result.sessionToken) {
+      res.setHeader('Set-Cookie', `catalyx_session_token=${result.sessionToken}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=604800`);
+    }
+    res.json({
+      success: true,
+      user: safeUser,
+      sessionToken: result.sessionToken
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Login failed' });
   }
@@ -1859,10 +1902,19 @@ app.post('/api/auth/google', async (req, res) => {
       acceptTerms: Boolean(acceptTerms),
       ip: clientIp
     });
-    if (!result.success) {
+    if (!result.success || !result.user) {
       return res.status(400).json(result);
     }
-    res.json(result);
+    const { passwordHash, passwordSalt, ...safeUser } = result.user as any;
+    if (result.sessionToken) {
+      res.setHeader('Set-Cookie', `catalyx_session_token=${result.sessionToken}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=604800`);
+    }
+    res.json({
+      success: true,
+      user: safeUser,
+      sessionToken: result.sessionToken,
+      isNewUser: (result as any).isNewUser
+    });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Google authentication failed' });
   }
@@ -1896,11 +1948,11 @@ app.post('/api/auth/google/link', async (req, res) => {
  * Terminate Session / Logout
  */
 app.post('/api/auth/logout', (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : (req.headers['x-session-token'] as string);
+  const token = extractSessionToken(req);
   if (token) {
     serverAuthStore.revokeSession(token);
   }
+  res.setHeader('Set-Cookie', 'catalyx_session_token=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');
   res.json({ success: true, message: 'Logged out successfully' });
 });
 

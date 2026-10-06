@@ -58,5 +58,103 @@
     "status": "active",
     "progress": 75,
     "createdAt": "2026-10-05T16:15:37.192Z"
+  },
+  {
+    "id": "proj_audit_1791310622336",
+    "userId": "user_audit_executor_1791310622336",
+    "workspaceId": "ws_audit_1791310622336",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T18:17:02.336Z"
+  },
+  {
+    "id": "proj_audit_1791310645528",
+    "userId": "user_audit_executor_1791310645528",
+    "workspaceId": "ws_audit_1791310645528",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T18:17:25.528Z"
+  },
+  {
+    "id": "proj_audit_1791310690977",
+    "userId": "user_audit_executor_1791310690977",
+    "workspaceId": "ws_audit_1791310690977",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T18:18:10.977Z"
+  },
+  {
+    "id": "proj_audit_1791310768405",
+    "userId": "user_audit_executor_1791310768404",
+    "workspaceId": "ws_audit_1791310768404",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T18:19:28.405Z"
+  },
+  {
+    "id": "proj_1791311844947_2a0cf304",
+    "userId": "usr_1791311844881_08ccdc9b95e7",
+    "title": "Alpha Confidential Strategy",
+    "description": "Top secret",
+    "status": "active",
+    "progress": 0,
+    "createdAt": "2026-10-06T18:37:24.947Z"
+  },
+  {
+    "id": "proj_1791312375604_d25b0547",
+    "userId": "usr_1791312375525_be3f7e3026e3",
+    "title": "Alice Project",
+    "description": "Alice Secret",
+    "status": "active",
+    "progress": 0,
+    "createdAt": "2026-10-06T18:46:15.604Z"
+  },
+  {
+    "id": "proj_audit_1791312409162",
+    "userId": "user_audit_executor_1791312409161",
+    "workspaceId": "ws_audit_1791312409161",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T18:46:49.162Z"
+  },
+  {
+    "id": "proj_audit_1791316109196",
+    "userId": "user_audit_executor_1791316109195",
+    "workspaceId": "ws_audit_1791316109195",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T19:48:29.196Z"
+  },
+  {
+    "id": "proj_audit_1791316539762",
+    "userId": "user_audit_executor_1791316539762",
+    "workspaceId": "ws_audit_1791316539762",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T19:55:39.762Z"
+  },
+  {
+    "id": "proj_audit_1791316804929",
+    "userId": "user_audit_executor_1791316804929",
+    "workspaceId": "ws_audit_1791316804929",
+    "title": "Core Infrastructure Hardening",
+    "description": "Audit task suite",
+    "status": "active",
+    "progress": 75,
+    "createdAt": "2026-10-06T20:00:04.929Z"
   }
 ]

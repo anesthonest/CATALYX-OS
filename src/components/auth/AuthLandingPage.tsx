@@ -77,6 +77,7 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setErrorMessage('');
     setSuccessMessage('');
 
@@ -111,6 +112,7 @@ export const AuthLandingPage: React.FC<AuthLandingPageProps> = ({ onAuthSuccess,
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setErrorMessage('');
     setSuccessMessage('');
 

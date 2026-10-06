@@ -260,7 +260,18 @@ export default function App() {
           if (res.ok) {
             const data = await res.json();
             if (data.authenticated && data.user) {
-              const prof = await dbService.getUserProfile(data.user.uid) || await dbService.registerUser(data.user.username, data.user.email);
+              const uid = data.user.uid;
+              let prof = await dbService.getUserProfile(uid);
+              if (!prof) {
+                prof = await dbService.registerUser(data.user.username, data.user.email, uid);
+              }
+              prof = await dbService.updateUserProfile(uid, {
+                accountType: data.user.accountType || prof.accountType,
+                organizationId: data.user.organizationId || prof.organizationId,
+                role: data.user.role || prof.role,
+                emailVerified: data.user.emailVerified ?? true
+              });
+              safeStorage.setActiveSession(uid);
               setUser(prof);
               loadUserData(prof.uid);
               return;
@@ -279,16 +290,8 @@ export default function App() {
           return;
         }
       } catch {
-        // Network connection error (e.g. server completely unreachable/offline preview)
-        const currentId = safeStorage.getActiveSession();
-        if (currentId) {
-          const prof = await dbService.getUserProfile(currentId);
-          if (prof) {
-            setUser(prof);
-            loadUserData(prof.uid);
-            return;
-          }
-        }
+        // Network connection error / unverified session: strictly unauthenticated
+        safeStorage.clearActiveSession();
         setUser(null);
       }
     };
@@ -403,15 +406,18 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await persistenceSyncService.flushPendingQueue();
-      const sessionToken = localStorage.getItem('catalyx_session_token');
+      const sessionToken = safeStorage.getSessionToken();
       if (sessionToken) {
         await fetch('/api/auth/logout', {
           method: 'POST',
-          headers: { 'x-session-token': sessionToken }
+          headers: {
+            'x-session-token': sessionToken,
+            'Authorization': `Bearer ${sessionToken}`
+          }
         });
       }
     } catch {}
-    localStorage.removeItem('catalyx_session_token');
+    safeStorage.clearActiveSession();
     await authService.logout();
     setUser(null);
     setIsGuestBrowsingMarketplace(false);

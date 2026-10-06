@@ -64,5 +64,93 @@
     "status": "completed",
     "type": "short_term",
     "createdAt": "2026-10-05T16:15:37.192Z"
+  },
+  {
+    "id": "goal_audit_1791310622336",
+    "userId": "user_audit_executor_1791310622336",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T18:17:02.336Z"
+  },
+  {
+    "id": "goal_audit_1791310645528",
+    "userId": "user_audit_executor_1791310645528",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T18:17:25.528Z"
+  },
+  {
+    "id": "goal_audit_1791310690977",
+    "userId": "user_audit_executor_1791310690977",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T18:18:10.977Z"
+  },
+  {
+    "id": "goal_audit_1791310768405",
+    "userId": "user_audit_executor_1791310768404",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T18:19:28.405Z"
+  },
+  {
+    "id": "goal_audit_1791312409162",
+    "userId": "user_audit_executor_1791312409161",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T18:46:49.162Z"
+  },
+  {
+    "id": "goal_audit_1791316109196",
+    "userId": "user_audit_executor_1791316109195",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T19:48:29.196Z"
+  },
+  {
+    "id": "goal_audit_1791316539762",
+    "userId": "user_audit_executor_1791316539762",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T19:55:39.762Z"
+  },
+  {
+    "id": "goal_audit_1791316804929",
+    "userId": "user_audit_executor_1791316804929",
+    "title": "100% Persistence Durability",
+    "description": "Ensure zero data drop",
+    "targetDate": "2026-12-31",
+    "progress": 100,
+    "status": "completed",
+    "type": "short_term",
+    "createdAt": "2026-10-06T20:00:04.929Z"
   }
 ]

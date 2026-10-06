@@ -53,5 +53,86 @@
     "priority": "high",
     "category": "work",
     "createdAt": "2026-10-05T16:15:37.192Z"
+  },
+  {
+    "id": "task_audit_1791310622336",
+    "userId": "user_audit_executor_1791310622336",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T18:17:02.336Z"
+  },
+  {
+    "id": "task_audit_1791310645528",
+    "userId": "user_audit_executor_1791310645528",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T18:17:25.528Z"
+  },
+  {
+    "id": "task_audit_1791310690977",
+    "userId": "user_audit_executor_1791310690977",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T18:18:10.977Z"
+  },
+  {
+    "id": "task_audit_1791310768405",
+    "userId": "user_audit_executor_1791310768404",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T18:19:28.405Z"
+  },
+  {
+    "id": "task_1791312375609_bfc2635a",
+    "userId": "usr_1791312375525_be3f7e3026e3",
+    "text": "Alice Task",
+    "completed": false,
+    "priority": "medium",
+    "category": "work",
+    "createdAt": "2026-10-06T18:46:15.609Z"
+  },
+  {
+    "id": "task_audit_1791312409162",
+    "userId": "user_audit_executor_1791312409161",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T18:46:49.162Z"
+  },
+  {
+    "id": "task_audit_1791316109196",
+    "userId": "user_audit_executor_1791316109195",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T19:48:29.196Z"
+  },
+  {
+    "id": "task_audit_1791316539762",
+    "userId": "user_audit_executor_1791316539762",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T19:55:39.762Z"
+  },
+  {
+    "id": "task_audit_1791316804929",
+    "userId": "user_audit_executor_1791316804929",
+    "text": "Verify zero data loss on browser restart",
+    "completed": true,
+    "priority": "high",
+    "category": "work",
+    "createdAt": "2026-10-06T20:00:04.929Z"
   }
 ]
